@@ -1,0 +1,375 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+
+  /* Light Theme (default) */
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    
+    --primary: 355 94% 47%;
+    --primary-foreground: 0 0% 100%;
+    
+    --accent: 45 95% 52%;
+    --accent-foreground: 0 0% 0%;
+    
+    --nepal-blue: 225 100% 29%;
+    --nepal-red: 355 94% 47%;
+    
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    
+    --ring: 355 94% 47%;
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    
+    --radius: 0.5rem;
+  }
+
+  /* Dark Theme */
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    
+    --primary: 355 76% 60%;
+    --primary-foreground: 0 0% 100%;
+    
+    --accent: 45 95% 65%;
+    --accent-foreground: 0 0% 0%;
+    
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 74.9%;
+    
+    --card: 240 10% 7%;
+    --card-foreground: 0 0% 98%;
+    
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    
+    --ring: 355 80% 65%;
+    
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 98%;
+  }
+
+  /* Hero gradient */
+  .hero-gradient {
+    background: linear-gradient(90deg, rgba(220, 20, 60, 0.05) 0%, rgba(0, 56, 147, 0.1) 100%);
+  }
+  
+  .dark .hero-gradient {
+    background: linear-gradient(90deg, rgba(220, 20, 60, 0.15) 0%, rgba(0, 56, 147, 0.3) 100%);
+  }
+
+  /* Progress bar */
+  .progress-bar {
+    height: 8px;
+    border-radius: 4px;
+    background-color: hsl(var(--muted));
+    overflow: hidden;
+  }
+
+  .progress-value {
+    height: 100%;
+    border-radius: 4px;
+    background-color: hsl(var(--primary));
+    transition: width 0.5s ease;
+  }
+
+  /* Focus styles */
+  .donation-input:focus {
+    box-shadow: 0 0 0 2px hsla(var(--primary), 0.2);
+  }
+  
+  /* Nepal-inspired color gradients */
+  .nepal-gradient-text {
+    @apply bg-gradient-to-r from-[#DC143C] to-[#003893] bg-clip-text text-transparent;
+  }
+  
+  .dark .nepal-gradient-text {
+    @apply bg-gradient-to-r from-[#ff3358] to-[#1e68ff] bg-clip-text text-transparent;
+  }
+  
+  /* Dark mode adjustments */
+  .dark .bg-white {
+    background-color: #1f2937;
+  }
+  
+  .dark .text-gray-700 {
+    color: #e5e7eb;
+  }
+  
+  .dark .text-gray-600 {
+    color: #d1d5db;
+  }
+  
+  .dark .text-gray-500 {
+    color: #9ca3af;
+  }
+  
+  .dark .text-gray-400 {
+    color: #d1d5db;
+  }
+  
+  .dark .bg-gray-50 {
+    background-color: #111827;
+  }
+  
+  .dark .border-gray-200 {
+    border-color: #374151;
+  }
+  
+  .dark .border-gray-300 {
+    border-color: #4b5563;
+  }
+}
+
+@layer components {
+  /* Enhanced buttons and CTAs */
+  .button-primary {
+    @apply py-3 px-6 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200;
+  }
+  
+  .button-secondary {
+    @apply py-3 px-6 border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 font-medium rounded-lg shadow-sm hover:shadow-md transform hover:-translate-y-0.5 transition-all duration-200;
+  }
+  
+  /* Responsive Design Helpers */
+  .md-fix {
+    @apply flex-wrap justify-center;
+  }
+  
+  .md-button-fix {
+    @apply w-full mb-2;
+  }
+}
+
+/* Add styles to ensure the mobile menu is fully visible */
+.mobile-menu-container {
+  position: fixed;
+  top: 64px; /* Match header height */
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background-color: white;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  max-height: calc(100vh - 64px);
+  overflow-y: auto;
+}
+
+/* Dark mode styles */
+.dark .mobile-menu-container {
+  background-color: #1f2937; /* dark:bg-gray-800 */
+  border-top: 1px solid #374151; /* dark:border-gray-700 */
+}
+
+@media (min-width: 768px) {
+  .mobile-menu-container {
+    display: none;
+  }
+}
+
+/* Custom scrollbar styles for modal */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  @apply bg-gray-100 dark:bg-gray-800 rounded-full;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 dark:bg-gray-600 rounded-full;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400 dark:bg-gray-500;
+}
+
+/* Hide scrollbar completely */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Safari and Chrome */
+}
+
+/* No scrollbar utility class (alternative name) */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Firefox scrollbar */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(209 213 219) rgb(243 244 246);
+}
+
+.dark .scrollbar-thin {
+  scrollbar-color: rgb(75 85 99) rgb(31 41 55);
+}
+
+/* Modal z-index utility */
+.z-modal {
+  z-index: 9999;
+}
+
+/* Prevent text selection on modal backdrop */
+.modal-backdrop {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Custom focus styles for modal */
+.modal-focus:focus {
+  @apply outline-none ring-2 ring-ring ring-opacity-50;
+}
+
+/* Peaceful Balloon Animations for TopDonors component */
+@keyframes floatBalloon1 {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px) scale(1);
+    opacity: 0.3;
+  }
+  25% {
+    transform: translateY(-15px) translateX(-5px) scale(1.05);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateY(-8px) translateX(8px) scale(0.95);
+    opacity: 0.4;
+  }
+  75% {
+    transform: translateY(-12px) translateX(-3px) scale(1.02);
+    opacity: 0.6;
+  }
+}
+
+@keyframes floatBalloon2 {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px) scale(1);
+    opacity: 0.25;
+  }
+  33% {
+    transform: translateY(-12px) translateX(6px) scale(1.08);
+    opacity: 0.4;
+  }
+  66% {
+    transform: translateY(-6px) translateX(-8px) scale(0.92);
+    opacity: 0.35;
+  }
+}
+
+@keyframes floatBalloon3 {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px) scale(1);
+    opacity: 0.4;
+  }
+  20% {
+    transform: translateY(-8px) translateX(-4px) scale(1.1);
+    opacity: 0.6;
+  }
+  60% {
+    transform: translateY(-14px) translateX(7px) scale(0.9);
+    opacity: 0.3;
+  }
+  80% {
+    transform: translateY(-5px) translateX(-2px) scale(1.05);
+    opacity: 0.5;
+  }
+}
+
+@keyframes floatBalloon4 {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px) scale(1);
+    opacity: 0.3;
+  }
+  30% {
+    transform: translateY(-10px) translateX(9px) scale(1.07);
+    opacity: 0.45;
+  }
+  70% {
+    transform: translateY(-16px) translateX(-6px) scale(0.93);
+    opacity: 0.55;
+  }
+}
+
+@keyframes floatBalloon5 {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px) scale(1);
+    opacity: 0.35;
+  }
+  25% {
+    transform: translateY(-6px) translateX(-7px) scale(1.12);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateY(-11px) translateX(4px) scale(0.88);
+    opacity: 0.4;
+  }
+  75% {
+    transform: translateY(-3px) translateX(8px) scale(1.04);
+    opacity: 0.6;
+  }
+}
+
+@keyframes gentleGlow {
+  0%, 100% {
+    opacity: 0.1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.2;
+    transform: scale(1.02);
+  }
+}
+
+/* Animation utility classes */
+.animate-floatBalloon1 {
+  animation: floatBalloon1 8s ease-in-out infinite;
+}
+
+.animate-floatBalloon2 {
+  animation: floatBalloon2 10s ease-in-out infinite;
+}
+
+.animate-floatBalloon3 {
+  animation: floatBalloon3 6s ease-in-out infinite;
+}
+
+.animate-floatBalloon4 {
+  animation: floatBalloon4 12s ease-in-out infinite;
+}
+
+.animate-floatBalloon5 {
+  animation: floatBalloon5 9s ease-in-out infinite;
+}
+
+.animate-gentleGlow {
+  animation: gentleGlow 15s ease-in-out infinite;
+}
