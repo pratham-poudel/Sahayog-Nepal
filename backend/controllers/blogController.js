@@ -39,12 +39,33 @@ const getPagination = (page, size) => {
 // @access  Private
 exports.createBlog = async (req, res) => {
     try {
-        const { title, excerpt, content, tags, templateId, status } = req.body;
+        const { 
+            title, 
+            excerpt, 
+            content, 
+            tags, 
+            templateId, 
+            status, 
+            coverImageUrl, 
+            coverImage,
+            twitter,
+            facebook,
+            instagram,
+            linkedin
+        } = req.body;
         
         if (!title || !excerpt || !content) {
             return res.status(400).json({
                 success: false,
                 message: 'Title, excerpt and content are required'
+            });
+        }
+        
+        // Check if cover image was uploaded
+        if (!coverImageUrl && !coverImage) {
+            return res.status(400).json({
+                success: false,
+                message: 'Cover image is required'
             });
         }
         
@@ -68,16 +89,8 @@ exports.createBlog = async (req, res) => {
         // Generate unique slug
         const slug = await generateUniqueSlug(title);
         
-        // Get cover image path
-        if (!req.file) {
-            return res.status(400).json({
-                success: false,
-                message: 'No file uploaded. Make sure the file is sent with the field name "BlogCoverImage"'
-            });
-        }
-        console.log('Blog Cover upload file:', req.file);
-        const filename = req.fileData?.BlogCoverImage?.[0]?.filename || req.file.key.split('/').pop();
-        const fileData = fileService.processUploadedFile(req.file);
+        // Use the uploaded cover image URL
+        const finalCoverImage = coverImageUrl || coverImage;
 
 
         
@@ -88,16 +101,16 @@ exports.createBlog = async (req, res) => {
             excerpt,
             content: parsedContent,
             author: req.user._id,
-            coverImage: filename,
+            coverImage: finalCoverImage,
             tags: parsedTags,
             templateId: templateId || 'classic',
             status: status || 'draft',
             publishedAt: status === 'published' ? new Date() : null,
             socials: {
-                twitter: req.body.twitter || '',
-                facebook: req.body.facebook || '',
-                instagram: req.body.instagram || '',
-                linkedin: req.body.linkedin || ''
+                twitter: twitter || '',
+                facebook: facebook || '',
+                instagram: instagram || '',
+                linkedin: linkedin || ''
             }
         };
         

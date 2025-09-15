@@ -14,7 +14,6 @@ const {
     getBlogsByTag
 } = require('../controllers/blogController');
 const { protect, admin } = require('../middlewares/authMiddleware');
-const upload = require('../middlewares/uploadMiddleware');
 const cacheMiddleware = require('../middlewares/cacheMiddleware');
 
 // Public routes
@@ -26,10 +25,10 @@ router.post('/views/:id', incrementBlogViews); // Increment blog views
 
 // Protected routes
 router.get('/user/myblogs', getUserBlogs); // Get blogs by logged in user
-router.post('/', upload.single('BlogCoverImage'),protect, createBlog); // Create a blog
-router.put('/:id', upload.single('BlogCoverImage'),protect, updateBlog); // Update a blog
-router.delete('/:id',protect, deleteBlog); // Delete a blog
-router.post('/like/:id', protect,likeBlog); // Like a blog
-router.post('/upload-image',upload.single('Blogimage'),protect, uploadBlogImage); // Upload an image for blog content
+router.post('/', protect, createBlog); // Create a blog
+router.put('/:id', protect, updateBlog); // Update a blog
+router.delete('/:id', protect, deleteBlog); // Delete a blog
+router.post('/like/:id', protect, likeBlog); // Like a blog
+router.post('/upload-image', protect, uploadBlogImage); // Upload an image for blog content
 
 module.exports = router; 

@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
-import { motion } from 'framer-motion';
 import { useLocation } from 'wouter';
 import { useToast } from '@/hooks/use-toast';
 import SEO from '../utils/seo.jsx';
@@ -10,6 +9,7 @@ import HierarchicalCategorySelector from '../components/campaigns/HierarchicalCa
 import { apiRequest } from '../lib/queryClient';
 import { getCoverImageUrl, getCampaignImageUrls } from '../utils/imageUtils';
 import { API_URL as CONFIG_API_URL } from '../config/index.js';
+import uploadService from '../services/uploadService';
 
 const EditCampaign = ({ id }) => {
   const [, setLocation] = useLocation();
@@ -141,24 +141,40 @@ const EditCampaign = ({ id }) => {
     }
   }, [campaign, setLocation, toast]);
 
-  const handleAdditionalImageUpload = (e) => {
+  const handleAdditionalImageUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length > 0) {
       // Limit to 3 additional images
       const newFiles = files.slice(0, 3 - uploadedAdditionalPreviews.length);
       
       if (newFiles.length > 0) {
-        // Update state for form submission
-        setAdditionalImages(prev => [...prev, ...newFiles]);
-        
-        // Create previews for display
-        newFiles.forEach(file => {
-          const reader = new FileReader();
-          reader.onload = (event) => {
-            setUploadedAdditionalPreviews(prev => [...prev, event.target.result]);
-          };
-          reader.readAsDataURL(file);
-        });
+        try {
+          setIsLoading(true);
+          
+          // Upload multiple files using presigned URLs
+          const results = await uploadService.uploadFiles(newFiles, { fileType: 'campaign-image' });
+          
+          // Store uploaded URLs instead of file objects
+          const uploadedUrls = results.map(result => result.publicUrl);
+          setAdditionalImages(prev => [...prev, ...uploadedUrls]);
+          
+          // Create previews for display using the uploaded URLs
+          setUploadedAdditionalPreviews(prev => [...prev, ...uploadedUrls]);
+          
+          toast({
+            title: "Success",
+            description: `${newFiles.length} additional images uploaded successfully`,
+          });
+        } catch (error) {
+          console.error('Additional images upload failed:', error);
+          toast({
+            title: "Upload Failed",
+            description: "Failed to upload additional images. Please try again.",
+            variant: "destructive"
+          });
+        } finally {
+          setIsLoading(false);
+        }
       }
     }
   };
@@ -187,18 +203,35 @@ const EditCampaign = ({ id }) => {
     setUploadedAdditionalPreviews(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleImageUpload = (e) => {
+  const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Store the file object for form submission
-      setCoverImage(file);
-      
-      // Create a preview URL
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setUploadedCoverPreview(event.target.result);
-      };
-      reader.readAsDataURL(file);
+      try {
+        setIsLoading(true);
+        
+        // Upload file using presigned URL
+        const result = await uploadService.uploadFile(file, { fileType: 'campaign-cover' });
+        
+        // Store the uploaded URL instead of file object
+        setCoverImage(result.publicUrl);
+        
+        // Create a preview URL for display
+        setUploadedCoverPreview(result.publicUrl);
+        
+        toast({
+          title: "Success",
+          description: "Cover image uploaded successfully",
+        });
+      } catch (error) {
+        console.error('Cover image upload failed:', error);
+        toast({
+          title: "Upload Failed",
+          description: "Failed to upload cover image. Please try again.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
   
@@ -230,47 +263,54 @@ const EditCampaign = ({ id }) => {
     try {
       setIsLoading(true);
       
-      // Create FormData object for file uploads
-      const formData = new FormData();
-        // Add form data
-      formData.append('title', data.title);
-      formData.append('category', data.category);
+      // Create JSON payload instead of FormData
+      const payload = {
+        title: data.title,
+        category: data.category,
+        targetAmount: data.targetAmount,
+        endDate: data.endDate,
+        shortDescription: data.shortDescription,
+        story: data.story
+      };
+
       if (data.subcategory) {
-        formData.append('subcategory', data.subcategory);
+        payload.subcategory = data.subcategory;
       }
-      formData.append('targetAmount', data.targetAmount);
-      formData.append('endDate', data.endDate);
-      formData.append('shortDescription', data.shortDescription);
-      formData.append('story', data.story);
       
-      // Add cover image if changed
+      // Add cover image URL if uploaded
       if (coverImage) {
-        formData.append('coverImage', coverImage);
+        payload.coverImage = coverImage;
       }
       
-      // Add additional images if any new ones
-      additionalImages.forEach(image => {
-        formData.append('additionalImages', image);
-      });
+      // Add additional image URLs if any new ones
+      if (additionalImages.length > 0) {
+        payload.additionalImages = additionalImages;
+      }
       
       // Also include a list of existing images to keep
       if (campaign.images) {
         // Keep track of which existing images should be preserved
+        const keepImages = [];
         uploadedAdditionalPreviews.forEach(previewUrl => {
           if (isExistingImageUrl(previewUrl)) {
             // Extract just the filename from the URL
             const filename = previewUrl.split('/').pop();
-            formData.append('keepImages', filename);
+            keepImages.push(filename);
           }
         });
+        if (keepImages.length > 0) {
+          payload.keepImages = keepImages;
+        }
       }
-        // Use fetch directly for correct FormData handling
+      
+      // Use fetch with JSON payload
       const token = localStorage.getItem('token');
       const response = await fetch(`${CONFIG_API_URL}/api/campaigns/${id}`, {
         method: 'PUT',
-        body: formData,
+        body: JSON.stringify(payload),
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
       
@@ -301,7 +341,8 @@ const EditCampaign = ({ id }) => {
     }
   };
 
-  if (fetchLoading) {
+  // Show loading state for both fetch loading and category loading
+  if (fetchLoading || categoriesLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
         <div className="text-center">
@@ -340,11 +381,7 @@ const EditCampaign = ({ id }) => {
       <div className="bg-gray-50 py-12">
         <div className="container mx-auto px-4 md:px-6">
           <div className="max-w-4xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-            >
+            <div>
               <div className="bg-white rounded-xl shadow-md overflow-hidden mb-8">
                 <div className="p-6 border-b border-gray-200">
                   <h1 className="text-2xl md:text-3xl font-bold">Edit Campaign</h1>
@@ -604,7 +641,7 @@ const EditCampaign = ({ id }) => {
                   </div>
                 </form>
               </div>
-            </motion.div>
+            </div>
           </div>
         </div>
       </div>

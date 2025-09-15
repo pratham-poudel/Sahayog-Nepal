@@ -7,7 +7,7 @@ const redis = require('../utils/RedisClient');
 // @access  Public
 exports.getTopDonors = async (req, res) => {
     try {
-        const limit = parseInt(req.query.limit) || 50; // Get more donors for infinite scroll
+        const limit = parseInt(req.query.limit) || 50;
 
         // Check cache first
         const cacheKey = `topDonors:all:limit:${limit}`;
@@ -20,107 +20,126 @@ exports.getTopDonors = async (req, res) => {
             }
         } catch (cacheError) {
             console.warn('Cache read error:', cacheError);
-        }        // Since AstraDB doesn't support aggregation and has sort limitations, 
-        // we'll fetch ALL donations in batches (including anonymous ones for total calculation)
-        let allDonations = [];
-        let hasMore = true;
-        let lastId = null;
-        
-        console.log('Starting to fetch all donations for top donors...');
-        
-        // Fetch ALL donations in batches to work around AstraDB limitations
-        // Increased limits to ensure we get ALL possible donors
-        while (hasMore && allDonations.length < 10000) { // Increased safety limit significantly
-            const query = {};
-            
-            if (lastId) {
-                query._id = { $gt: lastId };
-            }
-              const batch = await Donation.find(query)
-                .populate('donorId', 'name profilePicture bio createdAt')
-                .limit(50); // Increased batch size to get more data per query
-            
-            console.log(`Fetched batch of ${batch.length} donations. Total so far: ${allDonations.length}`);
-            
-            if (batch.length === 0) {
-                hasMore = false;
-            } else {                allDonations = allDonations.concat(batch);
-                lastId = batch[batch.length - 1]._id;
-                
-                // If we got less than 50, we've reached the end
-                if (batch.length < 50) {
-                    hasMore = false;
-                }
-            }
         }
-          console.log(`Total donations fetched: ${allDonations.length}`);
 
-        // Group donations by donor and calculate totals in memory
-        // Include ALL donations for total calculation, but track anonymous status
-        const donorMap = new Map();
-        
-        allDonations.forEach(donation => {
-            if (!donation.donorId) {
-                console.log('Skipping donation without donorId:', donation._id);
-                return; // Skip if donor doesn't exist
-            }
-            
-            const donorId = donation.donorId._id.toString();
-            
-            if (donorMap.has(donorId)) {
-                const existing = donorMap.get(donorId);
-                existing.totalDonated += donation.amount;
-                existing.donationCount += 1;
-                
-                // Track if donor has ANY non-anonymous donations
-                if (!donation.anonymous) {
-                    existing.hasNonAnonymousDonations = true;
+        // Use MongoDB aggregation for efficient processing
+        const pipeline = [
+            // Match only donations with donors (exclude null donors)
+            {
+                $match: {
+                    donorId: { $exists: true, $ne: null }
                 }
-                
-                // Keep the most recent donation date
-                if (donation.date > existing.lastDonation) {
-                    existing.lastDonation = donation.date;
-                }
-            } else {                donorMap.set(donorId, {
-                    _id: donorId,
-                    totalDonated: donation.amount,
-                    donationCount: 1,
-                    hasNonAnonymousDonations: !donation.anonymous, // True if this donation is not anonymous
-                    lastDonation: donation.date,
-                    donor: {
-                        _id: donation.donorId._id,
-                        name: donation.donorId.name,
-                        profilePicture: donation.donorId.profilePicture,
-                        bio: donation.donorId.bio,
-                        createdAt: donation.donorId.createdAt
+            },
+            // Group by donor and calculate statistics
+            {
+                $group: {
+                    _id: '$donorId',
+                    totalDonated: { $sum: '$amount' },
+                    donationCount: { $sum: 1 },
+                    lastDonation: { $max: '$date' },
+                    hasNonAnonymousDonations: {
+                        $max: {
+                            $cond: [{ $ne: ['$anonymous', true] }, 1, 0]
+                        }
                     }
-                });
-            }        });
-        
-        console.log(`Total unique donors found: ${donorMap.size}`);
+                }
+            },
+            // Filter out donors who made only anonymous donations
+            {
+                $match: {
+                    hasNonAnonymousDonations: 1
+                }
+            },
+            // Sort by total donated (descending)
+            {
+                $sort: { totalDonated: -1 }
+            },
+            // Limit results
+            {
+                $limit: limit
+            },
+            // Lookup donor information
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: '_id',
+                    foreignField: '_id',
+                    as: 'donor',
+                    pipeline: [
+                        {
+                            $project: {
+                                name: 1,
+                                profilePicture: 1,
+                                bio: 1,
+                                createdAt: 1
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                $unwind: '$donor'
+            },
+            // Add rank field
+            {
+                $addFields: {
+                    rank: { $add: [{ $indexOfArray: [[], null] }, 1] }
+                }
+            },
+            // Project final structure
+            {
+                $project: {
+                    _id: 1,
+                    totalDonated: 1,
+                    donationCount: 1,
+                    lastDonation: 1,
+                    donor: 1
+                }
+            }
+        ];
 
-        // Convert map to array, filter out donors who made ALL donations anonymously, 
-        // then sort by total donated
-        const sortedDonors = Array.from(donorMap.values())
-            .filter(donor => donor.hasNonAnonymousDonations) // Only show donors with at least one non-anonymous donation
-            .sort((a, b) => b.totalDonated - a.totalDonated);
-        
-        console.log(`Donors with non-anonymous donations: ${sortedDonors.length}`);// Add rank to each donor and limit results for infinite scroll
-        const topDonors = sortedDonors
-            .slice(0, limit)
-            .map((donor, index) => ({
-                _id: donor._id,
-                totalDonated: donor.totalDonated,
-                donationCount: donor.donationCount,
-                lastDonation: donor.lastDonation,
-                donor: donor.donor,
-                rank: index + 1
-            }));
+        const topDonorsResult = await Donation.aggregate(pipeline);
+
+        // Add rank to each donor
+        const topDonors = topDonorsResult.map((donor, index) => ({
+            ...donor,
+            rank: index + 1
+        }));
+
+        // Get total count of unique donors with non-anonymous donations
+        const totalCountPipeline = [
+            {
+                $match: {
+                    donorId: { $exists: true, $ne: null }
+                }
+            },
+            {
+                $group: {
+                    _id: '$donorId',
+                    hasNonAnonymousDonations: {
+                        $max: {
+                            $cond: [{ $ne: ['$anonymous', true] }, 1, 0]
+                        }
+                    }
+                }
+            },
+            {
+                $match: {
+                    hasNonAnonymousDonations: 1
+                }
+            },
+            {
+                $count: "total"
+            }
+        ];
+
+        const totalResult = await Donation.aggregate(totalCountPipeline);
+        const total = totalResult.length > 0 ? totalResult[0].total : 0;
 
         const response = {
             success: true,
             data: topDonors,
-            total: sortedDonors.length,
+            total: total,
             showing: topDonors.length
         };
 
@@ -157,71 +176,52 @@ exports.getDonorStats = async (req, res) => {
             }
         } catch (cacheError) {
             console.warn('Cache read error:', cacheError);
-        }        // Since AstraDB doesn't support aggregation, calculate stats in memory
-        // Fetch all donations in batches to avoid AstraDB limitations
-        let allDonations = [];
-        let hasMore = true;
-        let lastId = null;
-        
-        while (hasMore && allDonations.length < 10000) { // Increased safety limit
-            const query = {};
-            
-            if (lastId) {
-                query._id = { $gt: lastId };
-            }
-            
-            const batch = await Donation.find(query).limit(50); // Increased batch size
-            
-            if (batch.length === 0) {
-                hasMore = false;
-            } else {
-                allDonations = allDonations.concat(batch);
-                lastId = batch[batch.length - 1]._id;
-                
-                if (batch.length < 50) {
-                    hasMore = false;
-                }
-            }
-        }
-        
-        if (allDonations.length === 0) {
-            const response = {
-                success: true,
-                data: {
-                    totalDonors: 0,
-                    totalDonations: 0,
-                    totalAmount: 0,
-                    averageDonation: 0
-                }
-            };
-            
-            // Cache for 30 minutes
-            try {
-                await redis.set(cacheKey, JSON.stringify(response), 'EX', 1800);
-            } catch (cacheError) {
-                console.warn('Cache write error:', cacheError);
-            }
-            
-            return res.status(200).json(response);
         }
 
-        // Calculate stats in memory
-        const uniqueDonors = new Set();
-        let totalAmount = 0;
-        
-        allDonations.forEach(donation => {
-            if (donation.donorId) {
-                uniqueDonors.add(donation.donorId.toString());
+        // Use MongoDB aggregation for efficient statistics calculation
+        const pipeline = [
+            {
+                $group: {
+                    _id: null,
+                    totalDonations: { $sum: 1 },
+                    totalAmount: { $sum: '$amount' },
+                    uniqueDonors: { $addToSet: '$donorId' },
+                    averageDonation: { $avg: '$amount' }
+                }
+            },
+            {
+                $addFields: {
+                    totalDonors: { 
+                        $size: { 
+                            $filter: {
+                                input: '$uniqueDonors',
+                                cond: { $ne: ['$$this', null] }
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    totalDonors: 1,
+                    totalDonations: 1,
+                    totalAmount: { $round: ['$totalAmount', 2] },
+                    averageDonation: { $round: ['$averageDonation', 2] }
+                }
             }
-            totalAmount += donation.amount;
-        });
+        ];
 
-        const stats = {
-            totalDonors: uniqueDonors.size,
-            totalDonations: allDonations.length,
-            totalAmount: totalAmount,
-            averageDonation: allDonations.length > 0 ? Math.round((totalAmount / allDonations.length) * 100) / 100 : 0
-        };        const response = {
+        const result = await Donation.aggregate(pipeline);
+        
+        const stats = result.length > 0 ? result[0] : {
+            totalDonors: 0,
+            totalDonations: 0,
+            totalAmount: 0,
+            averageDonation: 0
+        };
+
+        const response = {
             success: true,
             data: stats
         };

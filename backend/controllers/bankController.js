@@ -17,6 +17,8 @@ exports.createBankAccount = async (req, res) => {
             associatedPhoneNumber,
             documentType,
             documentNumber,
+            documentImageUrl,
+            documentImage,
             isPrimary = false,
             notes
         } = req.body;
@@ -30,27 +32,17 @@ exports.createBankAccount = async (req, res) => {
             });
         }
 
-        // Check if document was uploaded
-        if (!req.uploadedDocument) {
+        // Check if document was uploaded (either URL or key)
+        if (!documentImageUrl && !documentImage) {
             return res.status(400).json({
                 success: false,
                 message: 'Document image is required'
             });
         }
 
-        // Validate document type matches uploaded document
-        if (req.uploadedDocument.documentType !== documentType) {
-            return res.status(400).json({
-                success: false,
-                message: 'Document type mismatch. Please ensure the document type matches the uploaded file'
-            });
-        }
-
         // Check if account number already exists
         const existingAccount = await BankAccount.findOne({ accountNumber });
         if (existingAccount) {
-            // If account creation fails, we should clean up the uploaded file
-            await fileService.deleteFile(req.uploadedDocument.fullPath);
             return res.status(400).json({
                 success: false,
                 message: 'Account number already exists'
@@ -60,14 +52,13 @@ exports.createBankAccount = async (req, res) => {
         // Check if user exists
         const user = await User.findById(req.user.id);
         if (!user) {
-            await fileService.deleteFile(req.uploadedDocument.fullPath);
             return res.status(404).json({
                 success: false,
                 message: 'User not found'
             });
         }
 
-        // Create new bank account with document image URL
+        // Create new bank account with document image URL from presigned upload
         const bankAccount = new BankAccount({
             userId: req.user.id,
             bankName,
@@ -76,7 +67,7 @@ exports.createBankAccount = async (req, res) => {
             associatedPhoneNumber,
             documentType,
             documentNumber,
-            documentImage: req.uploadedDocument.url,
+            documentImage: documentImageUrl || documentImage,
             isPrimary,
             notes,
             lastModifiedBy: req.user.id
@@ -104,23 +95,10 @@ exports.createBankAccount = async (req, res) => {
         res.status(201).json({
             success: true,
             message: 'Bank account created successfully',
-            data: {
-                ...bankAccount.toObject(),
-                uploadedDocument: {
-                    filename: req.uploadedDocument.filename,
-                    folder: req.uploadedDocument.folder,
-                    url: req.uploadedDocument.url,
-                    documentType: req.uploadedDocument.documentType
-                }
-            }
+            data: bankAccount.toObject()
         });
 
     } catch (error) {
-        // Clean up uploaded file if account creation fails
-        if (req.uploadedDocument) {
-            await fileService.deleteFile(req.uploadedDocument.fullPath);
-        }
-        
         console.error('Create bank account error:', error);
         res.status(500).json({
             success: false,

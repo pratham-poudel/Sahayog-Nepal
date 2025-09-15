@@ -1,60 +1,100 @@
 /**
- * Centralized MinIO configuration
- * This file contains all MinIO/S3 related configuration to ensure consistency
+ * Centralized S3-Compatible Storage Configuration
+ * Supports MinIO (local), Cloudflare R2, AWS S3, and other S3-compatible storage
  */
 const { S3Client } = require('@aws-sdk/client-s3');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 
-// MinIO server information
-const MINIO_ENDPOINT = 'http://127.0.0.1:9000/';
-const MINIO_ACCESS_KEY = 'minioadmin';
-const MINIO_SECRET_KEY = 'minioadmin';
-const MINIO_REGION = 'us-east-1';
-const BUCKET_NAME = 'mybucket';
+// Load configuration from environment variables with fallbacks
+const STORAGE_ENDPOINT = process.env.STORAGE_ENDPOINT || 'http://127.0.0.1:9000/';
+const STORAGE_ACCESS_KEY = process.env.STORAGE_ACCESS_KEY || 'minioadmin';
+const STORAGE_SECRET_KEY = process.env.STORAGE_SECRET_KEY || 'minioadmin';
+const STORAGE_REGION = process.env.STORAGE_REGION || 'auto'; // 'auto' for Cloudflare R2, 'us-east-1' for AWS
+const BUCKET_NAME = process.env.BUCKET_NAME || 'mybucket';
+const PUBLIC_URL_BASE = process.env.PUBLIC_URL || 'http://127.0.0.1:9000/mybucket';
 
-// Public URL format for frontend use
-const PUBLIC_URL_BASE = 'http://127.0.0.1:9000/mybucket';
+// Detect storage provider based on endpoint
+const isCloudflareR2 = STORAGE_ENDPOINT.includes('cloudflarestorage.com');
+const isAWSS3 = STORAGE_ENDPOINT.includes('amazonaws.com');
+const isMinIO = STORAGE_ENDPOINT.includes('127.0.0.1') || STORAGE_ENDPOINT.includes('localhost');
 
-// Configure S3 client
-const s3Client = new S3Client({
-  endpoint: MINIO_ENDPOINT,
+console.log(`Storage Provider Detected: ${
+  isCloudflareR2 ? 'Cloudflare R2' : 
+  isAWSS3 ? 'AWS S3' : 
+  isMinIO ? 'MinIO (Local)' : 
+  'S3-Compatible'
+}`);
+console.log(`Public URL Base: ${PUBLIC_URL_BASE}`);
+
+// Configure S3 client based on storage provider
+const s3ClientConfig = {
   credentials: {
-    accessKeyId: MINIO_ACCESS_KEY,
-    secretAccessKey: MINIO_SECRET_KEY,
+    accessKeyId: STORAGE_ACCESS_KEY,
+    secretAccessKey: STORAGE_SECRET_KEY,
   },
-  region: MINIO_REGION,
-  forcePathStyle: true,
-  tls: false,
-});
+  region: STORAGE_REGION,
+};
+
+// Provider-specific configurations
+if (isCloudflareR2) {
+  // Cloudflare R2 configuration
+  s3ClientConfig.endpoint = STORAGE_ENDPOINT;
+  s3ClientConfig.forcePathStyle = true; // R2 works better with path-style for presigned URLs
+  s3ClientConfig.signatureVersion = 'v4';
+} else if (isMinIO) {
+  // MinIO configuration
+  s3ClientConfig.endpoint = STORAGE_ENDPOINT;
+  s3ClientConfig.forcePathStyle = true; // MinIO requires path-style
+  s3ClientConfig.tls = false; // Disable TLS for local development
+} else {
+  // AWS S3 or other S3-compatible services
+  if (STORAGE_ENDPOINT !== 'https://s3.amazonaws.com') {
+    s3ClientConfig.endpoint = STORAGE_ENDPOINT;
+  }
+  s3ClientConfig.forcePathStyle = false; // AWS S3 prefers virtual-hosted style
+}
+
+const s3Client = new S3Client(s3ClientConfig);
 
 /**
- * Get a public URL for a file stored in MinIO
- * @param {string} key - The object key in MinIO
+ * Get a public URL for a file stored in S3-compatible storage
+ * @param {string} key - The object key in storage
  * @returns {string} - The public URL
  */
 const getPublicUrl = (key) => {
   if (!key) return null;
-  return `${PUBLIC_URL_BASE}/${key}`;
+  
+  // For Cloudflare R2 with custom domain, use the custom domain
+  if (isCloudflareR2 && PUBLIC_URL_BASE) {
+    return `${PUBLIC_URL_BASE.replace(/\/$/, '')}/${key}`;
+  }
+  
+  // For other providers, construct the URL based on the pattern
+  return `${PUBLIC_URL_BASE.replace(/\/$/, '')}/${key}`;
 };
 
 /**
  * Generate an object key for storing a file
- * @param {string} file - The file object
+ * @param {string} originalName - The original filename or file object
  * @param {string} fileType - The type of file (profile, campaign, etc.)
- * @returns {string} - The object key to use in MinIO
+ * @param {string} userId - Optional user ID for file organization
+ * @returns {string} - The object key to use in storage
  */
-const generateObjectKey = (file, fileType) => {
-  const extension = path.extname(file.originalname);
+const generateObjectKey = (originalName, fileType, userId = null) => {
+  // Extract extension from filename
+  const extension = path.extname(typeof originalName === 'string' ? originalName : originalName.originalname || '.jpg');
   const timestamp = Date.now();
-  const randomString = Math.round(Math.random() * 1E9);
-    // Define the folder structure for each file type
+  const randomString = uuidv4().split('-')[0]; // Use first part of UUID for shorter names
+  const userPrefix = userId ? `user-${userId}` : 'anonymous';
+  
+  // Define the folder structure for each file type
   const folders = {
     'profile-picture': 'users/profile-pictures',
-    'campaign-cover': 'uploads',
-    'campaign-image': 'uploads',
-    'blog-image': 'blog/images',
-    'product-image': 'products/images',
+    'campaign-cover': 'campaigns/covers',
+    'campaign-image': 'campaigns/images', 
+    'blog-cover': 'blogs/covers',
+    'blog-image': 'blogs/images',
     'document-license': 'documents/licenses',
     'document-citizenship': 'documents/citizenship',
     'document-passport': 'documents/passports',
@@ -66,12 +106,75 @@ const generateObjectKey = (file, fileType) => {
   // Determine filename with proper prefix
   let filename = '';
   if (fileType === 'campaign-cover') {
-    filename = `cover-${timestamp}-${randomString}${extension}`;
+    filename = `cover-${userPrefix}-${timestamp}-${randomString}${extension}`;
+  } else if (fileType === 'profile-picture') {
+    filename = `profile-${userPrefix}-${timestamp}-${randomString}${extension}`;
   } else {
-    filename = `${timestamp}-${randomString}${extension}`;
+    filename = `${userPrefix}-${timestamp}-${randomString}${extension}`;
   }
   
   return `${folder}/${filename}`;
+};
+
+/**
+ * Generate a presigned URL for uploading files directly to S3
+ * @param {string} key - The object key
+ * @param {string} contentType - The MIME type of the file
+ * @param {number} expiresIn - Expiration time in seconds (default: 15 minutes)
+ * @returns {Promise<Object>} - Object containing presigned URL and fields
+ */
+const generatePresignedUploadUrl = async (key, contentType, expiresIn = 900) => {
+  try {
+    // For Cloudflare R2, use PutObject presigned URL instead of presigned POST
+    if (isCloudflareR2) {
+      const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+      const { PutObjectCommand } = require('@aws-sdk/client-s3');
+      
+      const command = new PutObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: key,
+        ContentType: contentType,
+      });
+
+      const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn });
+      
+      return {
+        url: uploadUrl,
+        fields: {},
+        key: key,
+        publicUrl: getPublicUrl(key),
+        method: 'PUT' // Important: R2 uses PUT, not POST
+      };
+    }
+    
+    // For AWS S3 and MinIO, use presigned POST
+    const { createPresignedPost } = require('@aws-sdk/s3-presigned-post');
+    
+    const presignedPost = await createPresignedPost(s3Client, {
+      Bucket: BUCKET_NAME,
+      Key: key,
+      Conditions: [
+        ['content-length-range', 0, 15 * 1024 * 1024], // 15MB max
+        ['starts-with', '$Content-Type', contentType.split('/')[0] + '/'], // Ensure content type matches
+        { 'Content-Type': contentType },
+      ],
+      Fields: {
+        'Content-Type': contentType,
+      },
+      Expires: expiresIn,
+    });
+
+    return {
+      url: presignedPost.url,
+      fields: presignedPost.fields,
+      key: key,
+      publicUrl: getPublicUrl(key),
+      method: 'POST'
+    };
+  } catch (error) {
+    console.error('Error generating presigned upload URL:', error);
+    throw new Error('Failed to generate upload URL');
+  }
 };
 
 module.exports = {
@@ -79,5 +182,10 @@ module.exports = {
   BUCKET_NAME,
   getPublicUrl,
   generateObjectKey,
-  MINIO_ENDPOINT
+  generatePresignedUploadUrl,
+  STORAGE_ENDPOINT,
+  PUBLIC_URL_BASE,
+  isCloudflareR2,
+  isAWSS3,
+  isMinIO
 }; 

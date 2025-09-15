@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Switch, Route, Router, useLocation } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
-import { motion, AnimatePresence } from "framer-motion";
+
 import { Toaster } from "./components/ui/toaster";
 
 // Contexts
@@ -84,15 +84,7 @@ function AppContent() {
     <div className="flex flex-col min-h-screen">
       <Header />
       <main className="flex-grow">
-      <AnimatePresence mode="sync"> {/* Change from "wait" to "sync" */}
-    <motion.div
-      key={location}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.3 }}
-      className="w-full"
-    >
+      <div className="w-full">
             <Switch>
               <Route path="/" component={Home} />
               <Route path="/explore" component={Explore} />
@@ -206,8 +198,7 @@ function AppContent() {
 
               <Route component={NotFound} />
             </Switch>
-          </motion.div>
-        </AnimatePresence>
+          </div>
       </main>
       <Footer />
       

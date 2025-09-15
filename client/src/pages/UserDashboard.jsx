@@ -9,6 +9,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useToast } from '@/hooks/use-toast';
 import { getProfilePictureUrl ,getCoverImageUrl} from '../utils/imageUtils';
 import { API_URL as CONFIG_API_URL, MINIO_URL, TURNSTILE_CONFIG } from '../config/index.js';
+import uploadService from '../services/uploadService';
 
 // Import icons
 import { 
@@ -146,53 +147,42 @@ const UserDashboard = () => {
     const file = e.target.files[0];
     if (!file) return;
     
-    const formData = new FormData();
-    formData.append('profilePicture', file);
-    
     try {
       setProfileUpdateLoading(true);
       
-      // Use fetch directly to ensure proper handling of FormData
-      const token = localStorage.getItem('token');
-      
-      // Log the request for debugging
-      console.log('Upload request starting with token:', token ? 'Token exists' : 'No token');
-      console.log('FormData contains file:', formData.has('profilePicture'));
-      
-      const response = await fetch(`${CONFIG_API_URL}/api/users/profile-picture`, {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Authorization': `Bearer ${token}`
+      // Upload using presigned URL
+      const result = await uploadService.uploadFile(
+        file, 
+        { fileType: 'profile-picture' },
+        (progress) => {
+          console.log('Upload progress:', progress);
         }
-      });
+      );
       
-      console.log('Upload response status:', response.status);
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Upload success data:', data);
+      if (result.success) {
+        // Update user profile with new profile picture URL
+        // Extract just the filename from the key (e.g., "users/profile-pictures/filename.jpg" -> "filename.jpg")
+        const fileName = result.key.split('/').pop();
         
-        // Update user object with new profile picture path
-        const updatedUser = {
-          ...user,
-          profilePicture: data.profilePicture
-        };
-        
-        // Update localStorage
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-        
-        // Force refresh of user data
-        refreshAuth();
-        
-        toast({
-          title: "Profile updated",
-          description: "Your profile picture has been updated successfully."
+        const response = await apiRequest('PUT', '/api/users/profile', {
+          profilePictureUrl: result.publicUrl,
+          profilePicture: fileName // Store just the filename for consistency
         });
+        
+        if (response.ok) {
+          // Force refresh of user data
+          await refreshAuth();
+          
+          toast({
+            title: "Profile updated",
+            description: "Your profile picture has been updated successfully."
+          });
+        } else {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to update profile picture');
+        }
       } else {
-        const errorData = await response.json();
-        console.error('Upload error response:', errorData);
-        throw new Error(errorData.message || 'Failed to update profile picture');
+        throw new Error(result.error || 'Failed to upload profile picture');
       }
     } catch (error) {
       console.error('Error updating profile picture:', error);
@@ -431,6 +421,7 @@ const UserDashboard = () => {
             // Always ensure donations is an array
             if (data.success && Array.isArray(data.donations)) {
               console.log('Setting donations with data:', data.donations);
+              console.log('Sample donation structure:', data.donations[0]);
               setDonations(data.donations);
             } else if (data.success && data.donations === null) {
               console.log('No donations returned from API');
@@ -1050,7 +1041,7 @@ const UserDashboard = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="text-sm font-medium text-gray-900 dark:text-white">
-                          Rs. {(donation.amount/100).toLocaleString()}
+                          Rs. {(donation.amount).toLocaleString()}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -1461,14 +1452,22 @@ const UserDashboard = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-500 dark:text-gray-400">{new Date(donation.createdAt).toLocaleDateString()}</div>
                       </td>
-                      
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">
+                          Completed
+                        </span>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <Link 
-                          to={`/campaign/${donation.campaignId?._id}`} 
-                          className="text-primary hover:text-primary-dark dark:text-primary-light"
-                        >
-                          View Campaign
-                        </Link>
+                        {donation.campaignId?._id ? (
+                          <Link 
+                            to={`/campaign/${donation.campaignId._id}`} 
+                            className="text-primary hover:text-primary-dark dark:text-primary-light"
+                          >
+                            View Campaign
+                          </Link>
+                        ) : (
+                          <span className="text-gray-400 dark:text-gray-500">Campaign Unavailable</span>
+                        )}
                       </td>
                     </tr>
                   ))}

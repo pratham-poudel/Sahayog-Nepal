@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const Payment = require('../models/Payment');
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 const redis = require('../utils/RedisClient');
 const { sendOtpEmail } = require('../utils/sendOtpEmail');
 const { sendLoginWithOtp } = require('../utils/sendLoginWithOtp');
@@ -429,11 +430,17 @@ exports.loginUser = async (req, res) => {
         // Get profile picture URL if exists
         let profilePictureUrl = '';
         if (user.profilePicture) {
-            const fileService = require('../services/fileService');
-            profilePictureUrl = fileService.processUploadedFile({ 
-                key: user.profilePicture,
-                originalname: user.profilePicture.split('/').pop() 
-            }).url;
+            // Check if it's already a full URL (from presigned uploads)
+            if (user.profilePicture.startsWith('http://') || user.profilePicture.startsWith('https://')) {
+                profilePictureUrl = user.profilePicture;
+            } else {
+                // Legacy filename - process with fileService
+                const fileService = require('../services/fileService');
+                profilePictureUrl = fileService.processUploadedFile({ 
+                    key: user.profilePicture,
+                    originalname: user.profilePicture.split('/').pop() 
+                }).url;
+            }
         }
 
         res.status(200).json({
@@ -605,11 +612,17 @@ exports.loginWithOtp = async (req, res) => {
         // Get profile picture URL if exists
         let profilePictureUrl = '';
         if (user.profilePicture) {
-            const fileService = require('../services/fileService');
-            profilePictureUrl = fileService.processUploadedFile({ 
-                key: user.profilePicture,
-                originalname: user.profilePicture.split('/').pop() 
-            }).url;
+            // Check if it's already a full URL (from presigned uploads)
+            if (user.profilePicture.startsWith('http://') || user.profilePicture.startsWith('https://')) {
+                profilePictureUrl = user.profilePicture;
+            } else {
+                // Legacy filename - process with fileService
+                const fileService = require('../services/fileService');
+                profilePictureUrl = fileService.processUploadedFile({ 
+                    key: user.profilePicture,
+                    originalname: user.profilePicture.split('/').pop() 
+                }).url;
+            }
         }
 
         res.status(200).json({
@@ -645,13 +658,19 @@ exports.getUserProfile = async (req, res) => {
         // Get the profile picture URL if it exists
         let profilePictureUrl = '';
         if (user.profilePicture) {
-            const fileService = require('../services/fileService');
-            // Add the folder prefix back when generating URL
-            const key = `profiles/${user.profilePicture}`;
-            profilePictureUrl = fileService.processUploadedFile({ 
-                key: key,
-                originalname: user.profilePicture
-            }).url;
+            // Check if it's already a full URL (from presigned uploads)
+            if (user.profilePicture.startsWith('http://') || user.profilePicture.startsWith('https://')) {
+                profilePictureUrl = user.profilePicture;
+            } else {
+                // Legacy filename - process with fileService
+                const fileService = require('../services/fileService');
+                // Add the folder prefix back when generating URL (use correct folder structure)
+                const key = `users/profile-pictures/${user.profilePicture}`;
+                profilePictureUrl = fileService.processUploadedFile({ 
+                    key: key,
+                    originalname: user.profilePicture
+                }).url;
+            }
             console.log('PROFILE API - User profile picture:', user.profilePicture);
             console.log('PROFILE API - Generated profilePictureUrl:', profilePictureUrl);
         }
@@ -693,26 +712,46 @@ exports.getUserProfile = async (req, res) => {
 // @access  Private
 exports.updateUserProfile = async (req, res) => {
     try {
-        const { name, email, phone, bio } = req.body;
+        const { name, email, phone, bio, profilePicture, profilePictureUrl } = req.body;
+        
+        // Build update object
+        const updateData = { name, email, phone, bio };
+        
+        // Add profile picture fields if provided
+        if (profilePicture) {
+            updateData.profilePicture = profilePicture;
+        }
+        if (profilePictureUrl) {
+            updateData.profilePictureUrl = profilePictureUrl;
+        }
         
         // Find user and update
         const user = await User.findByIdAndUpdate(
             req.user._id,
-            { name, email, phone, bio },
+            updateData,
             { new: true, runValidators: true }
         );
         await redis.del(`profile:${req.user._id}`)
         
         // Get the profile picture URL if it exists
-        let profilePictureUrl = '';
-        if (user.profilePicture) {
-            const fileService = require('../services/fileService');
-            // Add the folder prefix back when generating URL
-            const key = `profiles/${user.profilePicture}`;
-            profilePictureUrl = fileService.processUploadedFile({ 
-                key: key,
-                originalname: user.profilePicture
-            }).url;
+        let responseProfilePictureUrl = '';
+        if (user.profilePictureUrl) {
+            // Use the stored URL (from presigned uploads)
+            responseProfilePictureUrl = user.profilePictureUrl;
+        } else if (user.profilePicture) {
+            // Check if it's already a full URL (from presigned uploads)
+            if (user.profilePicture.startsWith('http://') || user.profilePicture.startsWith('https://')) {
+                responseProfilePictureUrl = user.profilePicture;
+            } else {
+                // Legacy filename - process with fileService
+                const fileService = require('../services/fileService');
+                // Add the folder prefix back when generating URL (use correct folder structure)
+                const key = `users/profile-pictures/${user.profilePicture}`;
+                responseProfilePictureUrl = fileService.processUploadedFile({ 
+                    key: key,
+                    originalname: user.profilePicture
+                }).url;
+            }
         }
         
         res.status(200).json({
@@ -725,7 +764,7 @@ exports.updateUserProfile = async (req, res) => {
                 bio: user.bio,
                 role: user.role,
                 profilePicture: user.profilePicture,
-                profilePictureUrl: profilePictureUrl
+                profilePictureUrl: responseProfilePictureUrl
             }
         });
     } catch (error) {
@@ -870,15 +909,70 @@ module.exports.getMydonation = async (req, res) => {
         const userId = req.params.id;
         console.log('getMydonation called with userId:', userId);
 
-        // Fetch only Completed donations for the user
-        const donations = await Payment.find({ 
-            userId, 
-            status: 'Completed' 
-        })
-        .populate('campaignId', '_id title coverImage')
-        .select('_id amount currency campaignId donorName donorMessage createdAt');
+        // Use aggregation pipeline for better performance and data enrichment
+        const pipeline = [
+            {
+                $match: { 
+                    userId: new mongoose.Types.ObjectId(userId), 
+                    status: 'Completed' 
+                }
+            },
+            {
+                $lookup: {
+                    from: 'campaigns',
+                    localField: 'campaignId',
+                    foreignField: '_id',
+                    as: 'campaignDetails',
+                    pipeline: [
+                        {
+                            $project: {
+                                _id: 1,
+                                title: 1,
+                                coverImage: 1,
+                                category: 1,
+                                creator: 1
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                $addFields: {
+                    campaignId: {
+                        $cond: {
+                            if: { $gt: [{ $size: '$campaignDetails' }, 0] },
+                            then: {
+                                _id: { $arrayElemAt: ['$campaignDetails._id', 0] },
+                                title: { $arrayElemAt: ['$campaignDetails.title', 0] },
+                                coverImage: { $arrayElemAt: ['$campaignDetails.coverImage', 0] },
+                                category: { $arrayElemAt: ['$campaignDetails.category', 0] },
+                                creator: { $arrayElemAt: ['$campaignDetails.creator', 0] }
+                            },
+                            else: null
+                        }
+                    }
+                }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    amount: 1,
+                    currency: 1,
+                    campaignId: 1,
+                    donorName: 1,
+                    donorMessage: 1,
+                    createdAt: 1
+                }
+            },
+            {
+                $sort: { createdAt: -1 }
+            }
+        ];
+
+        const donations = await Payment.aggregate(pipeline);
 
         console.log(`Found ${donations.length} completed donations for user ${userId}`);
+        console.log('Sample donation data structure:', donations.length > 0 ? donations[0] : 'No donations');
 
         if (!donations || donations.length === 0) {
             console.log('No completed donations found for userId:', userId);

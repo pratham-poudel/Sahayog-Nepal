@@ -19,7 +19,6 @@ const {
     getCampaignsByHierarchicalCategory
 } = require('../controllers/campaignController');
 const { protect, admin } = require('../middlewares/authMiddleware');
-const upload = require('../middlewares/uploadMiddleware');
 
 // Public routes
 const generateCampaignsCacheKey = (req) => {
@@ -59,23 +58,8 @@ router.get('/search/:searchTerm', searchCampaigns);
 router.get('/:id',cacheMiddleware((req) => `campaignById:${req.params.id}`) ,getCampaignById);
 
 // Protected routes for campaign creators
-router.post('/', 
-    protect, 
-    upload.fields([
-        { name: 'coverImage', maxCount: 1 },
-        { name: 'additionalImages', maxCount: 3 }
-    ]), 
-    createCampaign
-);
-
-router.put('/:id', 
-    protect, 
-    upload.fields([
-        { name: 'coverImage', maxCount: 1 },
-        { name: 'additionalImages', maxCount: 3 }
-    ]), 
-    updateCampaign
-);
+router.post('/', protect, createCampaign);
+router.put('/:id', protect, updateCampaign);
 
 router.get('/user/campaigns', protect,getUserCampaigns);
 router.post('/:id/updates', protect, addCampaignUpdate);

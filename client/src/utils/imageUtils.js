@@ -16,15 +16,23 @@ const IMAGE_SERVER = MINIO_URL;
 export const getProfilePictureUrl = (user) => {
   if (!user) return null;
   
-  // Use the URL from the API if available
+  // Use the URL from the API if available (preferred method - should be full URL)
   if (user.profilePictureUrl) {
     return user.profilePictureUrl;
   }
   
-  // Generate URL from profile picture filename
+  // Return stored profile picture (should be full URL for new uploads)
   if (user.profilePicture) {
-    // Always add the profiles folder prefix (the database now only stores the filename)
-    return `${IMAGE_SERVER}/profiles/${user.profilePicture}`;
+    // Check if it's already a full URL (starts with http or https)
+    if (user.profilePicture.startsWith('http://') || user.profilePicture.startsWith('https://')) {
+      return user.profilePicture;
+    }
+    // Legacy support: Check if it already contains the folder path
+    if (user.profilePicture.startsWith('users/profile-pictures/')) {
+      return `${IMAGE_SERVER}/${user.profilePicture}`;
+    }
+    // Legacy support: Add the correct users/profile-pictures folder prefix for old filenames
+    return `${IMAGE_SERVER}/users/profile-pictures/${user.profilePicture}`;
   }
   
   // Default placeholder
@@ -39,15 +47,23 @@ export const getProfilePictureUrl = (user) => {
 export const getCoverImageUrl = (campaign) => {
   if (!campaign) return null;
   
-  // Use the URL from the API if available
+  // Use the URL from the API if available (preferred method)
   if (campaign.coverImageUrl) {
     return campaign.coverImageUrl;
   }
   
-  // Generate URL from cover image filename
+  // Return stored cover image (should be full URL for new uploads)
   if (campaign.coverImage) {
-    // Always add the campaigns folder prefix (database only stores filename)
-    return `${IMAGE_SERVER}/uploads/${campaign.coverImage}`;
+    // Check if it's already a full URL (starts with http or https)
+    if (campaign.coverImage.startsWith('http://') || campaign.coverImage.startsWith('https://')) {
+      return campaign.coverImage;
+    }
+    // Legacy support: Check if it already contains the folder path
+    if (campaign.coverImage.startsWith('campaigns/covers/')) {
+      return `${IMAGE_SERVER}/${campaign.coverImage}`;
+    }
+    // Legacy support: Add the correct campaigns/covers folder prefix for old filenames
+    return `${IMAGE_SERVER}/campaigns/covers/${campaign.coverImage}`;
   }
   
   // Default placeholder
@@ -67,10 +83,20 @@ export const getCampaignImageUrls = (campaign) => {
     return campaign.imageUrls;
   }
   
-  // Generate URLs from image filenames
+  // Return stored image URLs (should be full URLs for new uploads)
   if (campaign.images && campaign.images.length > 0) {
-    // Always add the uploads folder prefix (database only stores filenames)
-    return campaign.images.map(img => `${IMAGE_SERVER}/uploads/${img}`);
+    return campaign.images.map(img => {
+      // Check if it's already a full URL (starts with http or https)
+      if (img.startsWith('http://') || img.startsWith('https://')) {
+        return img;
+      }
+      // Legacy support: Check if it already contains the folder path
+      if (img.startsWith('campaigns/images/')) {
+        return `${IMAGE_SERVER}/${img}`;
+      }
+      // Legacy support: Add the correct campaigns/images folder prefix for old filenames
+      return `${IMAGE_SERVER}/campaigns/images/${img}`;
+    });
   }
   
   return [];

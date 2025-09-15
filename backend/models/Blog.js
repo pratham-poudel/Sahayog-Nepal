@@ -106,6 +106,28 @@ blogSchema.virtual('formattedDate').get(function() {
     }) : '';
 });
 
+// Indexes for efficient queries
+blogSchema.index({ status: 1, publishedAt: -1 });
+blogSchema.index({ author: 1, status: 1 });
+blogSchema.index({ tags: 1, status: 1 });
+blogSchema.index({ createdAt: -1 });
+blogSchema.index({ views: -1 });
+blogSchema.index({ likes: -1 });
+
+// Text index for search functionality
+blogSchema.index({
+    title: 'text',
+    excerpt: 'text',
+    content: 'text'
+}, {
+    weights: {
+        title: 10,
+        excerpt: 5,
+        content: 1
+    },
+    name: "blog_search_index"
+});
+
 const Blog = mongoose.model('Blog', blogSchema);
 
 module.exports = Blog; 

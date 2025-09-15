@@ -4,11 +4,6 @@ const router = express.Router();
 // Import middlewares
 const { protect } = require('../middlewares/authMiddleware');
 const adminAuth = require('../middleware/adminAuth');
-const { 
-    uploadDocument, 
-    validateDocumentType, 
-    processDocumentUpload 
-} = require('../middlewares/documentUploadMiddleware');
 
 // Import bank controller functions
 const {
@@ -37,13 +32,7 @@ router.get('/document-info', protect, getDocumentInfo);
 // @route   POST /api/bank/accounts
 // @desc    Create a new bank account
 // @access  Private (User)
-router.post('/accounts', 
-    protect, 
-    uploadDocument.single('documentImage'),
-    validateDocumentType,
-    processDocumentUpload,
-    createBankAccount
-);
+router.post('/accounts', protect, createBankAccount);
 
 // @route   GET /api/bank/accounts
 // @desc    Get user's bank accounts
@@ -58,22 +47,13 @@ router.get('/accounts/:id', protect, getBankAccount);
 // @route   PUT /api/bank/accounts/:id
 // @desc    Update bank account
 // @access  Private (User)
-router.put('/accounts/:id', 
-    protect,
-    uploadDocument.single('documentImage'),
-    validateDocumentType,
-    processDocumentUpload,
-    updateBankAccount
-);
+router.put('/accounts/:id', protect, updateBankAccount);
 
 // @route   POST /api/bank/accounts/:id/upload-document
 // @desc    Upload/Update document for bank account
 // @access  Private (User)
 router.post('/accounts/:id/upload-document',
     protect,
-    uploadDocument.single('documentImage'),
-    validateDocumentType,
-    processDocumentUpload,
     uploadBankAccountDocument
 );
 

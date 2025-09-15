@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { getProfilePictureUrl } from '../utils/imageUtils';
 import { API_URL as CONFIG_API_URL } from '../config/index.js';
+import FileUpload from '../components/common/FileUpload.jsx';
 
 const Profile = () => {
   const [, setLocation] = useLocation();
@@ -114,39 +115,28 @@ const Profile = () => {
     }
   };
   
-  const handleProfilePictureChange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    
+  const handleProfilePictureUpload = async (uploadResult) => {
     setIsLoading(true);
-    const formData = new FormData();
-    formData.append('profilePicture', file);
     
     try {
-      const token = localStorage.getItem('token');
-      
-      const response = await fetch(`${CONFIG_API_URL}/api/users/profile-picture`, {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      // Update user profile with new profile picture URL
+      const response = await apiRequest('PUT', '/api/users/profile', {
+        profilePictureUrl: uploadResult.publicUrl,
+        profilePicture: uploadResult.key // Store the key for consistency
       });
       
-      if (response.ok) {
-        const data = await response.json();
-        
-        // Force refresh of user data
-        await refreshAuth();
-        
-        toast({
-          title: "Profile updated",
-          description: "Your profile picture has been updated successfully."
-        });
-      } else {
+      if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to update profile picture');
       }
+      
+      // Force refresh of user data
+      await refreshAuth();
+      
+      toast({
+        title: "Profile updated",
+        description: "Your profile picture has been updated successfully."
+      });
     } catch (error) {
       console.error('Error updating profile picture:', error);
       toast({
@@ -226,20 +216,21 @@ const Profile = () => {
                           <span className="text-3xl font-medium text-gray-500">{user?.name?.charAt(0).toUpperCase() || 'U'}</span>
                         </div>
                       )}
-                      <label 
-                        htmlFor="profile-picture-upload" 
-                        className="absolute bottom-0 right-0 bg-white p-1 rounded-full shadow-md text-gray-600 hover:text-gray-800 cursor-pointer"
-                      >
-                        <i className="ri-camera-line text-lg"></i>
-                        <span className="sr-only">Upload profile picture</span>
-                      </label>
-                      <input 
-                        type="file" 
-                        id="profile-picture-upload" 
-                        className="hidden" 
-                        accept="image/*"
-                        onChange={handleProfilePictureChange}
-                      />
+                      <div className="absolute bottom-0 right-0">
+                        <FileUpload
+                          fileType="profile-picture"
+                          accept="image/*"
+                          maxFiles={1}
+                          onUploadComplete={handleProfilePictureUpload}
+                          dragDropArea={false}
+                          className="inline-block"
+                        >
+                          <div className="bg-white p-1 rounded-full shadow-md text-gray-600 hover:text-gray-800 cursor-pointer">
+                            <i className="ri-camera-line text-lg"></i>
+                            <span className="sr-only">Upload profile picture</span>
+                          </div>
+                        </FileUpload>
+                      </div>
                     </div>
                     <h3 className="text-lg font-medium">{user?.name || 'User'}</h3>
                     <p className="text-gray-500 text-sm">Member since {new Date(user?.createdAt || Date.now()).getFullYear()}</p>

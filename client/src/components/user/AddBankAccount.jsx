@@ -12,6 +12,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useToast } from '@/hooks/use-toast';
 import { API_BASE_URL } from '../../config';
+import uploadService from '../../services/uploadService';
 
 const AddBankAccount = ({ onClose, onSuccess }) => {
   const { toast } = useToast();
@@ -32,6 +33,15 @@ const AddBankAccount = ({ onClose, onSuccess }) => {
   const [documentFile, setDocumentFile] = useState({
     file: null,
     preview: null
+  });
+
+  // Upload state for presigned URLs
+  const [documentUpload, setDocumentUpload] = useState({
+    isUploading: false,
+    progress: 0,
+    publicUrl: null,
+    key: null,
+    error: null
   });
 
   // Validation errors
@@ -91,8 +101,12 @@ const AddBankAccount = ({ onClose, onSuccess }) => {
   const validateStep2 = () => {
     const newErrors = {};
     
-    if (!documentFile.file) {
-      newErrors.documentFile = 'Document image is required';
+    if (!documentFile.file || !documentUpload.publicUrl) {
+      newErrors.documentFile = 'Document image is required and must be uploaded successfully';
+    }
+
+    if (documentUpload.error) {
+      newErrors.documentFile = documentUpload.error;
     }
 
     setErrors(newErrors);
@@ -113,8 +127,8 @@ const AddBankAccount = ({ onClose, onSuccess }) => {
     }
   };
 
-  // Handle file selection
-  const handleFileSelect = (file) => {
+  // Handle file selection and upload
+  const handleFileSelect = async (file) => {
     if (!file) return;
 
     // Validate file
@@ -150,6 +164,47 @@ const AddBankAccount = ({ onClose, onSuccess }) => {
 
     // Clear error
     setErrors(prev => ({ ...prev, documentFile: '' }));
+
+    // Start upload immediately
+    try {
+      setDocumentUpload(prev => ({ ...prev, isUploading: true, progress: 0, error: null }));
+
+      const result = await uploadService.uploadFile(
+        file, 
+        { fileType: `document-${formData.documentType}` },
+        (progress) => {
+          setDocumentUpload(prev => ({ ...prev, progress }));
+        }
+      );
+
+      setDocumentUpload(prev => ({
+        ...prev,
+        isUploading: false,
+        publicUrl: result.publicUrl,
+        key: result.key,
+        progress: 100
+      }));
+
+      toast({
+        title: "Upload successful",
+        description: "Document uploaded successfully"
+      });
+
+    } catch (error) {
+      console.error('Error uploading document:', error);
+      setDocumentUpload(prev => ({
+        ...prev,
+        isUploading: false,
+        progress: 0,
+        error: error.message || 'Upload failed'
+      }));
+      
+      toast({
+        title: "Upload failed",
+        description: error.message || 'Failed to upload document',
+        variant: "destructive"
+      });
+    }
   };
 
   // Remove selected file
@@ -159,6 +214,13 @@ const AddBankAccount = ({ onClose, onSuccess }) => {
     }
     
     setDocumentFile({ file: null, preview: null });
+    setDocumentUpload({
+      isUploading: false,
+      progress: 0,
+      publicUrl: null,
+      key: null,
+      error: null
+    });
   };
 
   // Handle step navigation
@@ -186,28 +248,25 @@ const AddBankAccount = ({ onClose, onSuccess }) => {
 
     setIsSubmitting(true);
     try {
-      // Create FormData for file upload
-      const submitFormData = new FormData();
-      
-      // Add bank account data
-      Object.keys(formData).forEach(key => {
-        submitFormData.append(key, formData[key]);
-      });
-
-      // Add the document file
-      if (documentFile.file) {
-        submitFormData.append('documentImage', documentFile.file);
-      }
+      // Prepare bank account data with uploaded document URL
+      const bankAccountData = {
+        ...formData,
+        documentImageUrl: documentUpload.publicUrl,
+        documentImage: documentUpload.key
+      };
 
       const response = await fetch(`${API_BASE_URL}/api/bank/accounts`, {
         method: 'POST',
         headers: {
+          'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        body: submitFormData
+        body: JSON.stringify(bankAccountData)
       });
 
-      const data = await response.json();      if (data.success) {
+      const data = await response.json();
+
+      if (data.success) {
         toast({
           title: "Success!",
           description: "Bank account added successfully. It's now pending verification.",
@@ -433,6 +492,34 @@ const AddBankAccount = ({ onClose, onSuccess }) => {
                           <p className="text-xs text-gray-500 dark:text-gray-400">
                             {(documentFile.file.size / 1024 / 1024).toFixed(2)} MB
                           </p>
+                          {/* Upload Progress */}
+                          {documentUpload.isUploading && (
+                            <div className="mt-2">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-blue-600 dark:text-blue-400">Uploading...</span>
+                                <span className="text-blue-600 dark:text-blue-400">{documentUpload.progress}%</span>
+                              </div>
+                              <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-1.5 mt-1">
+                                <div 
+                                  className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
+                                  style={{ width: `${documentUpload.progress}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          )}
+                          {/* Upload Success */}
+                          {documentUpload.publicUrl && !documentUpload.isUploading && (
+                            <div className="mt-2 flex items-center text-xs text-green-600 dark:text-green-400">
+                              <CheckCircleIcon className="h-3 w-3 mr-1" />
+                              Upload complete
+                            </div>
+                          )}
+                          {/* Upload Error */}
+                          {documentUpload.error && (
+                            <div className="mt-2 text-xs text-red-600 dark:text-red-400">
+                              {documentUpload.error}
+                            </div>
+                          )}
                         </div>
                       </div>
                       <div className="flex space-x-2">
@@ -448,7 +535,8 @@ const AddBankAccount = ({ onClose, onSuccess }) => {
                         <button
                           type="button"
                           onClick={removeFile}
-                          className="p-2 text-red-600 hover:text-red-800"
+                          disabled={documentUpload.isUploading}
+                          className="p-2 text-red-600 hover:text-red-800 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <TrashIcon className="h-4 w-4" />
                         </button>
@@ -671,13 +759,18 @@ const AddBankAccount = ({ onClose, onSuccess }) => {
             ) : (
               <button
                 onClick={handleSubmit}
-                disabled={isSubmitting}
+                disabled={isSubmitting || documentUpload.isUploading}
                 className="px-6 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
               >
                 {isSubmitting ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
                     Submitting...
+                  </>
+                ) : documentUpload.isUploading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    Uploading...
                   </>
                 ) : (
                   'Submit for Verification'

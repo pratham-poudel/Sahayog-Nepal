@@ -1,5 +1,6 @@
 const Campaign = require('../models/Campaign');
 const User = require('../models/User');
+const mongoose = require('mongoose');
 const path = require('path');
 const fs = require('fs');
 const fileService = require('../services/fileService');
@@ -44,12 +45,26 @@ exports.createCampaign = async (req, res) => {
             subcategory, 
             targetAmount, 
             endDate,
+            coverImageUrl,
+            coverImage,
+            additionalImageUrls,
+            additionalImages,
             turnstileToken
-        } = req.body;// Validate required fields including Turnstile token
+        } = req.body;
+
+        // Validate required fields including Turnstile token
         if (!title || !shortDescription || !story || !category || !targetAmount || !endDate || !turnstileToken) {
             return res.status(400).json({
                 success: false,
                 message: 'All fields including security verification are required'
+            });
+        }
+
+        // Validate cover image is uploaded
+        if (!coverImageUrl && !coverImage) {
+            return res.status(400).json({
+                success: false, 
+                message: 'Cover image is required'
             });
         }
 
@@ -66,54 +81,33 @@ exports.createCampaign = async (req, res) => {
             });
         }
 
-        // console.log('Turnstile validation successful:', turnstileValidation);
+        // Use the uploaded cover image URL directly (store full URL)
+        const finalCoverImage = coverImageUrl || coverImage;
         
-        // Process file uploads
-        if (!req.files?.coverImage) {
-            return res.status(400).json({
-                success: false, 
-                message: 'Cover image is required'
+        // Process additional images if any
+        let campaignImages = [];
+        let imageUrls = [];
+        
+        // Prioritize full URLs for storage
+        if (additionalImageUrls && Array.isArray(additionalImageUrls)) {
+            imageUrls = additionalImageUrls;
+            campaignImages = additionalImageUrls; // Store full URLs directly
+        } else if (additionalImages && Array.isArray(additionalImages)) {
+            // Handle case where we have keys/paths or URLs - ensure they're full URLs
+            campaignImages = additionalImages.map(path => {
+                // If it's already a full URL, use as-is
+                if (path.startsWith('http://') || path.startsWith('https://')) {
+                    return path;
+                }
+                // If it's a path, construct full URL
+                if (path.includes('/')) {
+                    return `${process.env.MINIO_URL}/${path}`;
+                }
+                // If it's just a filename, add the images path
+                return `${process.env.MINIO_URL}/campaigns/images/${path}`;
             });
+            imageUrls = campaignImages; // Set imageUrls for response
         }
-        
-        // With S3 storage, we get key instead of filename
-        // Extract just the filename without the folder path
-        // Get the filename from the request fileData or extract from key
-        let coverImage = '';
-        if (req.fileData?.coverImage?.[0]?.filename) {
-            coverImage = req.fileData.coverImage[0].filename;
-        } else {
-            // Fallback: Extract filename from key and use proper format
-            const rawFilename = req.files.coverImage[0].key.split('/').pop();
-            // Ensure it has the 'cover-' prefix but not 'campaign-cover-'
-            if (rawFilename.startsWith('campaign-cover-')) {
-                coverImage = rawFilename.replace('campaign-cover-', 'cover-');
-            } else if (!rawFilename.startsWith('cover-')) {
-                // If it doesn't have 'cover-' prefix, add it
-                const timestamp = Date.now();
-                const randomString = Math.round(Math.random() * 1E9);
-                const extension = req.files.coverImage[0].originalname.split('.').pop();
-                coverImage = `cover-${timestamp}-${randomString}.${extension}`;
-            } else {
-                coverImage = rawFilename;
-            }
-        }
-        
-        // Add additional images if any
-        const campaignImages = [];
-        if (req.files?.additionalImages) {
-            req.files.additionalImages.forEach((file, index) => {
-                // Store just the filename part, not the full S3 path
-                const filename = req.fileData?.additionalImages?.[index]?.filename || file.key.split('/').pop();
-                campaignImages.push(filename);
-            });
-        }
-        
-        // Get the S3 URLs for the frontend
-        const coverImageUrl = fileService.processUploadedFile(req.files.coverImage[0]).url;
-        const imageUrls = req.files?.additionalImages 
-            ? req.files.additionalImages.map(file => fileService.processUploadedFile(file).url)
-                        : [];
           
           // Create new campaign
         const campaign = await Campaign.create({
@@ -124,7 +118,7 @@ exports.createCampaign = async (req, res) => {
             subcategory: subcategory || null, // Optional subcategory
             targetAmount,
             endDate,
-            coverImage,
+            coverImage: finalCoverImage,
             images: campaignImages,
             creator: req.user._id,
             featured: false // Always set to false now
@@ -141,8 +135,8 @@ exports.createCampaign = async (req, res) => {
             success: true,
             message: 'Campaign created successfully and submitted for review',
             campaignId: campaign._id,
-            // Include S3 URLs for the frontend
-            coverImageUrl,
+            // Include URLs for the frontend
+            coverImageUrl: finalCoverImage,
             imageUrls
         });
     } catch (error) {
@@ -171,108 +165,109 @@ exports.getAllCampaigns = async (req, res) => {
         const urgentOnly = req.query.urgentOnly === 'true' ? true : false;
         const random = req.query.random === 'true' ? true : false;
         const exclude = req.query.exclude; // ID of campaign to exclude from results
-          // Calculate skip value for pagination
+        
+        // Calculate skip value for pagination
         const skip = (page - 1) * limit;
         
-        // Build query object
-        const query = { status: 'active' };
+        // Build match stage for aggregation
+        const matchStage = { status: 'active' };
         
-        // Add category filter if specified
+        // Add filters
         if (category && category !== 'All Campaigns') {
-            query.category = category;
+            matchStage.category = category;
         }
-
-        // Add subcategory filter if specified
         if (subcategory) {
-            query.subcategory = subcategory;
+            matchStage.subcategory = subcategory;
         }
-          // Add featured filter if specified
         if (featured) {
-            query.featured = true;
+            matchStage.featured = true;
         }
-        
-        // Add tags filter for urgent campaigns
         if (urgentOnly) {
-            query.tags = { $in: ['Urgent'] };
+            matchStage.tags = { $in: ['Urgent'] };
         }
-        
-        // Exclude specific campaign if exclude parameter is provided
         if (exclude) {
-            query._id = { $ne: exclude };
+            matchStage._id = { $ne: new mongoose.Types.ObjectId(exclude) };
         }
-          // Build sort object - add multiple sort criteria for more varied results
-        const sort = {};
         
-        // If random sorting is requested, we'll use aggregation with $sample
-        if (random) {
-            const pipeline = [
-                { $match: query },
-                { $sample: { size: limit } },
-                {
-                    $lookup: {
-                        from: 'users',
-                        localField: 'creator',
-                        foreignField: '_id',
-                        as: 'creator'
-                    }
-                },
-                { $unwind: '$creator' },
-                {
-                    $project: {
-                        'creator.password': 0,
-                        'creator.resetPasswordToken': 0,
-                        'creator.resetPasswordExpires': 0
-                    }
+        // Build aggregation pipeline
+        let pipeline = [
+            { $match: matchStage }
+        ];
+        
+        // Add lookup for creator information
+        pipeline.push(
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'creator',
+                    foreignField: '_id',
+                    as: 'creator',
+                    pipeline: [
+                        {
+                            $project: {
+                                name: 1,
+                                email: 1,
+                                profilePicture: 1
+                            }
+                        }
+                    ]
                 }
-            ];
-            
-            const campaigns = await Campaign.aggregate(pipeline);
-            const total = await Campaign.countDocuments(query);
-            const totalPages = Math.ceil(total / limit);
-            
-            // Add URLs for each campaign's images using fileService
-            const campaignsWithUrls = campaigns.map(campaign => formatCampaignWithUrls(campaign));
-            
-            return res.status(200).json({
-                success: true,
-                count: campaignsWithUrls.length,
-                total,
-                pagination: {
-                    page,
-                    limit,
-                    totalPages,
-                    hasNextPage: page < totalPages,
-                    hasPrevPage: page > 1,
-                    nextPage: page < totalPages ? page + 1 : null,
-                    prevPage: page > 1 ? page - 1 : null
+            },
+            { $unwind: '$creator' }
+        );
+        
+        // Add computed fields for percentage raised and days left
+        pipeline.push({
+            $addFields: {
+                percentageRaised: {
+                    $multiply: [
+                        { $divide: ['$amountRaised', '$targetAmount'] },
+                        100
+                    ]
                 },
-                campaigns: campaignsWithUrls
-            });
+                daysLeft: {
+                    $max: [
+                        0,
+                        {
+                            $ceil: {
+                                $divide: [
+                                    { $subtract: ['$endDate', new Date()] },
+                                    86400000 // milliseconds in a day
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }
+        });
+        
+        // Handle sorting
+        if (random) {
+            pipeline.push({ $sample: { size: limit } });
+        } else {
+            // Build sort object
+            const sortStage = {};
+            sortStage[sortBy] = sortOrder;
+            
+            // Add secondary and tertiary sorting
+            if (sortBy !== 'percentageRaised') {
+                sortStage.percentageRaised = -1;
+            }
+            if (sortBy !== 'endDate') {
+                sortStage.endDate = 1;
+            }
+            
+            pipeline.push({ $sort: sortStage });
+            
+            // Add pagination only for non-random queries
+            pipeline.push({ $skip: skip }, { $limit: limit });
         }
         
-        // Primary sort
-        sort[sortBy] = sortOrder;
+        // Execute aggregation
+        const campaigns = await Campaign.aggregate(pipeline);
         
-        // Secondary sort by percentage raised (to prioritize campaigns close to their goal)
-        if (sortBy !== 'percentageRaised') {
-            sort.percentageRaised = -1;
-        }
-        
-        // Tertiary sort by time left (to prioritize urgent campaigns)
-        if (sortBy !== 'endDate') {
-            sort.endDate = 1;
-        }
-        
-        // Count total documents matching the query (for pagination info)
-        const total = await Campaign.countDocuments(query);
-        
-        // Fetch campaigns with pagination, sorting, and filtering
-        const campaigns = await Campaign.find(query)
-            .populate('creator', 'name email profilePicture')
-            .sort(sort)
-            .skip(skip)
-            .limit(limit)
-            .lean(); // Use lean() for better performance when you don't need Mongoose document methods
+        // Get total count for pagination (use separate optimized query)
+        const total = await Campaign.countDocuments(matchStage);
         
         // Add URLs for each campaign's images using fileService
         const campaignsWithUrls = campaigns.map(campaign => formatCampaignWithUrls(campaign));
@@ -313,28 +308,46 @@ const formatCampaignWithUrls = (campaign) => {
     
     // Add cover image URL
     if (campaign.coverImage) {
-        formattedCampaign.coverImageUrl = fileService.processUploadedFile({
-            key: `uploads/${campaign.coverImage}`,
-            originalname: campaign.coverImage
-        }).url;
+        // Check if it's already a full URL (from presigned uploads)
+        if (campaign.coverImage.startsWith('http://') || campaign.coverImage.startsWith('https://')) {
+            formattedCampaign.coverImageUrl = campaign.coverImage;
+        } else {
+            // Legacy filename - add the correct folder prefix
+            formattedCampaign.coverImageUrl = fileService.processUploadedFile({
+                key: `campaigns/covers/${campaign.coverImage}`,
+                originalname: campaign.coverImage
+            }).url;
+        }
     }
     
     // Add image URLs
     if (campaign.images && campaign.images.length > 0) {
-        formattedCampaign.imageUrls = campaign.images.map(image => 
-            fileService.processUploadedFile({
-                key: `uploads/${image}`,
-                originalname: image
-            }).url
-        );
+        formattedCampaign.imageUrls = campaign.images.map(image => {
+            // Check if it's already a full URL (from presigned uploads)
+            if (image.startsWith('http://') || image.startsWith('https://')) {
+                return image;
+            } else {
+                // Legacy filename - add the correct folder prefix
+                return fileService.processUploadedFile({
+                    key: `campaigns/images/${image}`,
+                    originalname: image
+                }).url;
+            }
+        });
     }
     
     // Add creator profile picture URL
     if (campaign.creator && campaign.creator.profilePicture) {
-        formattedCampaign.creator.profilePictureUrl = fileService.processUploadedFile({
-            key: `profiles/${campaign.creator.profilePicture}`,
-            originalname: campaign.creator.profilePicture
-        }).url;
+        // Check if it's already a full URL (from presigned uploads)
+        if (campaign.creator.profilePicture.startsWith('http://') || campaign.creator.profilePicture.startsWith('https://')) {
+            formattedCampaign.creator.profilePictureUrl = campaign.creator.profilePicture;
+        } else {
+            // Legacy filename - add the correct folder prefix
+            formattedCampaign.creator.profilePictureUrl = fileService.processUploadedFile({
+                key: `users/profile-pictures/${campaign.creator.profilePicture}`,
+                originalname: campaign.creator.profilePicture
+            }).url;
+        }
     }
     
     return formattedCampaign;
@@ -372,28 +385,80 @@ exports.getCampaignById = async (req, res) => {
 // @desc    Get user campaigns
 // @route   GET /api/campaigns/user
 // @access  Private
-
 exports.getUserCampaigns = async (req, res) => {
     try {
-        const limit = 20; // AstraDB max per page
-        let page = 0;
-        let allCampaigns = [];
-        let campaigns;
+        // Use aggregation pipeline for better performance and computed fields
+        const pipeline = [
+            {
+                $match: { creator: new mongoose.Types.ObjectId(req.user._id) }
+            },
+            {
+                $addFields: {
+                    percentageRaised: {
+                        $multiply: [
+                            { $divide: ['$amountRaised', '$targetAmount'] },
+                            100
+                        ]
+                    },
+                    daysLeft: {
+                        $max: [
+                            0,
+                            {
+                                $ceil: {
+                                    $divide: [
+                                        { $subtract: ['$endDate', new Date()] },
+                                        86400000
+                                    ]
+                                }
+                            }
+                        ]
+                    },
+                    availableForWithdrawal: {
+                        $max: [
+                            0,
+                            {
+                                $subtract: [
+                                    '$amountRaised',
+                                    { $add: ['$amountWithdrawn', '$pendingWithdrawals'] }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                $project: {
+                    title: 1,
+                    shortDescription: 1,
+                    story: 1,
+                    category: 1,
+                    targetAmount: 1,
+                    amountRaised: 1,
+                    amountWithdrawn: 1,
+                    pendingWithdrawals: 1,
+                    donors: 1,
+                    status: 1,
+                    percentageRaised: 1,
+                    daysLeft: 1,
+                    availableForWithdrawal: 1,
+                    startDate: 1,
+                    endDate: 1,
+                    createdAt: 1,
+                    updatedAt: 1,
+                    coverImage: 1,
+                    images: 1,
+                    featured: 1
+                }
+            },
+            {
+                $sort: { createdAt: -1 }
+            }
+        ];
 
-        do {
-            campaigns = await Campaign.find({ creator: req.user._id })
-                .select('title shortDescription story category targetAmount amountRaised amountWithdrawn pendingWithdrawals donors status percentageRaised startDate endDate createdAt updatedAt coverImage images featured')
-                .sort({ createdAt: -1 })
-                .skip(page * limit)
-                .limit(limit)
-                .lean(); // Use lean() for better performance
-
-            allCampaigns = allCampaigns.concat(campaigns);
-            page++;
-        } while (campaigns.length === limit); // Continue if we hit the limit
+        const campaigns = await Campaign.aggregate(pipeline);
 
         // Format campaigns with image URLs using fileService
-        const campaignsWithUrls = allCampaigns.map(campaign => formatCampaignWithUrls(campaign));
+        const campaignsWithUrls = campaigns.map(campaign => formatCampaignWithUrls(campaign));
 
         res.status(200).json({
             success: true,
@@ -788,7 +853,7 @@ exports.updateCampaign = async (req, res) => {
             );
         }
         
-        // Add new additional images if any
+        // Add new additional images if any (support both file uploads and URLs)
         if (req.files && req.files.additionalImages) {
             const newImages = Array.isArray(req.files.additionalImages)
                 ? req.files.additionalImages.map((file, index) => {
@@ -798,9 +863,13 @@ exports.updateCampaign = async (req, res) => {
                 : [req.fileData?.additionalImages?.[0]?.filename || req.files.additionalImages.key.split('/').pop()];
                 
             campaignImages = [...campaignImages, ...newImages];
-            // Limit to 3 images
-            campaignImages = campaignImages.slice(0, 3);
+        } else if (req.body.additionalImages && Array.isArray(req.body.additionalImages)) {
+            // Handle presigned URL uploads - store full URLs
+            campaignImages = [...campaignImages, ...req.body.additionalImages];
         }
+        
+        // Limit to 3 images
+        campaignImages = campaignImages.slice(0, 3);
         
         // Prepare update object
         const updateData = {
@@ -839,7 +908,7 @@ exports.updateCampaign = async (req, res) => {
             }
         }
         
-        // If cover image is uploaded, update it
+        // If cover image is uploaded, update it (support both file uploads and URLs)
         if (req.files && req.files.coverImage) {
             // Get the filename from fileData if available, otherwise extract from key
             if (req.fileData?.coverImage?.[0]?.filename) {
@@ -860,6 +929,9 @@ exports.updateCampaign = async (req, res) => {
                     updateData.coverImage = rawFilename;
                 }
             }
+        } else if (req.body.coverImage) {
+            // Handle presigned URL uploads - store full URL
+            updateData.coverImage = req.body.coverImage;
         }
         
         // Update campaign
@@ -938,13 +1010,10 @@ exports.searchCampaigns = async (req, res) => {
         const searchTerm = req.params.searchTerm;
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 9;
-        const sortBy = req.query.sortBy || 'createdAt';
+        const sortBy = req.query.sortBy || 'score';
         const sortOrder = req.query.sortOrder === 'asc' ? 1 : -1;
         const category = req.query.category || null;
-
-        console.log('Search Term:', searchTerm);
-        console.log('Category:', category);
-        console.log('Sort By:', sortBy, 'Sort Order:', sortOrder);
+        const skip = (page - 1) * limit;
 
         if (!searchTerm || searchTerm.trim() === "") {
             return res.status(400).json({
@@ -953,52 +1022,117 @@ exports.searchCampaigns = async (req, res) => {
             });
         }
 
-        // Retrieve all active campaigns for now (for debugging purposes)
-        const campaigns = await Campaign.find({ status: 'active' }).populate('creator', 'name email profilePicture').lean();
-        console.log('Total Active Campaigns:', campaigns.length);
+        // Build match stage
+        const matchStage = {
+            status: 'active',
+            $text: { $search: searchTerm }
+        };
 
-        // Filter campaigns based on search term and category
-        const filteredCampaigns = campaigns.filter(campaign => {
-            const name = campaign.title || ''; // Default to empty string if undefined
-            const description = campaign.shortDescription || ''; // Default to empty string if undefined
-            const matchesSearchTerm = name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                      description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                      (campaign.story && campaign.story.toLowerCase().includes(searchTerm.toLowerCase()));
-            const matchesCategory = category ? campaign.category === category : true;
-            return matchesSearchTerm && matchesCategory;
-        });
+        // Add category filter if specified
+        if (category && category !== 'All Campaigns') {
+            matchStage.category = category;
+        }
 
-        console.log('Filtered Campaigns:', filteredCampaigns.length);
+        // Build aggregation pipeline for search with text score
+        const pipeline = [
+            { $match: matchStage },
+            {
+                $addFields: {
+                    score: { $meta: "textScore" },
+                    percentageRaised: {
+                        $multiply: [
+                            { $divide: ['$amountRaised', '$targetAmount'] },
+                            100
+                        ]
+                    },
+                    daysLeft: {
+                        $max: [
+                            0,
+                            {
+                                $ceil: {
+                                    $divide: [
+                                        { $subtract: ['$endDate', new Date()] },
+                                        86400000
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'creator',
+                    foreignField: '_id',
+                    as: 'creator',
+                    pipeline: [
+                        {
+                            $project: {
+                                name: 1,
+                                email: 1,
+                                profilePicture: 1
+                            }
+                        }
+                    ]
+                }
+            },
+            { $unwind: '$creator' }
+        ];
 
-        // Implement pagination
-        const total = filteredCampaigns.length;
+        // Add sorting
+        const sortStage = {};
+        if (sortBy === 'score') {
+            sortStage.score = { $meta: "textScore" };
+        } else {
+            sortStage[sortBy] = sortOrder;
+        }
+        
+        // Add secondary sort by text score if not primary
+        if (sortBy !== 'score') {
+            sortStage.score = { $meta: "textScore" };
+        }
+        
+        pipeline.push({ $sort: sortStage });
+
+        // Get total count (separate query for performance)
+        const totalPipeline = [
+            { $match: matchStage },
+            { $count: "total" }
+        ];
+        
+        const totalResult = await Campaign.aggregate(totalPipeline);
+        const total = totalResult.length > 0 ? totalResult[0].total : 0;
+
+        // Add pagination
+        pipeline.push({ $skip: skip }, { $limit: limit });
+
+        // Execute search
+        const campaigns = await Campaign.aggregate(pipeline);
+
+        // Add URLs for each campaign's images
+        const campaignsWithUrls = campaigns.map(campaign => formatCampaignWithUrls(campaign));
+
+        // Calculate pagination details
         const totalPages = Math.ceil(total / limit);
-        const skip = (page - 1) * limit;
-        const paginatedCampaigns = filteredCampaigns.slice(skip, skip + limit);
-
-        // Sort campaigns
-        paginatedCampaigns.sort((a, b) => {
-            if (sortBy === 'createdAt') {
-                return sortOrder === 'asc' ? new Date(a.createdAt) - new Date(b.createdAt) :
-                                              new Date(b.createdAt) - new Date(a.createdAt);
-            }
-            return 0;
-        });
+        const hasNextPage = page < totalPages;
+        const hasPrevPage = page > 1;
 
         res.status(200).json({
             success: true,
-            count: paginatedCampaigns.length,
+            count: campaignsWithUrls.length,
             total,
+            searchTerm,
             pagination: {
                 page,
                 limit,
                 totalPages,
-                hasNextPage: page < totalPages,
-                hasPrevPage: page > 1,
-                nextPage: page < totalPages ? page + 1 : null,
-                prevPage: page > 1 ? page - 1 : null
+                hasNextPage,
+                hasPrevPage,
+                nextPage: hasNextPage ? page + 1 : null,
+                prevPage: hasPrevPage ? page - 1 : null
             },
-            campaigns: paginatedCampaigns
+            campaigns: campaignsWithUrls
         });
     } catch (error) {
         console.error('Error searching campaigns:', error);
@@ -1098,19 +1232,64 @@ exports.getRotatingFeaturedCampaigns = async (req, res) => {
         // Calculate skip for pagination
         const skip = (page - 1) * count;
         
-        // Create sort object
-        const sort = {};
-        sort[selectedStrategy.sortBy] = selectedStrategy.sortOrder;
+        console.log('Using sort strategy:', selectedStrategy.displayReason);
         
-        console.log('Using sort strategy:', selectedStrategy.displayReason, 'with sort:', sort);
-        
-        // Fetch campaigns with sorting
-        const campaigns = await Campaign.find(query)
-            .populate('creator', 'name email profilePicture')
-            .sort(sort)
-            .skip(skip)
-            .limit(count)
-            .lean(); // Use lean() for better performance
+        // Build aggregation pipeline for better performance
+        const pipeline = [
+            { $match: query },
+            {
+                $addFields: {
+                    percentageRaised: {
+                        $multiply: [
+                            { $divide: ['$amountRaised', '$targetAmount'] },
+                            100
+                        ]
+                    },
+                    daysLeft: {
+                        $max: [
+                            0,
+                            {
+                                $ceil: {
+                                    $divide: [
+                                        { $subtract: ['$endDate', new Date()] },
+                                        86400000
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'creator',
+                    foreignField: '_id',
+                    as: 'creator',
+                    pipeline: [
+                        {
+                            $project: {
+                                name: 1,
+                                email: 1,
+                                profilePicture: 1
+                            }
+                        }
+                    ]
+                }
+            },
+            { $unwind: '$creator' }
+        ];
+
+        // Add sorting
+        const sortStage = {};
+        sortStage[selectedStrategy.sortBy] = selectedStrategy.sortOrder;
+        pipeline.push({ $sort: sortStage });
+
+        // Add pagination
+        pipeline.push({ $skip: skip }, { $limit: count });
+
+        // Fetch campaigns with aggregation
+        const campaigns = await Campaign.aggregate(pipeline);
         
         console.log(`Retrieved ${campaigns.length} featured campaigns for page ${page}`);
         

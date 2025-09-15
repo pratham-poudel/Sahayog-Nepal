@@ -113,6 +113,13 @@ const paymentSchema = new mongoose.Schema({
   timestamps: true
 });
 
+// Indexes for efficient queries
+paymentSchema.index({ userId: 1, status: 1, createdAt: -1 });
+paymentSchema.index({ campaignId: 1, status: 1 });
+paymentSchema.index({ status: 1, createdAt: -1 });
+paymentSchema.index({ purchaseOrderId: 1 });
+paymentSchema.index({ paymentMethod: 1, status: 1 });
+
 const Payment = mongoose.model('Payment', paymentSchema);
 
 module.exports = Payment; 

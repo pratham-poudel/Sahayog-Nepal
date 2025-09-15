@@ -6,6 +6,7 @@ import { blogTemplates } from '../data/blogs';
 import axios from 'axios';
 import { useToast } from '@/hooks/use-toast';
 import { API_URL as CONFIG_API_URL } from '../config/index.js';
+import FileUpload from '../components/common/FileUpload.jsx';
 import { 
   FiPlus, 
   FiTrash2, 
@@ -40,8 +41,7 @@ const WriteBlog = () => {
   const [imageUrls, setImageUrls] = useState([]);
   const [tags, setTags] = useState([]);
   const [tagInput, setTagInput] = useState('');
-  const [coverImage, setCoverImage] = useState(null);
-  const [coverImagePreview, setCoverImagePreview] = useState('');
+  const [coverImageUpload, setCoverImageUpload] = useState(null);
   const [status, setStatus] = useState('draft');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -65,84 +65,31 @@ const WriteBlog = () => {
     }
   }, [isAuthenticated, setLocation]);
 
-  // Handle cover image selection
-  const handleCoverImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Check file size (limit to 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        toast({
-          title: "Submission failed",
-          description: "Image too large. Please select an image under 5MB.",
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      setCoverImage(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setCoverImagePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
+  // Handle cover image upload
+  const handleCoverImageUpload = (uploadResult) => {
+    setCoverImageUpload(uploadResult);
+    toast({
+      title: "Cover image uploaded",
+      description: "Cover image has been uploaded successfully.",
+    });
   };
 
   // Handle image upload for content
-  const handleImageUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  const handleContentImageUpload = (uploadResult) => {
+    // Add image block to content
+    const newImageBlock = {
+      type: 'image',
+      url: uploadResult.publicUrl,
+      caption: 'Image caption'
+    };
     
-    // Check file size (limit to 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast({
-        title: "Image Upload failed",
-        description: "Image too large. Please select an image under 5MB.",
-        variant: "destructive"
-      });
-      return;
-    }
+    setContent([...content, newImageBlock]);
+    setImageUrls([...imageUrls, uploadResult.publicUrl]);
     
-    try {
-      // Create form data for image upload
-      const formData = new FormData();
-      formData.append('Blogimage', file);
-      
-      // Upload image to server
-      const response = await axios.post(`${API_URL}/upload-image`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          'Authorization': `Bearer ${token}`
-        },
-        onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          setUploadProgress(percentCompleted);
-        }
-      });
-      
-      if (response.data.success) {
-        const imageUrl = response.data.imageUrl;
-        setImageUrls([...imageUrls, imageUrl]);
-        
-        // Add image block to content
-        const newImageBlock = {
-          type: 'image',
-          url: imageUrl,
-          caption: 'Image caption'
-        };
-        
-        setContent([...content, newImageBlock]);
-        setUploadProgress(0);
-      }
-    } catch (error) {
-      console.error('Error uploading image:', error);
-      toast({
-        title: "Update failed",
-        description: error.message || "Error uploading image",
-        variant: "destructive"
-      });
-      setUploadProgress(0);
-    }
+    toast({
+      title: "Image added",
+      description: "Image has been added to your blog content.",
+    });
   };
 
   // Add a new content block
@@ -228,7 +175,7 @@ const WriteBlog = () => {
       return;
     }
     
-    if (!coverImage) {
+    if (!coverImageUpload) {
       toast({
         title: "Submission failed",
         description: "Please upload a cover image for your blog.",
@@ -246,31 +193,30 @@ const WriteBlog = () => {
       const instagram = validateUrl(instagramHandle);
       const linkedin = validateUrl(linkedinHandle);
       
-      // Create form data for blog submission
-      const formData = new FormData();
-      formData.append('title', title);
-      formData.append('excerpt', excerpt);
-      formData.append('content', JSON.stringify(content));
-      formData.append('tags', JSON.stringify(tags));
-      formData.append('templateId', selectedTemplate?.id || 'classic');
-      formData.append('status', status);
-      formData.append('BlogCoverImage', coverImage);
+      // Create blog data - no FormData needed as cover image is already uploaded
+      const blogData = {
+        title,
+        excerpt,
+        content: JSON.stringify(content),
+        tags: JSON.stringify(tags),
+        templateId: selectedTemplate?.id || 'classic',
+        status,
+        coverImageUrl: coverImageUpload.publicUrl,
+        coverImage: coverImageUpload.key, // Store key for backend reference
+        imageUrls: JSON.stringify(imageUrls) // Content images
+      };
       
       // Add social media links
-      if (twitter) formData.append('twitter', twitter);
-      if (facebook) formData.append('facebook', facebook);
-      if (instagram) formData.append('instagram', instagram);
-      if (linkedin) formData.append('linkedin', linkedin);
+      if (twitter) blogData.twitter = twitter;
+      if (facebook) blogData.facebook = facebook;
+      if (instagram) blogData.instagram = instagram;
+      if (linkedin) blogData.linkedin = linkedin;
       
       // Submit blog to server
-      const response = await axios.post(API_URL, formData, {
+      const response = await axios.post(API_URL, blogData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
-        },
-        onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          setUploadProgress(percentCompleted);
         }
       });
       

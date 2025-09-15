@@ -231,13 +231,75 @@ const CampaignDetail = ({ id }) => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Campaign Image */}
+              {/* Campaign Images */}
               <div className="lg:col-span-1">
-                <img 
-                  src={campaign.images?.[0] || '/api/placeholder/400/300'} 
-                  alt={campaign.title}
-                  className="w-full h-64 object-cover rounded-lg"
-                />
+                <div className="space-y-4">
+                  {/* Cover Image */}
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Cover Image</h4>
+                    <img 
+                      src={campaign.coverImageUrl || campaign.coverImage || '/api/placeholder/400/300'} 
+                      alt={`${campaign.title} - Cover`}
+                      className="w-full h-48 object-cover rounded-lg border-2 border-blue-200 dark:border-blue-700"
+                    />
+                  </div>
+                  
+                  {/* Additional Images */}
+                  {campaign.imageUrls && campaign.imageUrls.length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Additional Images ({campaign.imageUrls.length})
+                      </h4>
+                      <div className="grid grid-cols-1 gap-3">
+                        {campaign.imageUrls.map((imageUrl, index) => (
+                          <div key={index} className="relative">
+                            <img 
+                              src={imageUrl || '/api/placeholder/400/300'} 
+                              alt={`${campaign.title} - Image ${index + 1}`}
+                              className="w-full h-32 object-cover rounded-lg border border-gray-200 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500 transition-colors cursor-pointer"
+                              onClick={() => window.open(imageUrl, '_blank')}
+                            />
+                            <div className="absolute top-2 left-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+                              {index + 1}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Fallback for campaigns with old image format */}
+                  {(!campaign.imageUrls || campaign.imageUrls.length === 0) && campaign.images && campaign.images.length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Additional Images ({campaign.images.length})
+                      </h4>
+                      <div className="grid grid-cols-1 gap-3">
+                        {campaign.images.map((image, index) => (
+                          <div key={index} className="relative">
+                            <img 
+                              src={image || '/api/placeholder/400/300'} 
+                              alt={`${campaign.title} - Image ${index + 1}`}
+                              className="w-full h-32 object-cover rounded-lg border border-gray-200 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500 transition-colors cursor-pointer"
+                              onClick={() => window.open(image, '_blank')}
+                            />
+                            <div className="absolute top-2 left-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+                              {index + 1}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* No additional images message */}
+                  {(!campaign.imageUrls || campaign.imageUrls.length === 0) && 
+                   (!campaign.images || campaign.images.length === 0) && (
+                    <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                      <div className="text-sm">No additional images uploaded</div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Campaign Info */}

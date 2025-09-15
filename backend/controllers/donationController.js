@@ -112,26 +112,71 @@ exports.getRecentDonationsToUserCampaigns = async (req, res) => {
       });
     }
 
-    // First, get all campaigns created by the user
-    const userCampaigns = await Campaign.find({ creator: userId }).select('_id title');
-    const campaignIds = userCampaigns.map(campaign => campaign._id);
+    // Use aggregation pipeline for better performance
+    const pipeline = [
+      {
+        $lookup: {
+          from: 'campaigns',
+          localField: 'campaignId',
+          foreignField: '_id',
+          as: 'campaign'
+        }
+      },
+      {
+        $unwind: '$campaign'
+      },
+      {
+        $match: {
+          'campaign.creator': new mongoose.Types.ObjectId(userId),
+          donorId: { $ne: new mongoose.Types.ObjectId(userId) }
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'donorId',
+          foreignField: '_id',
+          as: 'donor',
+          pipeline: [
+            {
+              $project: {
+                name: 1,
+                email: 1,
+                profilePicture: 1
+              }
+            }
+          ]
+        }
+      },
+      {
+        $unwind: {
+          path: '$donor',
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $project: {
+          _id: 1,
+          amount: 1,
+          message: 1,
+          date: 1,
+          anonymous: 1,
+          donorId: '$donor',
+          campaignId: {
+            _id: '$campaign._id',
+            title: '$campaign.title'
+          }
+        }
+      },
+      {
+        $sort: { date: -1 }
+      },
+      {
+        $limit: 4
+      }
+    ];
 
-    if (campaignIds.length === 0) {
-      return res.status(200).json({
-        success: true,
-        data: []
-      });
-    }
-
-    // Get recent donations to these campaigns, excluding donations made by the user themselves
-    const donations = await Donation.find({ 
-      campaignId: { $in: campaignIds },
-      donorId: { $ne: userId } // Exclude donations made by the user themselves
-    })
-      .populate('donorId', 'name email profilePicture')
-      .populate('campaignId', 'title')
-      .sort({ date: -1 })
-      .limit(4); // Limit to 4 donations
+    const donations = await Donation.aggregate(pipeline);
 
     res.status(200).json({
       success: true,
@@ -146,7 +191,7 @@ exports.getRecentDonationsToUserCampaigns = async (req, res) => {
   }
 };
 
-// Get comprehensive campaign statistics (without aggregation)
+// Get comprehensive campaign statistics using aggregation
 exports.getCampaignStatistics = async (req, res) => {
   try {
     const { campaignId } = req.params;
@@ -167,64 +212,105 @@ exports.getCampaignStatistics = async (req, res) => {
         success: false,
         error: 'Campaign not found'
       });
-    }    // Get donations for this campaign in batches due to Stargate constraints
-    let allDonations = [];
-    let page = 1;
-    const batchSize = 20;
-    let hasMore = true;
-    
-    while (hasMore && allDonations.length < 200) { // Limit to max 200 donations
-      const batchDonations = await Donation.find({ campaignId })
-        .sort({ date: -1 })
-        .skip((page - 1) * batchSize)
-        .limit(batchSize);
-      
-      if (batchDonations.length < batchSize) {
-        hasMore = false;
-      }
-      
-      allDonations = allDonations.concat(batchDonations);
-      page++;
     }
 
-    // Calculate statistics manually
-    const totalAmount = allDonations.reduce((sum, donation) => sum + donation.amount, 0);
-    const totalDonors = allDonations.length;
-    const averageDonation = totalDonors > 0 ? totalAmount / totalDonors : 0;
-    const maxDonation = allDonations.length > 0 ? Math.max(...allDonations.map(d => d.amount)) : 0;
-    const minDonation = allDonations.length > 0 ? Math.min(...allDonations.map(d => d.amount)) : 0;    // Get anonymous vs named donors count
-    const anonymousCount = allDonations.filter(d => d.anonymous === true).length;
-    const namedCount = allDonations.filter(d => d.anonymous === false).length;
+    // Use aggregation pipeline for efficient statistics calculation
+    const statisticsPipeline = [
+      {
+        $match: { campaignId: new mongoose.Types.ObjectId(campaignId) }
+      },
+      {
+        $group: {
+          _id: null,
+          totalAmount: { $sum: '$amount' },
+          totalDonors: { $sum: 1 },
+          averageDonation: { $avg: '$amount' },
+          maxDonation: { $max: '$amount' },
+          minDonation: { $min: '$amount' },
+          anonymousDonors: {
+            $sum: { $cond: [{ $eq: ['$anonymous', true] }, 1, 0] }
+          },
+          publicDonors: {
+            $sum: { $cond: [{ $eq: ['$anonymous', false] }, 1, 0] }
+          }
+        }
+      },
+      {
+        $addFields: {
+          completionPercentage: {
+            $cond: [
+              { $gt: [campaign.targetAmount, 0] },
+              {
+                $round: [
+                  { $multiply: [{ $divide: ['$totalAmount', campaign.targetAmount] }, 100] },
+                  0
+                ]
+              },
+              0
+            ]
+          },
+          remainingAmount: {
+            $max: [0, { $subtract: [campaign.targetAmount, '$totalAmount'] }]
+          }
+        }
+      }
+    ];
 
-    // Calculate donation distribution by amount ranges
-    const ranges = [
-      { min: 0, max: 100, label: '$0-$100' },
-      { min: 100, max: 500, label: '$100-$500' },
-      { min: 500, max: 1000, label: '$500-$1000' },
-      { min: 1000, max: 5000, label: '$1000-$5000' },
-      { min: 5000, max: 10000, label: '$5000-$10000' },
-      { min: 10000, max: Infinity, label: '$10000+' }
-    ];    const distribution = ranges.map(range => {
-      const donationsInRange = allDonations.filter(d => d.amount >= range.min && d.amount < range.max);
-      return {
-        _id: range.label,
-        count: donationsInRange.length,
-        totalAmount: donationsInRange.reduce((sum, d) => sum + d.amount, 0)
-      };
-    });
+    // Get donation distribution by amount ranges using aggregation
+    const distributionPipeline = [
+      {
+        $match: { campaignId: new mongoose.Types.ObjectId(campaignId) }
+      },
+      {
+        $bucket: {
+          groupBy: '$amount',
+          boundaries: [0, 100, 500, 1000, 5000, 10000, Infinity],
+          default: 'Other',
+          output: {
+            count: { $sum: 1 },
+            totalAmount: { $sum: '$amount' }
+          }
+        }
+      },
+      {
+        $addFields: {
+          _id: {
+            $switch: {
+              branches: [
+                { case: { $eq: ['$_id', 0] }, then: '$0-$100' },
+                { case: { $eq: ['$_id', 100] }, then: '$100-$500' },
+                { case: { $eq: ['$_id', 500] }, then: '$500-$1000' },
+                { case: { $eq: ['$_id', 1000] }, then: '$1000-$5000' },
+                { case: { $eq: ['$_id', 5000] }, then: '$5000-$10000' },
+                { case: { $eq: ['$_id', 10000] }, then: '$10000+' }
+              ],
+              default: 'Other'
+            }
+          }
+        }
+      }
+    ];
 
-    const statistics = {
-      totalAmount,
-      totalDonors,
-      averageDonation,
-      maxDonation,
-      minDonation,
-      anonymousDonors: anonymousCount,
-      publicDonors: namedCount,
-      completionPercentage: campaign.targetAmount > 0 ? 
-        Math.round((totalAmount / campaign.targetAmount) * 100) : 0,
-      remainingAmount: Math.max(0, campaign.targetAmount - totalAmount)
+    // Execute both pipelines concurrently
+    const [statisticsResult, distributionResult] = await Promise.all([
+      Donation.aggregate(statisticsPipeline),
+      Donation.aggregate(distributionPipeline)
+    ]);
+
+    const statistics = statisticsResult.length > 0 ? statisticsResult[0] : {
+      totalAmount: 0,
+      totalDonors: 0,
+      averageDonation: 0,
+      maxDonation: 0,
+      minDonation: 0,
+      anonymousDonors: 0,
+      publicDonors: 0,
+      completionPercentage: 0,
+      remainingAmount: campaign.targetAmount
     };
+
+    // Remove the null _id from statistics
+    delete statistics._id;
 
     res.status(200).json({
       success: true,
@@ -239,7 +325,7 @@ exports.getCampaignStatistics = async (req, res) => {
           endDate: campaign.endDate
         },
         statistics,
-        distribution
+        distribution: distributionResult
       }
     });
   } catch (error) {
@@ -251,7 +337,7 @@ exports.getCampaignStatistics = async (req, res) => {
   }
 };
 
-// Get donation trends and analytics (without aggregation)
+// Get donation trends and analytics using aggregation
 exports.getDonationTrends = async (req, res) => {
   try {
     const { campaignId } = req.params;
@@ -266,65 +352,102 @@ exports.getDonationTrends = async (req, res) => {
 
     const daysBack = parseInt(period);
     const startDate = new Date();
-    startDate.setDate(startDate.getDate() - daysBack);    // Get donations within the specified period (limited due to Stargate constraints)
-    const donations = await Donation.find({ 
-      campaignId, 
-      date: { $gte: startDate } 
-    }).sort({ date: 1 }).limit(20);
+    startDate.setDate(startDate.getDate() - daysBack);
 
-    // Group donations by day manually
-    const dailyData = {};
-    donations.forEach(donation => {
-      const dateKey = donation.date.toISOString().split('T')[0];
-      if (!dailyData[dateKey]) {
-        dailyData[dateKey] = { dailyAmount: 0, dailyDonors: 0 };
+    // Daily trends aggregation pipeline
+    const dailyTrendsPipeline = [
+      {
+        $match: { 
+          campaignId: new mongoose.Types.ObjectId(campaignId),
+          date: { $gte: startDate }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: '$date' },
+            month: { $month: '$date' },
+            day: { $dayOfMonth: '$date' }
+          },
+          dailyAmount: { $sum: '$amount' },
+          dailyDonors: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { 
+          '_id.year': 1, 
+          '_id.month': 1, 
+          '_id.day': 1 
+        }
       }
-      dailyData[dateKey].dailyAmount += donation.amount;
-      dailyData[dateKey].dailyDonors += 1;
-    });
+    ];
 
-    // Convert to array format
-    const dailyTrends = Object.entries(dailyData)
-      .map(([date, data]) => ({
-        _id: {
-          year: new Date(date).getFullYear(),
-          month: new Date(date).getMonth() + 1,
-          day: new Date(date).getDate()
-        },
-        ...data
-      }))
-      .sort((a, b) => {
-        const dateA = new Date(a._id.year, a._id.month - 1, a._id.day);
-        const dateB = new Date(b._id.year, b._id.month - 1, b._id.day);
-        return dateA - dateB;
-      });    // Get recent donations for hourly distribution (limited by Stargate)
-    const recentDonationsForHourly = await Donation.find({ campaignId })
-      .sort({ date: -1 })
-      .limit(20);
+    // Hourly distribution aggregation pipeline
+    const hourlyDistributionPipeline = [
+      {
+        $match: { campaignId: new mongoose.Types.ObjectId(campaignId) }
+      },
+      {
+        $group: {
+          _id: { $hour: '$date' },
+          count: { $sum: 1 },
+          totalAmount: { $sum: '$amount' }
+        }
+      },
+      {
+        $sort: { '_id': 1 }
+      }
+    ];
+
+    // Top donation days pipeline
+    const topDonationDaysPipeline = [
+      {
+        $match: { 
+          campaignId: new mongoose.Types.ObjectId(campaignId),
+          date: { $gte: startDate }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: '$date' },
+            month: { $month: '$date' },
+            day: { $dayOfMonth: '$date' }
+          },
+          dailyAmount: { $sum: '$amount' },
+          dailyDonors: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { dailyAmount: -1 }
+      },
+      {
+        $limit: 5
+      }
+    ];
+
+    // Execute all aggregations concurrently
+    const [dailyTrends, hourlyDistributionResult, topDonationDays] = await Promise.all([
+      Donation.aggregate(dailyTrendsPipeline),
+      Donation.aggregate(hourlyDistributionPipeline),
+      Donation.aggregate(topDonationDaysPipeline)
+    ]);
+
+    // Create complete hourly distribution array (0-23 hours)
     const hourlyData = Array.from({ length: 24 }, (_, hour) => ({
       _id: hour,
       count: 0,
       totalAmount: 0
     }));
 
-    recentDonationsForHourly.forEach(donation => {
-      const hour = donation.date.getHours();
-      hourlyData[hour].count += 1;
-      hourlyData[hour].totalAmount += donation.amount;
+    // Fill in actual data
+    hourlyDistributionResult.forEach(hourData => {
+      hourlyData[hourData._id] = {
+        _id: hourData._id,
+        count: hourData.count,
+        totalAmount: hourData.totalAmount
+      };
     });
-
-    // Get top donation days
-    const topDonationDays = Object.entries(dailyData)
-      .map(([date, data]) => ({
-        _id: {
-          year: new Date(date).getFullYear(),
-          month: new Date(date).getMonth() + 1,
-          day: new Date(date).getDate()
-        },
-        ...data
-      }))
-      .sort((a, b) => b.dailyAmount - a.dailyAmount)
-      .slice(0, 5);
 
     res.status(200).json({
       success: true,

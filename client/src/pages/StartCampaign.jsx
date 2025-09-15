@@ -10,6 +10,7 @@ import { useContext } from 'react';
 import useCategories from '../hooks/useCategories';
 import HierarchicalCategorySelector from '../components/campaigns/HierarchicalCategorySelector';
 import TurnstileWidget from '../components/common/TurnstileWidget';
+import FileUpload from '../components/common/FileUpload.jsx';
 import axios from 'axios';
 import { API_URL as CONFIG_API_URL, TURNSTILE_CONFIG } from '../config/index.js';
 
@@ -20,10 +21,8 @@ const StartCampaign = () => {
   const { categories, loading: categoriesLoading } = useCategories();
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
-  const [coverImage, setCoverImage] = useState(null);
-  const [additionalImages, setAdditionalImages] = useState([]);
-  const [uploadedCoverPreview, setUploadedCoverPreview] = useState(null);
-  const [uploadedAdditionalPreviews, setUploadedAdditionalPreviews] = useState([]);
+  const [coverImageUpload, setCoverImageUpload] = useState(null);
+  const [additionalImageUploads, setAdditionalImageUploads] = useState([]);
   const [turnstileToken, setTurnstileToken] = useState(null);
   const [turnstileKey, setTurnstileKey] = useState(0); // Force re-render of Turnstile widget
   const [showTurnstile, setShowTurnstile] = useState(false); // Show/hide Turnstile widget
@@ -282,8 +281,8 @@ const StartCampaign = () => {
     } else if (currentStep === 2) {
       isStepValid = await trigger(['shortDescription', 'story']);
       
-      // Validate cover image - allow both new uploads and restored previews
-      if (!coverImage && !uploadedCoverPreview) {
+      // Validate cover image
+      if (!coverImageUpload) {
         toast({
           title: "Cover image required",
           description: "Please upload a cover image for your campaign",
@@ -304,46 +303,22 @@ const StartCampaign = () => {
     }
   };
 
-  const handleAdditionalImageUpload = (e) => {
-    const files = Array.from(e.target.files);
-    if (files.length > 0) {
-      // Limit to 3 additional images
-      const newFiles = files.slice(0, 3 - additionalImages.length);
-      
-      if (newFiles.length > 0) {
-        // Update state for form submission
-        setAdditionalImages(prev => [...prev, ...newFiles]);
-        
-        // Create previews for display
-        newFiles.forEach(file => {
-          const reader = new FileReader();
-          reader.onload = (event) => {
-            setUploadedAdditionalPreviews(prev => [...prev, event.target.result]);
-          };
-          reader.readAsDataURL(file);
-        });
-      }
-    }
+  // Handle cover image upload
+  const handleCoverImageUpload = (uploadResult) => {
+    setCoverImageUpload(uploadResult);
+    toast({
+      title: "Cover image uploaded",
+      description: "Cover image has been uploaded successfully.",
+    });
   };
 
-  const removeAdditionalImage = (index) => {
-    setAdditionalImages(prev => prev.filter((_, i) => i !== index));
-    setUploadedAdditionalPreviews(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Store the file object for form submission
-      setCoverImage(file);
-      
-      // Create a preview URL
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setUploadedCoverPreview(event.target.result);
-      };
-      reader.readAsDataURL(file);
-    }
+  // Handle additional images upload
+  const handleAdditionalImagesUpload = (uploadResults) => {
+    setAdditionalImageUploads(uploadResults);
+    toast({
+      title: "Additional images uploaded", 
+      description: `${uploadResults.length} additional image(s) uploaded successfully.`,
+    });
   };
   
   const nextStep = () => setCurrentStep(prev => prev + 1);
@@ -419,39 +394,21 @@ const StartCampaign = () => {
     try {
       setIsLoading(true);
       
-      // Create FormData object for file uploads
-      const formData = new FormData();
-      
-      // Add form data
-      formData.append('title', data.title);
-      formData.append('category', data.category);
-      if (data.subcategory) {
-        formData.append('subcategory', data.subcategory);
-      }
-      formData.append('targetAmount', data.targetAmount);
-      formData.append('endDate', data.endDate);
-      formData.append('shortDescription', data.shortDescription);
-      formData.append('story', data.story);
-      formData.append('turnstileToken', turnstileToken);
-      
-      // Add cover image - validate that we have a proper file object
-      if (coverImage && coverImage !== 'RESTORED_PREVIEW') {
-        formData.append('coverImage', coverImage);
-      } else if (coverImage === 'RESTORED_PREVIEW') {
-        // User needs to re-upload the cover image for submission
-        toast({
-          title: "Cover image required",
-          description: "Please re-upload your cover image to submit the campaign.",
-          variant: "destructive"
-        });
-        setIsLoading(false);
-        return;
-      }
-      
-      // Add additional images if any
-      additionalImages.forEach(image => {
-        formData.append('additionalImages', image);
-      });
+      // Prepare campaign data - no FormData needed as files are already uploaded
+      const campaignData = {
+        title: data.title,
+        category: data.category,
+        subcategory: data.subcategory || null,
+        targetAmount: data.targetAmount,
+        endDate: data.endDate,
+        shortDescription: data.shortDescription,
+        story: data.story,
+        turnstileToken: turnstileToken,
+        coverImageUrl: coverImageUpload?.publicUrl,
+        coverImage: coverImageUpload?.publicUrl, // Store full URL directly
+        additionalImages: additionalImageUploads.map(upload => upload.publicUrl), // Store full URLs
+        additionalImageUrls: additionalImageUploads.map(upload => upload.publicUrl)
+      };
       
       // Get JWT token from localStorage
       const token = localStorage.getItem('token');
@@ -463,11 +420,11 @@ const StartCampaign = () => {
       // Send request to API
       const response = await axios.post(
         `${CONFIG_API_URL}/api/campaigns`,
-        formData,
+        campaignData,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data'
+            'Content-Type': 'application/json'
           }
         }
       );
@@ -942,122 +899,41 @@ const StartCampaign = () => {
                         <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                           Cover Image* (Required)
                         </label>
-                        <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-200 dark:border-gray-600 border-dashed rounded-xl hover:border-gray-300 dark:hover:border-gray-500 transition-colors duration-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100/50 dark:hover:bg-gray-600/50">
-                          <div className="space-y-1 text-center">
-                            {uploadedCoverPreview ? (
-                              <div>
-                                <img
-                                  src={uploadedCoverPreview}
-                                  alt="Campaign cover"
-                                  className="mx-auto h-40 object-cover rounded-lg shadow-md"
-                                />
-                                <button
-                                  type="button"
-                                  className="mt-3 text-sm text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-medium transition-colors duration-200"
-                                  onClick={() => {
-                                    setCoverImage(null);
-                                    setUploadedCoverPreview(null);
-                                    setValue('coverImage', null);
-                                  }}
-                                >
-                                  Remove image
-                                </button>
-                              </div>
-                            ) : (
-                              <>
-                                <svg
-                                  className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500"
-                                  stroke="currentColor"
-                                  fill="none"
-                                  viewBox="0 0 48 48"
-                                  aria-hidden="true"
-                                >
-                                  <path
-                                    d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                                    strokeWidth={2}
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                  />
-                                </svg>
-                                <div className="flex justify-center text-sm text-gray-600 dark:text-gray-300">
-                                  <label
-                                    htmlFor="coverImage"
-                                    className="relative cursor-pointer bg-white dark:bg-gray-800 rounded-md font-semibold text-[#8B2325] hover:text-[#7a1f21] dark:text-[#a02729] dark:hover:text-[#8B2325] transition-colors duration-200"
-                                  >
-                                    <span>Upload a file</span>
-                                    <input
-                                      id="coverImage"
-                                      name="coverImage"
-                                      type="file"
-                                      className="sr-only"
-                                      accept="image/*"
-                                      onChange={handleImageUpload}
-                                    />
-                                  </label>
-                                  <p className="pl-1">or drag and drop</p>
-                                </div>
-                              </>
-                            )}
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                              PNG, JPG, GIF up to 5MB (1200x630px recommended)
-                            </p>
-                          </div>
-                        </div>
+                        <FileUpload
+                          fileType="campaign-cover"
+                          accept="image/*"
+                          maxFiles={1}
+                          onUploadComplete={handleCoverImageUpload}
+                          className="w-full"
+                        >
+                          <p className="text-sm font-medium">
+                            Click to upload cover image or drag and drop
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            PNG, JPG, GIF up to 15MB (1200x630px recommended)
+                          </p>
+                        </FileUpload>
                       </div>
                       
                       <div className="group">
                         <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                           Additional Images (Optional - Up to 3)
                         </label>
-                        <div className="mt-1 grid grid-cols-1 sm:grid-cols-3 gap-4">
-                          {uploadedAdditionalPreviews.map((preview, index) => (
-                            <div key={index} className="relative">
-                              <img
-                                src={preview}
-                                alt={`Additional image ${index + 1}`}
-                                className="h-24 w-full object-cover rounded-lg"
-                              />
-                              <button
-                                type="button"
-                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center"
-                                onClick={() => removeAdditionalImage(index)}
-                              >
-                                ×
-                              </button>
-                            </div>
-                          ))}
-                          
-                          {uploadedAdditionalPreviews.length < 3 && (
-                            <div className="border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg h-24 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 bg-gray-50 dark:bg-gray-700">
-                              <label htmlFor="additionalImages" className="cursor-pointer h-full w-full flex flex-col items-center justify-center">
-                                <svg
-                                  className="h-8 w-8 text-gray-400 dark:text-gray-500"
-                                  stroke="currentColor"
-                                  fill="none"
-                                  viewBox="0 0 48 48"
-                                  aria-hidden="true"
-                                >
-                                  <path
-                                    d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                                    strokeWidth={2}
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                  />
-                                </svg>
-                                <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">Add Image</span>
-                                <input
-                                  id="additionalImages"
-                                  name="additionalImages"
-                                  type="file"
-                                  className="sr-only"
-                                  accept="image/*"
-                                  onChange={handleAdditionalImageUpload}
-                                />
-                              </label>
-                            </div>
-                          )}
-                        </div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        <FileUpload
+                          fileType="campaign-image"
+                          accept="image/*"
+                          maxFiles={3}
+                          onUploadComplete={handleAdditionalImagesUpload}
+                          className="w-full"
+                        >
+                          <p className="text-sm font-medium">
+                            Click to upload additional images or drag and drop
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            PNG, JPG, GIF up to 15MB each (max 3 images)
+                          </p>
+                        </FileUpload>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                           These images will appear in the campaign gallery
                         </p>
                       </div>
@@ -1136,27 +1012,27 @@ const StartCampaign = () => {
                         </div>
                       </div>
                       
-                      <div className="bg-white dark:bg-gray-700 p-6 rounded-xl border border-gray-100 dark:border-gray-600 shadow-sm">
-                        <h3 className="font-semibold text-lg mb-4 text-gray-800 dark:text-white">Cover Image</h3>
-                        <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
-                          {uploadedCoverPreview && (
+                      {coverImageUpload && (
+                        <div className="bg-white dark:bg-gray-700 p-6 rounded-xl border border-gray-100 dark:border-gray-600 shadow-sm">
+                          <h3 className="font-semibold text-lg mb-4 text-gray-800 dark:text-white">Cover Image</h3>
+                          <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
                             <img 
-                              src={uploadedCoverPreview} 
+                              src={coverImageUpload.publicUrl} 
                               alt="Cover Preview" 
                               className="w-full h-64 object-cover rounded-lg shadow-md"
                             />
-                          )}
+                          </div>
                         </div>
-                      </div>
+                      )}
                       
-                      {uploadedAdditionalPreviews.length > 0 && (
+                      {additionalImageUploads.length > 0 && (
                         <div className="bg-white dark:bg-gray-700 p-6 rounded-xl border border-gray-100 dark:border-gray-600 shadow-sm">
                           <h3 className="font-semibold text-lg mb-4 text-gray-800 dark:text-white">Additional Images</h3>
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                            {uploadedAdditionalPreviews.map((preview, index) => (
+                            {additionalImageUploads.map((upload, index) => (
                               <div key={index} className="bg-gray-50 dark:bg-gray-800 p-2 rounded-lg">
                                 <img 
-                                  src={preview} 
+                                  src={upload.publicUrl} 
                                   alt={`Additional Preview ${index + 1}`} 
                                   className="w-full h-32 object-cover rounded-lg shadow-sm"
                                 />

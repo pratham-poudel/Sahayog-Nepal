@@ -39,7 +39,11 @@ const userSchema = new mongoose.Schema({
     },
     profilePicture: {
         type: String,
-        default: '' // Empty string for default
+        default: '' // Empty string for default (filename only)
+    },
+    profilePictureUrl: {
+        type: String,
+        default: '' // Full URL to profile picture (from presigned uploads)
     },
     bio: {
         type: String,
@@ -81,6 +85,13 @@ userSchema.pre('save', async function(next) {
 userSchema.methods.comparePassword = async function(candidatePassword) {
     return await bcrypt.compare(candidatePassword, this.password);
 };
+
+// Add indexes for better query performance
+userSchema.index({ role: 1 });
+userSchema.index({ createdAt: -1 });
+
+// Compound index for campaigns lookup
+userSchema.index({ _id: 1, campaigns: 1 });
 
 const User = mongoose.model('User', userSchema);
 

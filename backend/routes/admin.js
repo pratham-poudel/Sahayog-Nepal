@@ -223,6 +223,58 @@ router.get('/campaigns/rejected', adminAuth, async (req, res) => {
 });
 
 
+// Helper function to format campaign with image URLs (copied from campaignController)
+const fileService = require('../services/fileService');
+const formatCampaignWithUrls = (campaign) => {
+    const formattedCampaign = { ...campaign };
+    
+    // Add cover image URL
+    if (campaign.coverImage) {
+        // Check if it's already a full URL (from presigned uploads)
+        if (campaign.coverImage.startsWith('http://') || campaign.coverImage.startsWith('https://')) {
+            formattedCampaign.coverImageUrl = campaign.coverImage;
+        } else {
+            // Legacy filename - add the correct folder prefix
+            formattedCampaign.coverImageUrl = fileService.processUploadedFile({
+                key: `campaigns/covers/${campaign.coverImage}`,
+                originalname: campaign.coverImage
+            }).url;
+        }
+    }
+    
+    // Add image URLs
+    if (campaign.images && campaign.images.length > 0) {
+        formattedCampaign.imageUrls = campaign.images.map(image => {
+            // Check if it's already a full URL (from presigned uploads)
+            if (image.startsWith('http://') || image.startsWith('https://')) {
+                return image;
+            } else {
+                // Legacy filename - add the correct folder prefix
+                return fileService.processUploadedFile({
+                    key: `campaigns/images/${image}`,
+                    originalname: image
+                }).url;
+            }
+        });
+    }
+    
+    // Add creator profile picture URL
+    if (campaign.creator && campaign.creator.profilePicture) {
+        // Check if it's already a full URL (from presigned uploads)
+        if (campaign.creator.profilePicture.startsWith('http://') || campaign.creator.profilePicture.startsWith('https://')) {
+            formattedCampaign.creator.profilePictureUrl = campaign.creator.profilePicture;
+        } else {
+            // Legacy filename - add the correct folder prefix
+            formattedCampaign.creator.profilePictureUrl = fileService.processUploadedFile({
+                key: `users/profile-pictures/${campaign.creator.profilePicture}`,
+                originalname: campaign.creator.profilePicture
+            }).url;
+        }
+    }
+    
+    return formattedCampaign;
+};
+
 // Get campaign details by ID
 router.get('/campaigns/:id', adminAuth, async (req, res) => {
     try {
@@ -237,9 +289,12 @@ router.get('/campaigns/:id', adminAuth, async (req, res) => {
             });
         }
 
+        // Format campaign with proper image URLs
+        const formattedCampaign = formatCampaignWithUrls(campaign.toObject());
+
         res.json({
             success: true,
-            data: campaign
+            data: formattedCampaign
         });
     } catch (error) {
         res.status(500).json({

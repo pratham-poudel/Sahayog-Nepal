@@ -29,6 +29,19 @@ const donationSchema = new Schema({
     type: Boolean,
     default: false
   }
+}, {
+  timestamps: true
 });
+
+// Indexes for efficient queries
+donationSchema.index({ campaignId: 1, date: -1 });
+donationSchema.index({ donorId: 1, date: -1 });
+donationSchema.index({ campaignId: 1, anonymous: 1, date: -1 });
+donationSchema.index({ campaignId: 1, amount: -1 });
+donationSchema.index({ date: -1 });
+donationSchema.index({ amount: -1 });
+
+// Compound indexes for common aggregation queries
+donationSchema.index({ campaignId: 1, donorId: 1 });
 
 module.exports = mongoose.model('Donation', donationSchema);
