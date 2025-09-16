@@ -219,6 +219,7 @@ exports.getRecentDonationsToUserCampaigns = async (req, res) => {
           message: 1,
           date: 1,
           anonymous: 1,
+          donorName: 1,
           donorId: '$donor',
           campaignId: {
             _id: '$campaign._id',

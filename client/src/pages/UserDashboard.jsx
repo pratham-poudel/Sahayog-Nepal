@@ -461,16 +461,36 @@ const UserDashboard = () => {
             
             if (data.success && Array.isArray(data.data)) {
               // Transform the data to match the existing donation structure for the overview section
-              const transformedDonations = data.data.map(donation => ({
-                id: donation._id,
-                campaignId: donation.campaignId._id,
-                campaignTitle: donation.campaignId.title,
-                amount: donation.amount,
-                date: new Date(donation.date).toLocaleDateString(),
-                status: 'Completed',
-                donorName: donation.donorId.name,
-                donorId: donation.donorId._id
-              }));
+              const transformedDonations = data.data.map(donation => {
+                let donorName = 'Unknown Donor';
+                
+                if (donation.anonymous) {
+                  donorName = 'Anonymous Donor';
+                } else {
+                  // Check for guest donation (has donorName field directly)
+                  if (donation.donorName) {
+                    donorName = donation.donorName;
+                  }
+                  // Check for logged-in user donation (has donorId.name)
+                  else if (donation.donorId && donation.donorId.name) {
+                    donorName = donation.donorId.name;
+                  }
+                }
+
+                return {
+                  id: donation._id,
+                  campaignId: donation.campaignId._id,
+                  campaignTitle: donation.campaignId.title,
+                  amount: donation.amount,
+                  date: new Date(donation.date).toLocaleDateString(),
+                  status: 'Completed',
+                  donorName: donorName,
+                  donorId: donation.donorId ? donation.donorId._id : null,
+                  anonymous: donation.anonymous || false,
+                  message: donation.message || '',
+                  isGuestDonation: !!donation.donorName && !donation.donorId
+                };
+              });
               setOverviewDonations(transformedDonations);
             } else {
               setOverviewDonations([]);
@@ -1021,6 +1041,7 @@ const UserDashboard = () => {
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Donor</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Campaign</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Amount</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Message</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
                   </tr>
                 </thead>
@@ -1028,9 +1049,21 @@ const UserDashboard = () => {
                   {overviewDonations.slice(0, 4).map(donation => (
                     <tr key={donation.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-medium text-gray-900 dark:text-white">
-                          {donation.donorName}
-                        </span>
+                        <div className="flex items-center">
+                          <span className="text-sm font-medium text-gray-900 dark:text-white">
+                            {donation.donorName}
+                          </span>
+                          {donation.anonymous && (
+                            <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                              Anonymous
+                            </span>
+                          )}
+                          {donation.isGuestDonation && !donation.anonymous && (
+                            <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                              Guest
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <Link href={`/campaign/${donation.campaignId}`}>
@@ -1042,6 +1075,11 @@ const UserDashboard = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="text-sm font-medium text-gray-900 dark:text-white">
                           Rs. {(donation.amount).toLocaleString()}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-sm text-gray-600 dark:text-gray-400 max-w-xs truncate block">
+                          {donation.message ? donation.message : <em>No message</em>}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
