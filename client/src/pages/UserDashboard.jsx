@@ -1752,34 +1752,10 @@ const UserDashboard = () => {
     // Bank accounts component
     bankAccounts: (
       <div className="space-y-6">
-        
-        
         <BankAccountList 
           key={bankAccountsRefresh}
           onRefresh={() => setBankAccountsRefresh(prev => prev + 1)}
         />
-        
-        {/* Add Bank Account Modal */}
-        {showAddBankAccount && (
-          <div className="fixed inset-0 z-50 overflow-y-auto">
-            <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-              <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
-              <div className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
-                <AddBankAccount
-                  onSuccess={() => {
-                    setShowAddBankAccount(false);
-                    setBankAccountsRefresh(prev => prev + 1);
-                    toast({
-                      title: "Success",
-                      description: "Bank account added successfully. It will be reviewed within 24-48 hours.",
-                    });
-                  }}
-                  onClose={() => setShowAddBankAccount(false)}
-                />
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     ),
     
@@ -2010,7 +1986,7 @@ const UserDashboard = () => {
                     <div key={campaign._id} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
                       <div className="flex items-start space-x-4">
                         <img 
-                          src={`${MINIO_URL}/uploads/${campaign.coverImage}`}
+                          src={`${campaign.coverImage}`}
                           alt={campaign.title}
                           className="h-16 w-16 object-cover rounded-lg"
                         />
@@ -2359,7 +2335,7 @@ const UserDashboard = () => {
                         type="button"
                         onClick={() => {
                           setWithdrawalModal({ show: false, campaign: null });
-                          setActiveTab('bank-accounts');
+                          setShowAddBankAccount(true);
                         }}
                         className="text-sm bg-yellow-100 dark:bg-yellow-800 text-yellow-800 dark:text-yellow-200 px-3 py-1 rounded-md hover:bg-yellow-200 dark:hover:bg-yellow-700 transition-colors"
                       >
@@ -2455,6 +2431,21 @@ const UserDashboard = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Add Bank Account Modal */}
+      {showAddBankAccount && (
+        <AddBankAccount
+          onSuccess={() => {
+            setShowAddBankAccount(false);
+            setBankAccountsRefresh(prev => prev + 1);
+            toast({
+              title: "Success",
+              description: "Bank account added successfully. It will be reviewed within 24-48 hours.",
+            });
+          }}
+          onClose={() => setShowAddBankAccount(false)}
+        />
       )}
     </>
   );
