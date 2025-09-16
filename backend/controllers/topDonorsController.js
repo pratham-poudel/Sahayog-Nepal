@@ -9,8 +9,8 @@ exports.getTopDonors = async (req, res) => {
     try {
         const limit = parseInt(req.query.limit) || 50;
 
-        // Check cache first
-        const cacheKey = `topDonors:all:limit:${limit}`;
+        // Check cache first (including guest donors)
+        const cacheKey = `topDonors:withGuests:limit:${limit}`;
         
         try {
             const cachedData = await redis.get(cacheKey);
@@ -22,32 +22,48 @@ exports.getTopDonors = async (req, res) => {
             console.warn('Cache read error:', cacheError);
         }
 
-        // Use MongoDB aggregation for efficient processing
+        // Use MongoDB aggregation for efficient processing - include both registered and guest donors
         const pipeline = [
-            // Match only donations with donors (exclude null donors)
+            // Filter out anonymous donations
             {
                 $match: {
-                    donorId: { $exists: true, $ne: null }
+                    anonymous: { $ne: true }
                 }
             },
-            // Group by donor and calculate statistics
+            // Group by donor (using donorId for registered users, donorEmail for guests)
             {
                 $group: {
-                    _id: '$donorId',
+                    _id: {
+                        $cond: [
+                            { $ne: ['$donorId', null] },
+                            '$donorId',
+                            '$donorEmail'
+                        ]
+                    },
+                    donorType: {
+                        $first: {
+                            $cond: [
+                                { $ne: ['$donorId', null] },
+                                'registered',
+                                'guest'
+                            ]
+                        }
+                    },
+                    donorName: {
+                        $first: {
+                            $cond: [
+                                { $ne: ['$donorId', null] },
+                                null, // Will lookup from User model
+                                '$donorName'
+                            ]
+                        }
+                    },
+                    donorEmail: {
+                        $first: '$donorEmail'
+                    },
                     totalDonated: { $sum: '$amount' },
                     donationCount: { $sum: 1 },
-                    lastDonation: { $max: '$date' },
-                    hasNonAnonymousDonations: {
-                        $max: {
-                            $cond: [{ $ne: ['$anonymous', true] }, 1, 0]
-                        }
-                    }
-                }
-            },
-            // Filter out donors who made only anonymous donations
-            {
-                $match: {
-                    hasNonAnonymousDonations: 1
+                    lastDonation: { $max: '$date' }
                 }
             },
             // Sort by total donated (descending)
@@ -58,18 +74,18 @@ exports.getTopDonors = async (req, res) => {
             {
                 $limit: limit
             },
-            // Lookup donor information
+            // Lookup donor information for registered users
             {
                 $lookup: {
                     from: 'users',
                     localField: '_id',
                     foreignField: '_id',
-                    as: 'donor',
+                    as: 'userInfo',
                     pipeline: [
                         {
                             $project: {
                                 name: 1,
-                                profilePicture: 1,
+                                profilePictureUrl: 1,
                                 bio: 1,
                                 createdAt: 1
                             }
@@ -77,23 +93,27 @@ exports.getTopDonors = async (req, res) => {
                     ]
                 }
             },
-            {
-                $unwind: '$donor'
-            },
-            // Add rank field
-            {
-                $addFields: {
-                    rank: { $add: [{ $indexOfArray: [[], null] }, 1] }
-                }
-            },
-            // Project final structure
+            // Project final structure with proper donor information
             {
                 $project: {
                     _id: 1,
                     totalDonated: 1,
                     donationCount: 1,
                     lastDonation: 1,
-                    donor: 1
+                    donorType: 1,
+                    donor: {
+                        $cond: [
+                            { $eq: ['$donorType', 'registered'] },
+                            { $arrayElemAt: ['$userInfo', 0] },
+                            {
+                                name: '$donorName',
+                                profilePictureUrl: null,
+                                bio: null,
+                                createdAt: null,
+                                isGuest: true
+                            }
+                        ]
+                    }
                 }
             }
         ];
@@ -106,26 +126,22 @@ exports.getTopDonors = async (req, res) => {
             rank: index + 1
         }));
 
-        // Get total count of unique donors with non-anonymous donations
+        // Get total count of unique donors (both registered and guest) with non-anonymous donations
         const totalCountPipeline = [
             {
                 $match: {
-                    donorId: { $exists: true, $ne: null }
+                    anonymous: { $ne: true }
                 }
             },
             {
                 $group: {
-                    _id: '$donorId',
-                    hasNonAnonymousDonations: {
-                        $max: {
-                            $cond: [{ $ne: ['$anonymous', true] }, 1, 0]
-                        }
+                    _id: {
+                        $cond: [
+                            { $ne: ['$donorId', null] },
+                            '$donorId',
+                            '$donorEmail'
+                        ]
                     }
-                }
-            },
-            {
-                $match: {
-                    hasNonAnonymousDonations: 1
                 }
             },
             {
@@ -185,19 +201,46 @@ exports.getDonorStats = async (req, res) => {
                     _id: null,
                     totalDonations: { $sum: 1 },
                     totalAmount: { $sum: '$amount' },
-                    uniqueDonors: { $addToSet: '$donorId' },
+                    uniqueRegisteredDonors: { 
+                        $addToSet: {
+                            $cond: [
+                                { $ne: ['$donorId', null] },
+                                '$donorId',
+                                null
+                            ]
+                        }
+                    },
+                    guestDonations: {
+                        $sum: {
+                            $cond: [{ $eq: ['$donorId', null] }, 1, 0]
+                        }
+                    },
                     averageDonation: { $avg: '$amount' }
                 }
             },
             {
                 $addFields: {
-                    totalDonors: { 
+                    totalRegisteredDonors: { 
                         $size: { 
                             $filter: {
-                                input: '$uniqueDonors',
+                                input: '$uniqueRegisteredDonors',
                                 cond: { $ne: ['$$this', null] }
                             }
                         }
+                    },
+                    // Total donors includes registered donors + unique guest donations (approximate)
+                    totalDonors: {
+                        $add: [
+                            { 
+                                $size: { 
+                                    $filter: {
+                                        input: '$uniqueRegisteredDonors',
+                                        cond: { $ne: ['$$this', null] }
+                                    }
+                                }
+                            },
+                            '$guestDonations'
+                        ]
                     }
                 }
             },

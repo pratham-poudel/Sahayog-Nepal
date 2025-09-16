@@ -18,16 +18,36 @@ exports.getDonationsByCampaign = async (req, res) => {
     }
 
     const donations = await Donation.find({ campaignId })
-      .populate('donorId', 'name email profilePicture')
+      .populate({
+        path: 'donorId',
+        select: 'name email profilePicture',
+        options: { strictPopulate: false } // Allow null donorId for guest donations
+      })
       .sort({ date: -1 })
       .skip(skip)
       .limit(limit);
+    
+    // Format donations to handle guest donations
+    const formattedDonations = donations.map(donation => {
+      if (!donation.donorId && donation.donorName) {
+        // Guest donation - use name and email from donation record
+        return {
+          ...donation.toObject(),
+          donorId: {
+            name: donation.donorName,
+            email: donation.donorEmail,
+            profilePicture: null
+          }
+        };
+      }
+      return donation;
+    });
     
     const total = await Donation.countDocuments({ campaignId });
     
     res.status(200).json({
       success: true,
-      data: donations,
+      data: formattedDonations,
       pagination: {
         total,
         page,
@@ -56,13 +76,33 @@ exports.getRecentDonations = async (req, res) => {
     }
 
     const donations = await Donation.find({ campaignId })
-      .populate('donorId', 'name email profilePicture')
+      .populate({
+        path: 'donorId',
+        select: 'name email profilePicture',
+        options: { strictPopulate: false } // Allow null donorId for guest donations
+      })
       .sort({ date: -1 })
       .limit(7);
     
+    // Format donations to handle guest donations
+    const formattedDonations = donations.map(donation => {
+      if (!donation.donorId && donation.donorName) {
+        // Guest donation - use name and email from donation record
+        return {
+          ...donation.toObject(),
+          donorId: {
+            name: donation.donorName,
+            email: donation.donorEmail,
+            profilePicture: null
+          }
+        };
+      }
+      return donation;
+    });
+    
     res.status(200).json({
       success: true,
-      data: donations
+      data: formattedDonations
     });
   } catch (error) {
     res.status(500).json({
@@ -85,12 +125,30 @@ exports.getTopDonor = async (req, res) => {
     }
 
     const topDonor = await Donation.findOne({ campaignId })
-      .populate('donorId', 'name email profilePicture')
+      .populate({
+        path: 'donorId',
+        select: 'name email profilePicture',
+        options: { strictPopulate: false } // Allow null donorId for guest donations
+      })
       .sort({ amount: -1 });
+    
+    // Format donation to handle guest donation
+    let formattedTopDonor = topDonor;
+    if (topDonor && !topDonor.donorId && topDonor.donorName) {
+      // Guest donation - use name and email from donation record
+      formattedTopDonor = {
+        ...topDonor.toObject(),
+        donorId: {
+          name: topDonor.donorName,
+          email: topDonor.donorEmail,
+          profilePicture: null
+        }
+      };
+    }
     
     res.status(200).json({
       success: true,
-      data: topDonor
+      data: formattedTopDonor
     });
   } catch (error) {
     res.status(500).json({
@@ -496,17 +554,37 @@ exports.getAllDonors = async (req, res) => {
 
     const total = await Donation.countDocuments({ campaignId });
     
-    // Format the response to handle anonymous donations
-    const formattedDonations = donations.map(donation => ({
-      _id: donation._id,
-      amount: donation.amount,
-      message: donation.message,
-      date: donation.date,
-      anonymous: donation.anonymous,
-      donor: donation.anonymous 
-        ? { name: 'Anonymous Donor', profilePicture: null }
-        : donation.donorId || { name: 'Unknown Donor', profilePicture: null }
-    }));
+    // Format the response to handle guest and anonymous donations
+    const formattedDonations = donations.map(donation => {
+      let donorInfo;
+      
+      if (donation.anonymous) {
+        // Anonymous donation (could be from registered user or guest)
+        donorInfo = { name: 'Anonymous Donor', profilePicture: null };
+      } else if (donation.donorId) {
+        // Registered user donation
+        donorInfo = donation.donorId;
+      } else if (donation.donorName) {
+        // Guest donation (non-anonymous)
+        donorInfo = { 
+          name: donation.donorName, 
+          email: donation.donorEmail,
+          profilePicture: null 
+        };
+      } else {
+        // Fallback
+        donorInfo = { name: 'Unknown Donor', profilePicture: null };
+      }
+      
+      return {
+        _id: donation._id,
+        amount: donation.amount,
+        message: donation.message,
+        date: donation.date,
+        anonymous: donation.anonymous,
+        donor: donorInfo
+      };
+    });
     
     res.status(200).json({
       success: true,

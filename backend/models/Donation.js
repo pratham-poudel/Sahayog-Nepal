@@ -10,7 +10,17 @@ const donationSchema = new Schema({
   donorId: {
     type: Schema.Types.ObjectId,
     ref: 'User',
-    required: [true, 'Donor ID is required']
+    required: false // Allow guest donations without user ID
+  },
+  donorName: {
+    type: String,
+    trim: true,
+    maxlength: [100, 'Donor name cannot be more than 100 characters']
+  },
+  donorEmail: {
+    type: String,
+    trim: true,
+    lowercase: true
   },
   amount: {
     type: Number,

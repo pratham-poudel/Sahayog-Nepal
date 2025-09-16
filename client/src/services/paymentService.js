@@ -10,12 +10,20 @@ const paymentService = {
    */
   initiateKhaltiPayment: async (paymentData) => {
     try {
+      // Create headers object
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+      
+      // Only add authorization header if token exists (for logged-in users)
+      const token = localStorage.getItem('token');
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
       // First make a call to our backend to create a payment record and get the payment URL
       const response = await axios.post(`${API_URL}/api/payments/khalti/initiate`, paymentData, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
+        headers
       });
       
       if (!response.data.success) {
@@ -43,12 +51,20 @@ const paymentService = {
    */
   initiateEsewaPayment: async (paymentData) => {
     try {
+      // Create headers object
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+      
+      // Only add authorization header if token exists (for logged-in users)
+      const token = localStorage.getItem('token');
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
       // Make a call to our backend to create a payment record and get the eSewa form data
       const response = await axios.post(`${API_URL}/api/payments/esewa/initiate`, paymentData, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
+        headers
       });
       
       if (!response.data.success) {
@@ -76,12 +92,20 @@ const paymentService = {
    */
   initiateFonepayPayment: async (paymentData) => {
     try {
+      // Create headers object
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+      
+      // Only add authorization header if token exists (for logged-in users)
+      const token = localStorage.getItem('token');
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
       // Make a call to our backend to create a payment record and get the Fonepay QR code
       const response = await axios.post(`${API_URL}/api/payments/fonepay/initiate`, paymentData, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
+        headers
       });
       
       if (!response.data.success) {
@@ -109,11 +133,19 @@ const paymentService = {
    */
   checkFonepayStatus: async (paymentId) => {
     try {
+      // Create headers object
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+      
+      // Only add authorization header if token exists (for logged-in users)
+      const token = localStorage.getItem('token');
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
       const response = await axios.post(`${API_URL}/api/payments/fonepay/status`, { paymentId }, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
+        headers
       });
       
       if (!response.data.success) {

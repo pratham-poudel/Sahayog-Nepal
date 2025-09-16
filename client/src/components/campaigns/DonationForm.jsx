@@ -207,6 +207,19 @@ const DonationForm = ({ campaignId, campaignTitle = "This Campaign" }) => {
   const predefinedAmounts = ['1000', '2000', '5000', '10000'];
   const quickPresetAmounts = ['100', '500', '1000', '2500'];
 
+  // Auto-fill user information when authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      // Auto-fill name and email if user is logged in
+      if (user.name && !name) {
+        setName(user.name);
+      }
+      if (user.email && !email) {
+        setEmail(user.email);
+      }
+    }
+  }, [isAuthenticated, user, name, email]);
+
   // Cleanup for websocket and intervals
   useEffect(() => {
     return () => {
@@ -329,18 +342,7 @@ const DonationForm = ({ campaignId, campaignTitle = "This Campaign" }) => {
       }
     }
 
-    // Check if user is logged in
-    if (!isAuthenticated) {
-      toast({
-        title: "Login required",
-        description: "Please log in to make a donation.",
-        variant: "destructive"
-      });
-      
-      // Navigate to login page
-      navigate('/login');
-      return;
-    }
+    // Allow guest donations - no login required
 
     setIsLoading(true);
     setProcessingPayment(true);
@@ -795,23 +797,47 @@ const DonationForm = ({ campaignId, campaignTitle = "This Campaign" }) => {
                         <div>
                           <input
                             type="text"
-                            placeholder="Your Name"
-                            className="w-full py-3 px-4 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                            placeholder={isAuthenticated && user?.name ? "Name (auto-filled from your account)" : "Your Name"}
+                            className={`w-full py-3 px-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white ${
+                              isAuthenticated && user?.name && name === user.name 
+                                ? 'border-green-300 dark:border-green-600 bg-green-50 dark:bg-green-900/10' 
+                                : 'border-gray-200 dark:border-gray-700'
+                            }`}
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                           />
+                          {isAuthenticated && user?.name && name === user.name && (
+                            <p className="text-xs text-green-600 dark:text-green-400 mt-1 flex items-center">
+                              <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                              Auto-filled from your account
+                            </p>
+                          )}
                         </div>
                       )}
                       
                       <div>
                         <input
                           type="email"
-                          placeholder="Email Address (required for receipt)"
-                          className="w-full py-3 px-4 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                          placeholder={isAuthenticated && user?.email ? "Email (auto-filled from your account)" : "Email Address (required for receipt)"}
+                          className={`w-full py-3 px-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white ${
+                            isAuthenticated && user?.email && email === user.email 
+                              ? 'border-green-300 dark:border-green-600 bg-green-50 dark:bg-green-900/10' 
+                              : 'border-gray-200 dark:border-gray-700'
+                          }`}
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           required
                         />
+                        {isAuthenticated && user?.email && email === user.email && (
+                          <p className="text-xs text-green-600 dark:text-green-400 mt-1 flex items-center">
+                            <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                            Auto-filled from your account
+                          </p>
+                        )}
                       </div>
                       
                       {/* Only show message field if not anonymous */}

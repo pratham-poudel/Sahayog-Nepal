@@ -328,7 +328,9 @@ exports.handleKhaltiCallback = async (req, res) => {
 
 const donation = new Donation({
   campaignId: payment.campaignId,
-  donorId: payment.userId,
+  donorId: payment.userId, // Can be null for guest donations
+  donorName: payment.donorName,
+  donorEmail: payment.donorEmail,
   amount: payment.amount,
   message: payment.donorMessage,
   anonymous: isAnonymous,
@@ -690,7 +692,9 @@ exports.handleEsewaCallback = async (req, res) => {
 
         const donation = new Donation({
             campaignId: payment.campaignId,
-            donorId: payment.userId,
+            donorId: payment.userId, // Can be null for guest donations
+            donorName: payment.donorName,
+            donorEmail: payment.donorEmail,
             amount: payment.amount,
             message: payment.donorMessage,
             anonymous: isAnonymous,
@@ -983,7 +987,9 @@ exports.checkFonepayStatus = async (req, res) => {
         // Create donation record
         const donation = new Donation({
           campaignId: payment.campaignId,
-          donorId: payment.userId,
+          donorId: payment.userId, // Can be null for guest donations
+          donorName: payment.donorName,
+          donorEmail: payment.donorEmail,
           amount: payment.amount,
           message: payment.donorMessage,
           anonymous: payment.isAnonymous,

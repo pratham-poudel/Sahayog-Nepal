@@ -251,7 +251,7 @@ const DonorCard = React.memo(({ donor, index }) => {
             <div className="relative inline-block mb-4">
               <div className="relative">
                 <img
-                  src={getProfilePictureUrl(donor.donor.profilePicture) || getDefaultAvatar(donor.donor.name)}
+                  src={donor.donor.profilePictureUrl || getDefaultAvatar(donor.donor.name)}
                   alt={donor.donor.name}
                   className="w-24 h-24 rounded-full mx-auto border-4 border-white shadow-2xl object-cover transition-transform duration-500 group-hover:scale-110 ring-4 ring-white/30"
                   onError={(e) => {
