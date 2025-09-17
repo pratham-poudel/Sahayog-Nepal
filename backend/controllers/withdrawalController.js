@@ -67,6 +67,7 @@ const getWithdrawalSummary = async (req, res) => {
 };
 
 // Create withdrawal request
+// Note: Turnstile validation is now handled by middleware for financial operations security
 const createWithdrawalRequest = async (req, res) => {
   try {
     const { campaignId, bankAccountId, requestedAmount, reason, withdrawalType } = req.body;

@@ -7,31 +7,6 @@ const fileService = require('../services/fileService');
 const redis=require('../utils/RedisClient');
 const axios = require('axios');
 
-// Function to verify Turnstile token (exact copy from working userController.js)
-const validateTurnstileToken = async (token, remoteip = null) => {
-    try {
-        // Prepare form data for Cloudflare API
-        const formData = new URLSearchParams();
-        formData.append('secret', process.env.TURNSTILE_SECRET_KEY || '0x4AAAAAABeptpJznEzP7L6YNrikPDLjnx4');
-        formData.append('response', token);
-        if (remoteip) {
-            formData.append('remoteip', remoteip);
-        }
-
-        const response = await axios.post('https://challenges.cloudflare.com/turnstile/v0/siteverify', formData, {
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            }
-        });
-
-        console.log('Turnstile validation response:', response.data);
-        return response.data;
-    } catch (error) {
-        console.error('Turnstile validation error:', error);
-        return { success: false, 'error-codes': ['network-error'] };
-    }
-};
-
 // @desc    Create a new campaign
 // @route   POST /api/campaigns
 // @access  Private
@@ -52,11 +27,11 @@ exports.createCampaign = async (req, res) => {
             turnstileToken
         } = req.body;
 
-        // Validate required fields including Turnstile token
-        if (!title || !shortDescription || !story || !category || !targetAmount || !endDate || !turnstileToken) {
+        // Validate required fields (Turnstile validation handled by middleware)
+        if (!title || !shortDescription || !story || !category || !targetAmount || !endDate) {
             return res.status(400).json({
                 success: false,
-                message: 'All fields including security verification are required'
+                message: 'All required fields must be provided'
             });
         }
 
@@ -65,19 +40,6 @@ exports.createCampaign = async (req, res) => {
             return res.status(400).json({
                 success: false, 
                 message: 'Cover image is required'
-            });
-        }
-
-        // Validate Turnstile token
-        const clientIp = req.ip || req.connection.remoteAddress || req.socket.remoteAddress;
-        const turnstileValidation = await validateTurnstileToken(turnstileToken, clientIp);
-        
-        if (!turnstileValidation.success) {
-            console.log('Turnstile validation failed:', turnstileValidation);
-            return res.status(400).json({
-                success: false,
-                message: 'Security verification failed. Please try again.',
-                turnstileError: turnstileValidation['error-codes']
             });
         }
 

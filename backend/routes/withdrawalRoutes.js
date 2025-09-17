@@ -3,10 +3,12 @@ const router = express.Router();
 const withdrawalController = require('../controllers/withdrawalController');
 const { protect } = require('../middlewares/authMiddleware');
 const adminAuth = require('../middleware/adminAuth');
+// Import Turnstile middleware for security verification on financial operations
+const { turnstileMiddleware } = require('../middlewares/turnstileMiddleware');
 
 // User routes - require authentication
 router.get('/campaign/:campaignId/summary', protect, withdrawalController.getWithdrawalSummary);
-router.post('/request', protect, withdrawalController.createWithdrawalRequest);
+router.post('/request', protect, turnstileMiddleware, withdrawalController.createWithdrawalRequest); // Security verification required for withdrawal requests
 router.get('/my-requests', protect, withdrawalController.getMyWithdrawalRequests);
 router.get('/request/:requestId', protect, withdrawalController.getWithdrawalRequestDetails);
 

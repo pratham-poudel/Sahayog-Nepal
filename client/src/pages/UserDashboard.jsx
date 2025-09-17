@@ -1880,7 +1880,7 @@ const UserDashboard = () => {
                               <div className="flex-shrink-0 h-10 w-10">
                                 <img
                                   className="h-10 w-10 rounded-md object-cover"
-                                  src={`${MINIO_URL}/uploads/${withdrawal.campaign.coverImage}`}
+                                  src={`${withdrawal.campaign.coverImage}`}
                                   alt=""
                                 />
                               </div>

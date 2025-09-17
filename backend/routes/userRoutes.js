@@ -21,6 +21,9 @@ const {
     honeypotProtection
 } = require('../middlewares/emailAbuseProtection');
 
+// Import Turnstile middleware for security verification
+const { turnstileMiddleware } = require('../middlewares/turnstileMiddleware');
+
 const { 
     registerUser, 
     loginUser, 
@@ -41,7 +44,11 @@ const upload = require('../middlewares/uploadMiddleware');
 
 // Public routes
 router.post('/register', authLimiter, registerUser);
-router.post('/login', authLimiter, loginUser);
+router.post('/login', 
+    authLimiter, 
+    turnstileMiddleware,         // Security verification required for login
+    loginUser
+);
 
 // OTP Login routes with comprehensive protection
 router.post('/send-login-otp', 
@@ -54,6 +61,7 @@ router.post('/send-login-otp',
     emailDomainProtection,       // Validate email domain and block disposable emails
     suspiciousPatternDetection,  // Detect suspicious patterns
     emailFrequencyProtection,    // Prevent rapid emails to same address
+    turnstileMiddleware,         // Security verification required for OTP requests
     sendLoginOtp
 );
 

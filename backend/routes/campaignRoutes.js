@@ -19,6 +19,7 @@ const {
     getCampaignsByHierarchicalCategory
 } = require('../controllers/campaignController');
 const { protect, admin } = require('../middlewares/authMiddleware');
+const { turnstileMiddleware } = require('../middlewares/turnstileMiddleware');
 
 // Public routes
 const generateCampaignsCacheKey = (req) => {
@@ -58,7 +59,7 @@ router.get('/search/:searchTerm', searchCampaigns);
 router.get('/:id',cacheMiddleware((req) => `campaignById:${req.params.id}`) ,getCampaignById);
 
 // Protected routes for campaign creators
-router.post('/', protect, createCampaign);
+router.post('/', protect, turnstileMiddleware, createCampaign);
 router.put('/:id', protect, updateCampaign);
 
 router.get('/user/campaigns', protect,getUserCampaigns);

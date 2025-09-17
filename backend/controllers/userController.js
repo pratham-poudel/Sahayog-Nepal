@@ -354,57 +354,18 @@ exports.verifyOtp = async (req, res) => {
 // @desc    Login user
 // @route   POST /api/users/login
 // @access  Public
-const validateTurnstileToken = async (token, remoteip = null) => {
-    try {
-        // Prepare form data for Cloudflare API
-        const formData = new URLSearchParams();
-        formData.append('secret', process.env.TURNSTILE_SECRET_KEY || '0x4AAAAAABeptpJznEzP7L6YNrikPDLjnx4');
-        formData.append('response', token);
-        if (remoteip) {
-            formData.append('remoteip', remoteip);
-        }
-
-        const response = await axios.post('https://challenges.cloudflare.com/turnstile/v0/siteverify', formData, {
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            }
-        });
-
-        console.log('Turnstile validation response:', response.data);
-        return response.data;
-    } catch (error) {
-        console.error('Turnstile validation error:', error);
-        return { success: false, 'error-codes': ['network-error'] };
-    }
-};
-
-// Updated login function
+// Note: Turnstile validation is now handled by middleware
 exports.loginUser = async (req, res) => {
     try {
-        const { email, password, turnstileToken } = req.body;
+        const { email, password } = req.body;
         
-        // Validate required fields
-        if (!email || !password || !turnstileToken) {
+        // Validate required fields (turnstile validation handled by middleware)
+        if (!email || !password) {
             return res.status(400).json({
                 success: false,
-                message: 'Email, password, and security verification are required'
+                message: 'Email and password are required'
             });
         }
-
-        // Validate Turnstile token
-        const clientIp = req.ip || req.connection.remoteAddress || req.socket.remoteAddress;
-        const turnstileValidation = await validateTurnstileToken(turnstileToken, clientIp);
-        
-        if (!turnstileValidation.success) {
-            console.log('Turnstile validation failed:', turnstileValidation);
-            return res.status(400).json({
-                success: false,
-                message: 'Security verification failed. Please try again.',
-                turnstileError: turnstileValidation['error-codes']
-            });
-        }
-
-        console.log('Turnstile validation successful:', turnstileValidation);
 
         // Check if user exists
         const user = await User.findOne({ email }).select('+password');
@@ -468,33 +429,16 @@ exports.loginUser = async (req, res) => {
 // @desc    Send OTP for login
 // @route   POST /api/users/send-login-otp
 // @access  Public
+// Note: Turnstile validation is now handled by middleware
 exports.sendLoginOtp = async (req, res) => {
     try {
-        const { email, turnstileToken } = req.body;
+        const { email } = req.body;
 
-        // Validate required fields
-        if (!email || !turnstileToken) {
+        // Validate required fields (turnstile validation handled by middleware)
+        if (!email) {
             return res.status(400).json({
                 success: false,
-                message: 'Email and Turnstile token are required'
-            });
-        }
-
-        // Verify Turnstile token
-        const turnstileResponse = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: `secret=${process.env.TURNSTILE_SECRET_KEY}&response=${turnstileToken}`,
-        });
-
-        const turnstileResult = await turnstileResponse.json();
-        
-        if (!turnstileResult.success) {
-            return res.status(400).json({
-                success: false,
-                message: 'Turnstile verification failed. Please try again.'
+                message: 'Email is required'
             });
         }
 

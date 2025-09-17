@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
 import { useToast } from '../hooks/use-toast';
@@ -18,6 +18,7 @@ const Login = () => {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const { loginAndRedirect } = useAuthContext();
+  const turnstileRef = useRef();
   const handleTurnstileVerify = (token) => {
     console.log("Turnstile token received in login");
     setTurnstileToken(token);
@@ -27,12 +28,26 @@ const Login = () => {
     setTurnstileToken('');
   };
 
-  const handleTurnstileError = () => {
+  const handleTurnstileError = (errorCode) => {
     setTurnstileToken('');
     toast({
       title: "Security verification failed",
       description: "Please try again.",
-      variant: "destructive"    });
+      variant: "destructive"
+    });
+  };
+
+  // Reset turnstile token when switching between login modes
+  const switchLoginMode = (mode) => {
+    setLoginMode(mode);
+    setTurnstileToken('');
+    setOtpStep(1);
+    setOtpEmail('');
+    
+    // Reset turnstile widget
+    if (turnstileRef.current) {
+      turnstileRef.current.reset();
+    }
   };
   
   // Form for email/password login
@@ -185,10 +200,7 @@ const Login = () => {
 
   // Reset to login mode selection
   const resetLoginMode = () => {
-    setLoginMode('password');
-    setOtpStep(1);
-    setOtpEmail('');
-    setTurnstileToken('');
+    switchLoginMode('password');
   };
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 relative flex items-center justify-center p-4 overflow-hidden">
@@ -306,11 +318,7 @@ const Login = () => {
               <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
                 <button
                   type="button"
-                  onClick={() => {
-                    setLoginMode('password');
-                    setOtpStep(1);
-                    setTurnstileToken('');
-                  }}
+                  onClick={() => switchLoginMode('password')}
                   className={`flex-1 flex items-center justify-center py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
                     loginMode === 'password'
                       ? 'bg-white dark:bg-gray-700 text-[#8B2325] dark:text-[#e05759] shadow-sm'
@@ -322,11 +330,7 @@ const Login = () => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    setLoginMode('otp');
-                    setOtpStep(1);
-                    setTurnstileToken('');
-                  }}
+                  onClick={() => switchLoginMode('otp')}
                   className={`flex-1 flex items-center justify-center py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
                     loginMode === 'otp'
                       ? 'bg-white dark:bg-gray-700 text-[#8B2325] dark:text-[#e05759] shadow-sm'
@@ -411,16 +415,20 @@ const Login = () => {
                   </button>
                 </div>
 
+                {/* Single Turnstile Widget shared between both login modes */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Security Verification
                   </label>
                   <TurnstileWidget
+                    ref={turnstileRef}
                     siteKey={TURNSTILE_CONFIG.siteKey}
                     onVerify={handleTurnstileVerify}
                     onExpire={handleTurnstileExpire}
                     onError={handleTurnstileError}
                     theme="light"
+                    autoReset={true}
+                    resetDelay={3000}
                   />
                   {!turnstileToken && (
                     <p className="mt-2 text-sm text-amber-600 dark:text-amber-400">
@@ -494,31 +502,7 @@ const Login = () => {
                       )}
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Security Verification
-                      </label>
-                      <TurnstileWidget
-                        siteKey={TURNSTILE_CONFIG.siteKey}
-                        onVerify={handleTurnstileVerify}
-                        onExpire={handleTurnstileExpire}
-                        onError={handleTurnstileError}
-                        theme="light"
-                      />
-                      {!turnstileToken && (
-                        <p className="mt-2 text-sm text-amber-600 dark:text-amber-400">
-                          Please complete the security verification before continuing
-                        </p>
-                      )}
-                      {turnstileToken && (
-                        <p className="mt-2 text-sm text-green-600 dark:text-green-400 flex items-center">
-                          <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                          Security verification completed
-                        </p>
-                      )}
-                    </div>
+                    {/* Security verification status is shown above in the shared widget */}
 
                     <motion.button
                       whileHover={{ scale: 1.02 }}
