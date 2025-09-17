@@ -279,7 +279,7 @@ const DonorCard = React.memo(({ donor, index }) => {
             <div className="flex items-center justify-center gap-3">
               <div className="bg-white/20 backdrop-blur-sm rounded-full px-4 py-1.5 border border-white/30">
                 <p className="text-white/95 text-sm font-semibold">
-                  Hero since {new Date(donor.donor.createdAt).getFullYear()}
+                  Pretty Human since {new Date(donor.donor.createdAt).getFullYear()}
                 </p>
               </div>
             </div>

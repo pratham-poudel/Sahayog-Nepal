@@ -190,7 +190,7 @@ const Profile = () => {
         keywords="profile settings, account management, personal information"
       />
       
-      <div className="bg-gray-50 py-12 md:py-16">
+      <div className="bg-gray-50 dark:bg-gray-900 py-12 md:py-16">
         <div className="container mx-auto px-4 md:px-6 lg:px-8">
           <motion.div 
             className="max-w-4xl mx-auto"
@@ -198,11 +198,11 @@ const Profile = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <h1 className="text-3xl md:text-4xl font-poppins font-bold mb-8">Profile Settings</h1>
+            <h1 className="text-3xl md:text-4xl font-poppins font-bold mb-8 text-gray-900 dark:text-white">Profile Settings</h1>
             
-            <div className="bg-white rounded-xl shadow-md overflow-hidden">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
               <div className="md:flex">
-                <div className="md:w-1/3 bg-gray-50 p-6">
+                <div className="md:w-1/3 bg-gray-50 dark:bg-gray-700 p-6">
                   <div className="flex flex-col items-center mb-6">
                     <div className="relative mb-4">
                       {user?.profilePicture ? (
@@ -212,8 +212,8 @@ const Profile = () => {
                           className="w-24 h-24 rounded-full object-cover border-2 border-white shadow-lg"
                         />
                       ) : (
-                        <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center border-2 border-white shadow-lg">
-                          <span className="text-3xl font-medium text-gray-500">{user?.name?.charAt(0).toUpperCase() || 'U'}</span>
+                        <div className="w-24 h-24 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center border-2 border-white dark:border-gray-700 shadow-lg">
+                          <span className="text-3xl font-medium text-gray-500 dark:text-gray-300">{user?.name?.charAt(0).toUpperCase() || 'U'}</span>
                         </div>
                       )}
                       <div className="absolute bottom-0 right-0">
@@ -225,43 +225,43 @@ const Profile = () => {
                           dragDropArea={false}
                           className="inline-block"
                         >
-                          <div className="bg-white p-1 rounded-full shadow-md text-gray-600 hover:text-gray-800 cursor-pointer">
+                          <div className="bg-white dark:bg-gray-700 p-1 rounded-full shadow-md text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 cursor-pointer transition-colors">
                             <i className="ri-camera-line text-lg"></i>
                             <span className="sr-only">Upload profile picture</span>
                           </div>
                         </FileUpload>
                       </div>
                     </div>
-                    <h3 className="text-lg font-medium">{user?.name || 'User'}</h3>
-                    <p className="text-gray-500 text-sm">Member since {new Date(user?.createdAt || Date.now()).getFullYear()}</p>
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">{user?.name || 'User'}</h3>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm">Member since {new Date(user?.createdAt || Date.now()).getFullYear()}</p>
                   </div>
                   
                   <nav className="space-y-1">
                     <button 
-                      className={`w-full text-left px-4 py-2 rounded-md ${
+                      className={`w-full text-left px-4 py-2 rounded-md transition-colors ${
                         activeTab === 'personal' 
-                          ? 'bg-primary-50 text-primary-700 font-medium' 
-                          : 'hover:bg-gray-100 text-gray-700'
+                          ? 'bg-[#8B2635] bg-opacity-10 text-[#8B2635] dark:bg-[#8B2635] dark:bg-opacity-20 dark:text-[#E5A4B1] font-medium' 
+                          : 'hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
                       }`}
                       onClick={() => setActiveTab('personal')}
                     >
                       Personal Information
                     </button>
                     <button 
-                      className={`w-full text-left px-4 py-2 rounded-md ${
+                      className={`w-full text-left px-4 py-2 rounded-md transition-colors ${
                         activeTab === 'password' 
-                          ? 'bg-primary-50 text-primary-700 font-medium' 
-                          : 'hover:bg-gray-100 text-gray-700'
+                          ? 'bg-[#8B2635] bg-opacity-10 text-[#8B2635] dark:bg-[#8B2635] dark:bg-opacity-20 dark:text-[#E5A4B1] font-medium' 
+                          : 'hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
                       }`}
                       onClick={() => setActiveTab('password')}
                     >
                       Change Password
                     </button>
                     <button 
-                      className={`w-full text-left px-4 py-2 rounded-md ${
+                      className={`w-full text-left px-4 py-2 rounded-md transition-colors ${
                         activeTab === 'preferences' 
-                          ? 'bg-primary-50 text-primary-700 font-medium' 
-                          : 'hover:bg-gray-100 text-gray-700'
+                          ? 'bg-[#8B2635] bg-opacity-10 text-[#8B2635] dark:bg-[#8B2635] dark:bg-opacity-20 dark:text-[#E5A4B1] font-medium' 
+                          : 'hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
                       }`}
                       onClick={() => setActiveTab('preferences')}
                     >
@@ -277,18 +277,18 @@ const Profile = () => {
                       animate={{ opacity: 1 }}
                       transition={{ duration: 0.3 }}
                     >
-                      <h2 className="text-xl font-semibold mb-6">Personal Information</h2>
+                      <h2 className="text-xl font-semibold mb-6 text-gray-900 dark:text-white">Personal Information</h2>
                       
                       <form onSubmit={handleSubmitPersonal(onSubmitPersonal)}>
                         <div className="space-y-4">
                           <div>
-                            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                            <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                               Full Name
                             </label>
                             <input
                               id="name"
                               type="text"
-                              className={`w-full px-4 py-2 border ${errorsPersonal.name ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-600`}
+                              className={`w-full px-4 py-2 border ${errorsPersonal.name ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8B2635] focus:border-[#8B2635] placeholder-gray-500 dark:placeholder-gray-400`}
                               {...registerPersonal("name", { required: "Name is required" })}
                             />
                             {errorsPersonal.name && (
@@ -297,13 +297,13 @@ const Profile = () => {
                           </div>
                           
                           <div>
-                            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                            <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                               Email Address
                             </label>
                             <input
                               id="email"
                               type="email"
-                              className={`w-full px-4 py-2 border ${errorsPersonal.email ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-600`}
+                              className={`w-full px-4 py-2 border ${errorsPersonal.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8B2635] focus:border-[#8B2635] placeholder-gray-500 dark:placeholder-gray-400`}
                               {...registerPersonal("email", { 
                                 required: "Email is required",
                                 pattern: {
@@ -318,26 +318,26 @@ const Profile = () => {
                           </div>
                           
                           <div>
-                            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                               Phone Number
                             </label>
                             <input
                               id="phone"
                               type="tel"
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-600"
+                              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8B2635] focus:border-[#8B2635] placeholder-gray-500 dark:placeholder-gray-400"
                               placeholder="+977 98XXXXXXXX"
                               {...registerPersonal("phone")}
                             />
                           </div>
                           
                           <div>
-                            <label htmlFor="bio" className="block text-sm font-medium text-gray-700 mb-1">
+                            <label htmlFor="bio" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                               Bio
                             </label>
                             <textarea
                               id="bio"
                               rows="4"
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-600"
+                              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8B2635] focus:border-[#8B2635] placeholder-gray-500 dark:placeholder-gray-400 resize-vertical"
                               placeholder="Tell us a little about yourself..."
                               {...registerPersonal("bio")}
                             ></textarea>
@@ -347,9 +347,9 @@ const Profile = () => {
                         <div className="mt-6">
                           <motion.button
                             type="submit"
-                            className="px-6 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-70"
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
+                            className="px-6 py-3 bg-[#8B2635] text-white font-medium rounded-lg hover:bg-[#7A1E2B] focus:outline-none focus:ring-2 focus:ring-[#8B2635] focus:ring-opacity-50 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
                             disabled={isLoading}
                           >
                             {isLoading ? 'Saving...' : 'Save Changes'}
@@ -365,18 +365,18 @@ const Profile = () => {
                       animate={{ opacity: 1 }}
                       transition={{ duration: 0.3 }}
                     >
-                      <h2 className="text-xl font-semibold mb-6">Change Password</h2>
+                      <h2 className="text-xl font-semibold mb-6 text-gray-900 dark:text-white">Change Password</h2>
                       
                       <form id="password-form" onSubmit={handleSubmitPassword(onSubmitPassword)}>
                         <div className="space-y-4">
                           <div>
-                            <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                            <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                               Current Password
                             </label>
                             <input
                               id="currentPassword"
                               type="password"
-                              className={`w-full px-4 py-2 border ${errorsPassword.currentPassword ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-600`}
+                              className={`w-full px-4 py-2 border ${errorsPassword.currentPassword ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8B2635] focus:border-[#8B2635] placeholder-gray-500 dark:placeholder-gray-400`}
                               {...registerPassword("currentPassword", { required: "Current password is required" })}
                             />
                             {errorsPassword.currentPassword && (
@@ -385,13 +385,13 @@ const Profile = () => {
                           </div>
                           
                           <div>
-                            <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                            <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                               New Password
                             </label>
                             <input
                               id="newPassword"
                               type="password"
-                              className={`w-full px-4 py-2 border ${errorsPassword.newPassword ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-600`}
+                              className={`w-full px-4 py-2 border ${errorsPassword.newPassword ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8B2635] focus:border-[#8B2635] placeholder-gray-500 dark:placeholder-gray-400`}
                               {...registerPassword("newPassword", { 
                                 required: "New password is required",
                                 minLength: {
@@ -406,13 +406,13 @@ const Profile = () => {
                           </div>
                           
                           <div>
-                            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                               Confirm New Password
                             </label>
                             <input
                               id="confirmPassword"
                               type="password"
-                              className={`w-full px-4 py-2 border ${errorsPassword.confirmPassword ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-600`}
+                              className={`w-full px-4 py-2 border ${errorsPassword.confirmPassword ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8B2635] focus:border-[#8B2635] placeholder-gray-500 dark:placeholder-gray-400`}
                               {...registerPassword("confirmPassword", { 
                                 required: "Please confirm your password",
                                 validate: value => value === newPassword || "Passwords do not match"
@@ -427,9 +427,9 @@ const Profile = () => {
                         <div className="mt-6">
                           <motion.button
                             type="submit"
-                            className="px-6 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-70"
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
+                            className="px-6 py-3 bg-[#8B2635] text-white font-medium rounded-lg hover:bg-[#7A1E2B] focus:outline-none focus:ring-2 focus:ring-[#8B2635] focus:ring-opacity-50 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
                             disabled={isLoading}
                           >
                             {isLoading ? 'Changing Password...' : 'Change Password'}
@@ -445,11 +445,11 @@ const Profile = () => {
                       animate={{ opacity: 1 }}
                       transition={{ duration: 0.3 }}
                     >
-                      <h2 className="text-xl font-semibold mb-6">Preferences</h2>
+                      <h2 className="text-xl font-semibold mb-6 text-gray-900 dark:text-white">Preferences</h2>
                       
                       <div className="space-y-4">
                         <div>
-                          <h3 className="font-medium mb-2">Email Notifications</h3>
+                          <h3 className="font-medium mb-2 text-gray-900 dark:text-white">Email Notifications</h3>
                           <div className="space-y-2">
                             <div className="flex items-center">
                               <input
@@ -458,7 +458,7 @@ const Profile = () => {
                                 className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-600"
                                 defaultChecked={user?.notificationSettings?.newDonations ?? true}
                               />
-                              <label htmlFor="notify-new-donations" className="ml-2 text-sm text-gray-700">
+                              <label htmlFor="notify-new-donations" className="ml-2 text-sm text-gray-700 dark:text-gray-300">
                                 New donations to your campaigns
                               </label>
                             </div>
@@ -466,10 +466,10 @@ const Profile = () => {
                               <input
                                 id="notify-campaign-updates"
                                 type="checkbox"
-                                className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-600"
+                                className="h-4 w-4 text-primary-600 border-gray-300 dark:border-gray-600 rounded focus:ring-primary-600"
                                 defaultChecked={user?.notificationSettings?.emailUpdates ?? true}
                               />
-                              <label htmlFor="notify-campaign-updates" className="ml-2 text-sm text-gray-700">
+                              <label htmlFor="notify-campaign-updates" className="ml-2 text-sm text-gray-700 dark:text-gray-300">
                                 Updates to campaigns you've donated to
                               </label>
                             </div>
@@ -477,10 +477,10 @@ const Profile = () => {
                               <input
                                 id="notify-newsletter"
                                 type="checkbox"
-                                className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-600"
+                                className="h-4 w-4 text-primary-600 border-gray-300 dark:border-gray-600 rounded focus:ring-primary-600"
                                 defaultChecked={user?.notificationSettings?.marketingEmails ?? false}
                               />
-                              <label htmlFor="notify-newsletter" className="ml-2 text-sm text-gray-700">
+                              <label htmlFor="notify-newsletter" className="ml-2 text-sm text-gray-700 dark:text-gray-300">
                                 Newsletter and platform updates
                               </label>
                             </div>
@@ -491,9 +491,9 @@ const Profile = () => {
                       <div className="mt-6">
                         <motion.button
                           type="button"
-                          className="px-6 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
+                          className="px-6 py-3 bg-[#8B2635] text-white font-medium rounded-lg hover:bg-[#7A1E2B] focus:outline-none focus:ring-2 focus:ring-[#8B2635] focus:ring-opacity-50 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
                           onClick={() => {
                             const settings = {
                               emailUpdates: document.getElementById('notify-campaign-updates').checked,

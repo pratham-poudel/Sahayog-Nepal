@@ -49,7 +49,26 @@ import TurnstileWidget from '../components/common/TurnstileWidget';
 const UserDashboard = () => {
   const [location, setLocation] = useLocation();
   const { user, isAuthenticated, loading: authLoading, logout, refreshAuth } = useAuth();
-  const [activeTab, setActiveTab] = useState('overview');
+  
+  // Initialize activeTab from URL hash or localStorage, fallback to 'overview'
+  const getInitialTab = () => {
+    // First check if there's a hash in the URL
+    const hash = window.location.hash.substring(1);
+    if (hash && ['overview', 'campaigns', 'donations', 'bankAccounts', 'withdrawals', 'profile'].includes(hash)) {
+      return hash;
+    }
+    
+    // Then check localStorage
+    const savedTab = localStorage.getItem('userDashboard_activeTab');
+    if (savedTab && ['overview', 'campaigns', 'donations', 'bankAccounts', 'withdrawals', 'profile'].includes(savedTab)) {
+      return savedTab;
+    }
+    
+    // Default fallback
+    return 'overview';
+  };
+  
+  const [activeTab, setActiveTab] = useState(getInitialTab());
   const [userCampaigns, setUserCampaigns] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const { theme, toggleTheme } = useTheme();
@@ -307,12 +326,39 @@ const UserDashboard = () => {
     }
   };
   
+  // Handle tab changes with persistence
+  const handleTabChange = (tabName) => {
+    setActiveTab(tabName);
+    
+    // Save to localStorage
+    localStorage.setItem('userDashboard_activeTab', tabName);
+    
+    // Update URL hash without triggering navigation
+    if (window.location.hash.substring(1) !== tabName) {
+      window.history.replaceState(null, '', `#${tabName}`);
+    }
+  };
+
   // Add this computed value after all useEffect hooks
   // Filter campaigns based on active filter
   const filteredCampaigns = activeFilter
     ? userCampaigns.filter(campaign => campaign.status === activeFilter)
     : userCampaigns;
   
+  // Listen for hash changes (for browser back/forward buttons)
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.substring(1);
+      if (hash && ['overview', 'campaigns', 'donations', 'bankAccounts', 'withdrawals', 'profile'].includes(hash)) {
+        setActiveTab(hash);
+        localStorage.setItem('userDashboard_activeTab', hash);
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
   // Redirect if not authenticated
   useEffect(() => {
     if (!authLoading && !isAuthenticated && !localStorage.getItem('token')) {
@@ -638,7 +684,7 @@ const UserDashboard = () => {
           });
         } else {
           toast({
-            title: "Withdrawal failed",
+            title: "Submission failed",
             description: data.message || "Failed to submit withdrawal request.",
             variant: "destructive"
           });
@@ -646,9 +692,21 @@ const UserDashboard = () => {
       }
     } catch (error) {
       console.error('Error submitting withdrawal:', error);
+      
+      // Enhanced error handling for different error types
+      let errorMessage = "An error occurred while submitting your withdrawal request.";
+      
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error.response && error.response.data && error.response.data.message) {
+        errorMessage = error.response.data.message;
+      }
+      
       toast({
-        title: "Error",
-        description: "An error occurred while submitting your withdrawal request.",
+        title: "Submission failed",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
@@ -837,7 +895,7 @@ const UserDashboard = () => {
           </div>
           <div className="flex gap-2">
             <Link href="/start-campaign">
-              <a className="inline-flex items-center px-4 py-2 bg-primary-600 dark:bg-primary-500 text-white font-medium rounded-lg hover:bg-primary-700 dark:hover:bg-primary-600 transition-colors">
+              <a className="inline-flex items-center px-4 py-2 bg-[#800000] text-white font-medium rounded-lg hover:bg-[#660000] transition-colors">
                 <PlusIcon className="w-5 h-5 mr-2" />
                 New Campaign
               </a>
@@ -1004,7 +1062,7 @@ const UserDashboard = () => {
                 </div>
               ))}
               <div className="p-4 text-center">
-                <Link href="#" onClick={() => setActiveTab('campaigns')}>
+                <Link href="#" onClick={() => handleTabChange('campaigns')}>
                   <a className="text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300">
                     View all campaigns
                   </a>
@@ -1179,221 +1237,267 @@ const UserDashboard = () => {
         </div>
 
         {/* Campaign List */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {isLoading ? (
-            <div className="p-6 space-y-4">
+            <div className="col-span-full space-y-6">
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="animate-pulse flex space-x-4">
-                  <div className="bg-gray-200 dark:bg-gray-700 h-24 w-24 rounded-lg"></div>
-                  <div className="flex-1 space-y-3 py-1">
-                    <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
-                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
-                    <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+                <div key={i} className="animate-pulse bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6">
+                  <div className="flex space-x-4">
+                    <div className="bg-gray-200 dark:bg-gray-700 h-32 w-48 rounded-xl flex-shrink-0"></div>
+                    <div className="flex-1 space-y-4 py-1">
+                      <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+                      <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+                      <div className="flex gap-2">
+                        <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-24"></div>
+                        <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-24"></div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
           ) : filteredCampaigns.length > 0 ? (
             filteredCampaigns.map(campaign => (
-              <div key={campaign._id} className="bg-white dark:bg-gray-800 rounded-xl shadow border border-gray-100 dark:border-gray-700 overflow-hidden">
-                <div className="flex flex-col md:flex-row gap-6">
-                  <div className="md:w-1/4">
+              <div key={campaign._id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 overflow-hidden group">
+                {/* Card Header with Image */}
+                <div className="relative">
+                  <div className="aspect-w-16 aspect-h-9 bg-gray-100 dark:bg-gray-700">
                     <img 
                       src={getCoverImageUrl(campaign)} 
                       alt={campaign.title}
-                      className="w-full h-48 md:h-40 object-cover rounded-lg shadow-sm"
+                      className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   </div>
-                  <div className="flex-1">
-                    <div className="flex flex-col md:flex-row justify-between mb-2">
-                      <div>
-                        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">
-                          {campaign.title}
-                        </h3>
-                        <div className="flex items-center flex-wrap gap-2 mb-2">
-                          <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                            {campaign.category}
-                          </span>
-                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            campaign.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
-                            campaign.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                            campaign.status === 'completed' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' :
-                            campaign.status === 'rejected' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
-                            'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
-                          }`}>
-                            {campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1)}
-                          </span>
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {campaign.daysLeft > 0 ? `${campaign.daysLeft} days left` : 'Ended'}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="mt-2 md:mt-0">
-                        <div className="inline-flex items-center px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-sm">
-                          <CalendarIcon className="w-4 h-4 mr-1" />
-                          {new Date(campaign.startDate).toLocaleDateString()}
-                        </div>
+                  
+                  {/* Status Badge Overlay */}
+                  <div className="absolute top-4 left-4 flex gap-2">
+                    <span className={`px-3 py-1.5 rounded-full text-xs font-semibold shadow-md ${
+                      campaign.status === 'active' ? 'bg-green-500 text-white' :
+                      campaign.status === 'pending' ? 'bg-yellow-500 text-white' :
+                      campaign.status === 'completed' ? 'bg-blue-500 text-white' :
+                      campaign.status === 'rejected' ? 'bg-red-500 text-white' :
+                      'bg-gray-500 text-white'
+                    }`}>
+                      {campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1)}
+                    </span>
+                    <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-white/90 text-gray-800 shadow-md">
+                      {campaign.category}
+                    </span>
+                  </div>
+
+                  {/* Days Left Badge */}
+                  <div className="absolute top-4 right-4">
+                    <div className="bg-white/90 backdrop-blur-sm rounded-full px-3 py-1.5 shadow-md">
+                      <div className="flex items-center text-xs font-medium text-gray-800">
+                        <CalendarIcon className="w-4 h-4 mr-1.5" />
+                        {campaign.daysLeft > 0 ? `${campaign.daysLeft} days left` : 'Ended'}
                       </div>
                     </div>
-                    
-                    <p className="text-gray-600 dark:text-gray-400 text-sm mb-3 line-clamp-2">
-                      {campaign.shortDescription}
+                  </div>
+                </div>
+
+                {/* Card Content */}
+                <div className="p-6 space-y-4">
+                  {/* Title and Date */}
+                  <div className="space-y-2">
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white line-clamp-2 leading-tight">
+                      {campaign.title}
+                    </h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
+                      <CalendarIcon className="w-4 h-4 mr-1.5" />
+                      Started {new Date(campaign.startDate).toLocaleDateString()}
                     </p>
+                  </div>
+                  
+                  {/* Description */}
+                  <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed line-clamp-3">
+                    {campaign.shortDescription}
+                  </p>
+                  
+                  {/* Progress Section */}
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-lg font-bold text-gray-900 dark:text-white">
+                        Rs. {campaign.amountRaised.toLocaleString()}
+                      </span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                        of Rs. {campaign.targetAmount.toLocaleString()}
+                      </span>
+                    </div>
                     
-                    <div className="mb-4">
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="font-medium text-gray-900 dark:text-white">Rs. {campaign.amountRaised.toLocaleString()} raised</span>
-                        <span className="text-gray-600 dark:text-gray-400">of Rs. {campaign.targetAmount.toLocaleString()}</span>
-                      </div>
+                    {/* Enhanced Progress Bar */}
+                    <div className="relative">
                       <Progress 
                         value={campaign.targetAmount > 0 ? Math.min((campaign.amountRaised / campaign.targetAmount) * 100, 100) : 0}
-                        className="h-2 bg-gray-200 dark:bg-gray-700" 
-                        indicatorClassName="bg-blue-600 dark:bg-blue-500"
+                        className="h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden" 
+                        indicatorClassName="bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-400 dark:to-blue-500 rounded-full transition-all duration-500"
                       />
-                      <div className="flex justify-between text-xs mt-1">
-                        <span className="text-gray-600 dark:text-gray-400">
+                      <div className="flex justify-between items-center mt-2">
+                        <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">
                           {campaign.targetAmount > 0 ? Math.round((campaign.amountRaised / campaign.targetAmount) * 100) : 0}% funded
                         </span>
-                        <span className="text-gray-600 dark:text-gray-400">
-                          {campaign.daysLeft} days left
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {campaign.donors || 0} donors
                         </span>
                       </div>
-                      {/* Amount Withdrawn Information */}
-                      {(campaign.amountWithdrawn || 0) > 0 && (
-                        <div className="flex justify-between text-xs mt-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/20 rounded">
-                          <span className="text-blue-600 dark:text-blue-400 font-medium">
+                    </div>
+
+                    {/* Amount Withdrawn Information */}
+                    {(campaign.amountWithdrawn || 0) > 0 && (
+                      <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border-l-4 border-blue-500">
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-blue-700 dark:text-blue-300 font-medium">
                             Rs. {(campaign.amountWithdrawn || 0).toLocaleString()} withdrawn
                           </span>
-                          <span className="text-blue-500 dark:text-blue-300">
+                          <span className="text-blue-600 dark:text-blue-400 font-semibold">
                             Rs. {((campaign.amountRaised || 0) - (campaign.amountWithdrawn || 0)).toLocaleString()} available
                           </span>
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="p-4 border-t border-gray-100 dark:border-gray-700 flex flex-wrap justify-between items-center gap-2">
-                      <div className="flex flex-wrap gap-2">
-                        <Link href={`/campaign/${campaign._id}`}>
-                          <a className="py-1.5 px-3 bg-[#8B2325] hover:bg-[#7a1f21] text-white rounded-md text-sm font-medium transition-colors flex items-center gap-1">
-                            View Campaign
-                            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M9 6L15 12L9 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path>
-                            </svg>
-                          </a>
-                        </Link>
-                        
-                        {campaign.status === 'pending' && (
-                          <Link href={`/edit-campaign/${campaign._id}`}>
-                            <a className="inline-flex items-center px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md text-sm hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
-                              <PencilIcon className="w-4 h-4 mr-1" />
-                              Edit
-                            </a>
-                          </Link>
-                        )}
-                        
-                        {campaign.status === 'active' && (
-                          <>
-                            <button 
-                              onClick={() => showUpdateModal(campaign)}
-                              className="inline-flex items-center px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-md text-sm hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
-                            >
-                              <ChatBubbleLeftRightIcon className="w-4 h-4 mr-1" />
-                              Post Update
-                            </button>
-                          </>
-                        )}
-                        
-                        {(campaign.status === 'active' || campaign.status === 'completed') && (
-                          <Link href={`/detailstatistic/${campaign._id}`}>
-                            <a className="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg text-sm font-medium hover:from-indigo-600 hover:to-purple-700 transform hover:scale-105 transition-all duration-200 shadow-md hover:shadow-lg">
-                              <ChartPieIcon className="w-4 h-4 mr-2" />
-                              View Analytics
-                            </a>
-                          </Link>
-                        )}
-                        
-                        {((campaign.amountRaised - (campaign.amountWithdrawn || 0)) >= 10000) && (
-                          (() => {
-                            const hasPendingRequest = withdrawals.some(withdrawal => 
-                              withdrawal.campaign._id === campaign._id && 
-                              (withdrawal.status === 'pending' || withdrawal.status === 'processing')
-                            );
-
-                            if (hasPendingRequest) {
-                              return (
-                                <button 
-                                  disabled
-                                  className="inline-flex items-center px-3 py-1.5 bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 rounded-lg text-sm font-medium cursor-not-allowed"
-                                  title="Withdrawal request pending"
-                                >
-                                  <ClockIcon className="w-4 h-4 mr-2" />
-                                  Withdrawal Pending
-                                </button>
-                              );
-                            }
-
-                            return (
-                              <button 
-                                onClick={() => initiateWithdrawal(campaign)}
-                                className="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg text-sm font-medium hover:from-green-600 hover:to-emerald-700 transform hover:scale-105 transition-all duration-200 shadow-md hover:shadow-lg"
-                              >
-                                <BanknotesIcon className="w-4 h-4 mr-2" />
-                                Withdraw Funds
-                              </button>
-                            );
-                          })()
-                        )}
-                        
-                        {campaign.status === 'pending' && (
-                          <button 
-                            onClick={() => handleCancelCampaign(campaign._id)}
-                            className="inline-flex items-center px-3 py-1.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-md text-sm hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
-                          >
-                            <XMarkIcon className="w-4 h-4 mr-1" />
-                            Cancel
-                          </button>
-                        )}
-                        
-                        {campaign.status === 'rejected' && (
-                          <button 
-                            onClick={() => showFeedback(campaign)}
-                            className="inline-flex items-center px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded-md text-sm hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors"
-                          >
-                            <InformationCircleIcon className="w-4 h-4 mr-1" />
-                            View Feedback
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {campaign.updates && campaign.updates.length > 0 && (
-                      <div className="border-t border-gray-100 dark:border-gray-700 p-4">
-                        <div className="flex items-center mb-2">
-                          <ChatBubbleLeftRightIcon className="w-4 h-4 text-blue-600 dark:text-blue-400 mr-2" />
-                          <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Recent Updates</h4>
-                        </div>
-                        
-                        <div className="text-sm text-gray-600 dark:text-gray-400">
-                          <div className="mb-1">
-                            <span className="font-medium">{campaign.updates[campaign.updates.length - 1].title}</span> - {new Date(campaign.updates[campaign.updates.length - 1].date).toLocaleDateString()}
-                          </div>
-                          <p className="line-clamp-2">
-                            {campaign.updates[campaign.updates.length - 1].content}
-                          </p>
-                          
-                          {campaign.updates.length > 1 && (
-                            <Link href={`/campaign/${campaign._id}#updates`}>
-                              <a className="text-primary-600 dark:text-primary-400 text-xs hover:underline inline-flex items-center mt-1">
-                                View all {campaign.updates.length} updates
-                              </a>
-                            </Link>
-                          )}
                         </div>
                       </div>
                     )}
                   </div>
                 </div>
+
+                {/* Action Buttons Section */}
+                <div className="px-6 pb-6">
+                  <div className="flex flex-wrap gap-2 justify-start">
+                    {/* Primary Action - View Campaign */}
+                    <Link href={`/campaign/${campaign._id}`}>
+                      <a className="inline-flex items-center px-4 py-2.5 bg-gradient-to-r from-[#8B2325] to-[#a52729] hover:from-[#7a1f21] hover:to-[#8B2325] text-white rounded-lg text-sm font-semibold transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+                        View Campaign
+                        <svg className="w-4 h-4 ml-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M9 6L15 12L9 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path>
+                        </svg>
+                      </a>
+                    </Link>
+                    
+                    {/* Secondary Actions */}
+                    {campaign.status === 'pending' && (
+                      <Link href={`/edit-campaign/${campaign._id}`}>
+                        <a className="inline-flex items-center px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200">
+                          <PencilIcon className="w-4 h-4 mr-2" />
+                          Edit
+                        </a>
+                      </Link>
+                    )}
+                    
+                    {campaign.status === 'active' && (
+                      <button 
+                        onClick={() => showUpdateModal(campaign)}
+                        className="inline-flex items-center px-4 py-2.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-lg text-sm font-medium hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-all duration-200"
+                      >
+                        <ChatBubbleLeftRightIcon className="w-4 h-4 mr-2" />
+                        Post Update
+                      </button>
+                    )}
+                    
+                    {(campaign.status === 'active' || campaign.status === 'completed') && (
+                      <Link href={`/detailstatistic/${campaign._id}`}>
+                        <a className="inline-flex items-center px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg text-sm font-medium hover:from-indigo-600 hover:to-purple-700 transform hover:scale-105 transition-all duration-200 shadow-md hover:shadow-lg">
+                          <ChartPieIcon className="w-4 h-4 mr-2" />
+                          Analytics
+                        </a>
+                      </Link>
+                    )}
+                  </div>
+
+                  {/* Special Actions Row */}
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {((campaign.amountRaised - (campaign.amountWithdrawn || 0)) >= 10000) && (
+                      (() => {
+                        const hasPendingRequest = withdrawals.some(withdrawal => 
+                          withdrawal.campaign._id === campaign._id && 
+                          (withdrawal.status === 'pending' || withdrawal.status === 'processing')
+                        );
+
+                        if (hasPendingRequest) {
+                          return (
+                            <button 
+                              disabled
+                              className="inline-flex items-center px-4 py-2.5 bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 rounded-lg text-sm font-medium cursor-not-allowed"
+                              title="Withdrawal request pending"
+                            >
+                              <ClockIcon className="w-4 h-4 mr-2" />
+                              Withdrawal Pending
+                            </button>
+                          );
+                        }
+
+                        return (
+                          <button 
+                            onClick={() => initiateWithdrawal(campaign)}
+                            className="inline-flex items-center px-4 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg text-sm font-medium hover:from-green-600 hover:to-emerald-700 transform hover:scale-105 transition-all duration-200 shadow-md hover:shadow-lg"
+                          >
+                            <BanknotesIcon className="w-4 h-4 mr-2" />
+                            Withdraw Funds
+                          </button>
+                        );
+                      })()
+                    )}
+                    
+                    {campaign.status === 'pending' && (
+                      <button 
+                        onClick={() => handleCancelCampaign(campaign._id)}
+                        className="inline-flex items-center px-4 py-2.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg text-sm font-medium hover:bg-red-200 dark:hover:bg-red-900/50 transition-all duration-200"
+                      >
+                        <XMarkIcon className="w-4 h-4 mr-2" />
+                        Cancel
+                      </button>
+                    )}
+                    
+                    {campaign.status === 'rejected' && (
+                      <button 
+                        onClick={() => showFeedback(campaign)}
+                        className="inline-flex items-center px-4 py-2.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded-lg text-sm font-medium hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-all duration-200"
+                      >
+                        <InformationCircleIcon className="w-4 h-4 mr-2" />
+                        View Feedback
+                      </button>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Updates Section */}
+                {campaign.updates && campaign.updates.length > 0 && (
+                  <div className="border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 px-6 py-4">
+                    <div className="flex items-center mb-3">
+                      <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg mr-3">
+                        <ChatBubbleLeftRightIcon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Recent Updates</h4>
+                      <span className="ml-auto text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-1 rounded-full">
+                        {campaign.updates.length}
+                      </span>
+                    </div>
+                    
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                      <div className="flex justify-between items-start mb-2">
+                        <h5 className="font-medium text-gray-900 dark:text-white text-sm">
+                          {campaign.updates[campaign.updates.length - 1].title}
+                        </h5>
+                        <span className="text-xs text-gray-500 dark:text-gray-400 ml-2 flex-shrink-0">
+                          {new Date(campaign.updates[campaign.updates.length - 1].date).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed">
+                        {campaign.updates[campaign.updates.length - 1].content}
+                      </p>
+                      
+                      {campaign.updates.length > 1 && (
+                        <Link href={`/campaign/${campaign._id}#updates`}>
+                          <a className="inline-flex items-center text-blue-600 dark:text-blue-400 text-xs hover:text-blue-700 dark:hover:text-blue-300 mt-2 font-medium">
+                            View all {campaign.updates.length} updates
+                            <svg className="w-3 h-3 ml-1" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M9 6L15 12L9 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path>
+                            </svg>
+                          </a>
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             ))
           ) : (
@@ -1732,7 +1836,7 @@ const UserDashboard = () => {
                   <button 
                     onClick={handleNotificationSettingsUpdate}
                     disabled={notificationUpdateLoading}
-                    className="inline-flex items-center px-4 py-2 bg-primary-600 dark:bg-primary-500 text-white font-medium rounded-lg hover:bg-primary-700 dark:hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex items-center px-4 py-2 bg-[#800000] text-white font-medium rounded-lg hover:bg-[#660000] transition-colors"
                   >
                     {notificationUpdateLoading ? (
                       <>
@@ -1768,8 +1872,8 @@ const UserDashboard = () => {
             <p className="text-gray-600 dark:text-gray-400">Manage your fund withdrawal requests and history</p>
           </div>
           <button
-            onClick={() => setActiveTab('campaigns')}
-            className="inline-flex items-center px-4 py-2 bg-primary-600 dark:bg-primary-500 text-white font-medium rounded-lg hover:bg-primary-700 dark:hover:bg-primary-600 transition-colors"
+            onClick={() => handleTabChange('campaigns')}
+            className="inline-flex items-center px-4 py-2 bg-[#800000] text-white font-medium rounded-lg hover:bg-[#660000] transition-colors"
           >
             <PlusIcon className="w-5 h-5 mr-2" />
             New Withdrawal Request
@@ -1958,7 +2062,7 @@ const UserDashboard = () => {
               </p>
               <div className="mt-6">
                 <button
-                  onClick={() => setActiveTab('campaigns')}
+                  onClick={() => handleTabChange('campaigns')}
                   className="inline-flex items-center px-4 py-2 bg-primary-600 dark:bg-primary-500 text-white font-medium rounded-lg hover:bg-primary-700 dark:hover:bg-primary-600 transition-colors"
                 >
                   <PlusIcon className="w-5 h-5 mr-2" />
@@ -2057,7 +2161,7 @@ const UserDashboard = () => {
                         ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 font-medium'
                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                     }`}
-                    onClick={() => setActiveTab('overview')}
+                    onClick={() => handleTabChange('overview')}
                   >
                     <HomeIcon className="w-5 h-5" />
                     <span>Overview</span>
@@ -2070,7 +2174,7 @@ const UserDashboard = () => {
                         ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 font-medium'
                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                     }`}
-                    onClick={() => setActiveTab('campaigns')}
+                    onClick={() => handleTabChange('campaigns')}
                   >
                     <ChartBarIcon className="w-5 h-5" />
                     <span>Campaigns</span>
@@ -2083,7 +2187,7 @@ const UserDashboard = () => {
                         ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 font-medium'
                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                     }`}
-                    onClick={() => setActiveTab('donations')}
+                    onClick={() => handleTabChange('donations')}
                   >
                     <CurrencyDollarIcon className="w-5 h-5" />
                     <span>Donations</span>
@@ -2096,7 +2200,7 @@ const UserDashboard = () => {
                         ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 font-medium'
                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                     }`}
-                    onClick={() => setActiveTab('bankAccounts')}
+                    onClick={() => handleTabChange('bankAccounts')}
                   >
                     <CreditCardIcon className="w-5 h-5" />
                     <span>Bank Accounts</span>
@@ -2109,7 +2213,7 @@ const UserDashboard = () => {
                         ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 font-medium'
                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                     }`}
-                    onClick={() => setActiveTab('withdrawals')}
+                    onClick={() => handleTabChange('withdrawals')}
                   >
                     <BanknotesIcon className="w-5 h-5" />
                     <span>Withdrawals</span>
@@ -2122,7 +2226,7 @@ const UserDashboard = () => {
                         ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 font-medium'
                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                     }`}
-                    onClick={() => setActiveTab('profile')}
+                    onClick={() => handleTabChange('profile')}
                   >
                     <UserCircleIcon className="w-5 h-5" />
                     <span>Profile</span>
