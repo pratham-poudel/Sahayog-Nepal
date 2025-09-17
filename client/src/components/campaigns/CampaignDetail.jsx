@@ -381,10 +381,10 @@ const CampaignDetail = ({ campaign }) => {
         {campaign.updates && campaign.updates.length > 0 ? (
           <div className="space-y-6">
             {campaign.updates.map((update, index) => (
-              <div key={index} className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-primary-500">
+              <div key={index} className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border-l-4 border-primary-500 dark:border-primary-400">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-3">
-                  <h3 className="font-semibold text-lg text-gray-800">{update.title}</h3>
-                  <span className="text-sm text-gray-500 mt-1 md:mt-0">
+                  <h3 className="font-semibold text-lg text-gray-800 dark:text-gray-200">{update.title}</h3>
+                  <span className="text-sm text-gray-500 dark:text-gray-400 mt-1 md:mt-0">
                     {new Date(update.date).toLocaleDateString('en-US', {
                       year: 'numeric',
                       month: 'long',
@@ -392,21 +392,21 @@ const CampaignDetail = ({ campaign }) => {
                     })}
                   </span>
                 </div>
-                <div className="text-gray-700 whitespace-pre-line">
+                <div className="text-gray-700 dark:text-gray-300 whitespace-pre-line">
                   {update.content}
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="text-center py-8 bg-gray-50 rounded-lg">
+          <div className="text-center py-8 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
             <div className="mb-3">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
               </svg>
             </div>
-            <h4 className="text-lg font-medium text-gray-700 mb-1">No updates yet</h4>
-            <p className="text-gray-500">Check back soon for updates on this campaign's progress!</p>
+            <h4 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-1">No updates yet</h4>
+            <p className="text-gray-500 dark:text-gray-400">Check back soon for updates on this campaign's progress!</p>
           </div>
         )}
       </div>
