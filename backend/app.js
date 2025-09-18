@@ -15,7 +15,7 @@ const mongoose = require('mongoose');
 
 // Configure CORS with more explicit options
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://127.0.0.1:9000', 'http://192.168.1.77:5173'],
+  origin: ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://127.0.0.1:9000','https://s9wvbqkq-5173.inc1.devtunnels.ms', 'http://192.168.1.77:5173'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   exposedHeaders: ['Content-Disposition'],
@@ -39,6 +39,7 @@ const bankRoutes = require('./routes/bankRoutes');
 const withdrawalRoutes = require('./routes/withdrawalRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 const statsRoutes = require('./routes/statsRoutes');
+const imageProxy = require('./routes/imageProxy');
 
 
 app.use('/api/users', userRoutes);
@@ -52,6 +53,7 @@ app.use('/api/bank', bankRoutes);
 app.use('/api/withdrawals', withdrawalRoutes);
 app.use('/api/uploads', uploadRoutes);
 app.use('/api/stats', statsRoutes);
+app.use('/api/proxy', imageProxy);
 
 // Basic route for testing
 app.get('/', (req, res) => {

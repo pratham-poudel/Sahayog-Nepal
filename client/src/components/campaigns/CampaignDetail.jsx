@@ -77,89 +77,99 @@ const RecentDonations = ({ campaignId }) => {
   
   if (loading) {
     return (
-      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 text-center">
-        <p className="text-gray-600 dark:text-gray-300 text-sm">Loading donations...</p>
+      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 sm:p-4 text-center">
+        <p className="text-gray-600 dark:text-gray-300 text-xs sm:text-sm">Loading donations...</p>
       </div>
     );
   }
   
   if (error) {
     return (
-      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 text-center">
-        <p className="text-gray-600 dark:text-gray-300 text-sm">{error}</p>
+      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 sm:p-4 text-center">
+        <p className="text-gray-600 dark:text-gray-300 text-xs sm:text-sm">{error}</p>
       </div>
     );
   }
   
   if (!topDonor && donations.length === 0) {
     return (
-      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 text-center">
-        <p className="text-gray-600 dark:text-gray-300 text-sm">No donations yet. Be the first to donate!</p>
+      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 sm:p-4 text-center">
+        <p className="text-gray-600 dark:text-gray-300 text-xs sm:text-sm">No donations yet. Be the first to donate!</p>
       </div>
     );
   }
   
   return (
-    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-      <h4 className="font-semibold text-base mb-3 text-primary-700 dark:text-primary-400 flex items-center">
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
+      <h4 className="font-semibold text-sm sm:text-base mb-3 text-primary-700 dark:text-primary-400 flex items-center">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
         </svg>
         Recent Supporters
       </h4>
       
-      <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
+      <div className="space-y-3 max-h-[300px] sm:max-h-[400px] overflow-y-auto pr-1">
         {/* Top Donor */}
         {topDonor && (
-          <div className="bg-gradient-to-br from-amber-50 via-amber-100 to-amber-200 dark:from-amber-900/80 dark:via-amber-800/90 dark:to-yellow-900/80 border border-amber-300 dark:border-amber-600/80 rounded-xl p-5 mb-6 shadow-lg relative overflow-hidden">
+          <div className="bg-gradient-to-br from-amber-50 via-amber-100 to-amber-200 dark:from-amber-900/80 dark:via-amber-800/90 dark:to-yellow-900/80 border border-amber-300 dark:border-amber-600/80 rounded-xl p-3 sm:p-4 md:p-5 mb-4 sm:mb-6 shadow-lg relative overflow-hidden">
             {/* Premium gold gradient accent */}
             <div className="absolute inset-0 bg-gradient-to-tr from-amber-500/10 via-yellow-400/5 to-transparent pointer-events-none"></div>
-            <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-amber-400/20 dark:bg-amber-400/30 rounded-full blur-xl"></div>
+            <div className="absolute -bottom-6 -right-6 w-20 h-20 sm:w-32 sm:h-32 bg-amber-400/20 dark:bg-amber-400/30 rounded-full blur-xl"></div>
             
-            <div className="absolute top-0 right-0 bg-gradient-to-r from-amber-500 to-yellow-500 text-white font-bold text-xs py-1.5 px-4 rounded-bl-xl shadow-md">
+            <div className="absolute top-0 right-0 bg-gradient-to-r from-amber-500 to-yellow-500 text-white font-bold text-xs py-1 px-2 sm:py-1.5 sm:px-4 rounded-bl-xl shadow-md">
               <span className="relative z-4">TOP DONOR</span>
               <span className="absolute inset-0 bg-gradient-to-r from-yellow-300/30 to-amber-300/30 blur-sm"></span>
             </div>
             
-            <div className="flex items-start">
-              {topDonor.anonymous ? (
-                <div className="bg-gradient-to-br from-amber-400 to-yellow-500 text-white font-bold rounded-full h-12 w-12 flex items-center justify-center mr-4 shadow-md border-2 border-amber-100 dark:border-amber-700 ring-2 ring-amber-300/50 dark:ring-amber-500/50">
-                  A
-                </div>
-              ) : (
-                topDonor.donorId && topDonor.donorId.profilePicture ? (
-                  <img 
-                    src={`${MINIO_URL}/profiles/${topDonor.donorId.profilePicture}`}
-                    alt={topDonor.donorId.name || 'Donor'}
-                    className="h-12 w-12 rounded-full object-cover mr-4 shadow-md border-2 border-amber-100 dark:border-amber-700 ring-2 ring-amber-300/50 dark:ring-amber-500/50"
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src = `https://ui-avatars.com/api/?name=${topDonor.donorId.name || 'A'}&background=amber&color=fff`;
-                    }}
-                  />
-                ) : (
-                  <div className="bg-gradient-to-br from-amber-400 to-yellow-500 text-white font-bold rounded-full h-12 w-12 flex items-center justify-center mr-4 shadow-md border-2 border-amber-100 dark:border-amber-700 ring-2 ring-amber-300/50 dark:ring-amber-500/50">
-                    {topDonor.donorId && topDonor.donorId.name ? topDonor.donorId.name.charAt(0) : 'A'}
+            <div className="flex items-start flex-col sm:flex-row">
+              <div className="flex items-center mb-3 sm:mb-0 sm:mr-4">
+                {topDonor.anonymous ? (
+                  <div className="bg-gradient-to-br from-amber-400 to-yellow-500 text-white font-bold rounded-full h-10 w-10 sm:h-12 sm:w-12 flex items-center justify-center shadow-md border-2 border-amber-100 dark:border-amber-700 ring-2 ring-amber-300/50 dark:ring-amber-500/50">
+                    A
                   </div>
-                )
-              )}
-              <div className="flex-1">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <span className="font-bold text-base text-amber-900 dark:text-amber-100 tracking-wide">
+                ) : (
+                  topDonor.donorId && topDonor.donorId.profilePicture ? (
+                    <img 
+                      src={`${MINIO_URL}/profiles/${topDonor.donorId.profilePicture}`}
+                      alt={topDonor.donorId.name || 'Donor'}
+                      className="h-10 w-10 sm:h-12 sm:w-12 rounded-full object-cover shadow-md border-2 border-amber-100 dark:border-amber-700 ring-2 ring-amber-300/50 dark:ring-amber-500/50"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = `https://ui-avatars.com/api/?name=${topDonor.donorId.name || 'A'}&background=amber&color=fff`;
+                      }}
+                    />
+                  ) : (
+                    <div className="bg-gradient-to-br from-amber-400 to-yellow-500 text-white font-bold rounded-full h-10 w-10 sm:h-12 sm:w-12 flex items-center justify-center shadow-md border-2 border-amber-100 dark:border-amber-700 ring-2 ring-amber-300/50 dark:ring-amber-500/50">
+                      {topDonor.donorId && topDonor.donorId.name ? topDonor.donorId.name.charAt(0) : 'A'}
+                    </div>
+                  )
+                )}
+                <div className="ml-3 sm:hidden">
+                  <span className="font-bold text-sm sm:text-base text-amber-900 dark:text-amber-100 tracking-wide block">
+                    {topDonor.anonymous ? 'Anonymous' : (topDonor.donorId && topDonor.donorId.name ? topDonor.donorId.name : 'Anonymous')}
+                  </span>
+                  <span className="text-xs text-amber-700 dark:text-amber-300 font-medium">
+                    {formatDistanceToNow(new Date(topDonor.date), { addSuffix: true })}
+                  </span>
+                </div>
+              </div>
+              <div className="flex-1 w-full">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start space-y-2 sm:space-y-0">
+                  <div className="hidden sm:block">
+                    <span className="font-bold text-sm sm:text-base text-amber-900 dark:text-amber-100 tracking-wide">
                       {topDonor.anonymous ? 'Anonymous' : (topDonor.donorId && topDonor.donorId.name ? topDonor.donorId.name : 'Anonymous')}
                     </span>
                     <span className="text-xs text-amber-700 dark:text-amber-300 block font-medium">
                       {formatDistanceToNow(new Date(topDonor.date), { addSuffix: true })}
                     </span>
                   </div>
-                  <div className="font-bold text-base text-amber-900 dark:text-amber-100 bg-gradient-to-r from-amber-100 to-yellow-200 dark:from-amber-700/80 dark:to-yellow-600/80 px-4 py-1.5 rounded-lg border border-amber-300 dark:border-amber-600 shadow-sm">
-                    Rs. {topDonor.amount}
+                  <div className="font-bold text-sm sm:text-base text-amber-900 dark:text-amber-100 bg-gradient-to-r from-amber-100 to-yellow-200 dark:from-amber-700/80 dark:to-yellow-600/80 px-3 py-1 sm:px-4 sm:py-1.5 rounded-lg border border-amber-300 dark:border-amber-600 shadow-sm self-start">
+                    Rs. {topDonor.amount?.toLocaleString()}
                   </div>
                 </div>
                 {topDonor.message && (
-                  <div className="mt-3 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm p-3 rounded-lg border border-amber-200 dark:border-amber-700/50 shadow-sm">
-                    <p className="text-sm text-amber-800 dark:text-amber-200 italic">{`"${topDonor.message}"`}</p>
+                  <div className="mt-3 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm p-2 sm:p-3 rounded-lg border border-amber-200 dark:border-amber-700/50 shadow-sm">
+                    <p className="text-xs sm:text-sm text-amber-800 dark:text-amber-200 italic break-words">{`"${topDonor.message}"`}</p>
                   </div>
                 )}
               </div>
@@ -173,44 +183,50 @@ const RecentDonations = ({ campaignId }) => {
         {/* Other Recent Donations */}
         {donations.map((donation) => (
           <div key={donation._id} className="flex items-start border-b border-gray-200 dark:border-gray-700 pb-3 last:border-0 last:pb-0 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-md transition duration-150">
-            {donation.anonymous ? (
-              <div className="bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 font-bold rounded-full h-9 w-9 flex items-center justify-center mr-3 shadow-sm">
-                A
+            <div className="flex items-start w-full">
+              <div className="flex-shrink-0 mr-3">
+                {donation.anonymous ? (
+                  <div className="bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 font-bold rounded-full h-8 w-8 sm:h-9 sm:w-9 flex items-center justify-center shadow-sm">
+                    A
+                  </div>
+                ) : (
+                  donation.donorId && donation.donorId.profilePicture ? (
+                    <img 
+                      src={`${MINIO_URL}/profiles/${donation.donorId.profilePicture}`}
+                      alt={donation.donorId.name || 'Donor'}
+                      className="h-8 w-8 sm:h-9 sm:w-9 rounded-full object-cover shadow-sm border border-primary-100 dark:border-primary-800"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = `https://ui-avatars.com/api/?name=${donation.donorId.name || 'A'}&background=primary&color=fff`;
+                      }}
+                    />
+                  ) : (
+                    <div className="bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 font-bold rounded-full h-8 w-8 sm:h-9 sm:w-9 flex items-center justify-center shadow-sm">
+                      {donation.donorId && donation.donorId.name ? donation.donorId.name.charAt(0) : 'A'}
+                    </div>
+                  )
+                )}
               </div>
-            ) : (
-              donation.donorId && donation.donorId.profilePicture ? (
-                <img 
-                  src={`${MINIO_URL}/profiles/${donation.donorId.profilePicture}`}
-                  alt={donation.donorId.name || 'Donor'}
-                  className="h-9 w-9 rounded-full object-cover mr-3 shadow-sm border border-primary-100 dark:border-primary-800"
-                  onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.src = `https://ui-avatars.com/api/?name=${donation.donorId.name || 'A'}&background=primary&color=fff`;
-                  }}
-                />
-              ) : (
-                <div className="bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 font-bold rounded-full h-9 w-9 flex items-center justify-center mr-3 shadow-sm">
-                  {donation.donorId && donation.donorId.name ? donation.donorId.name.charAt(0) : 'A'}
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start space-y-1 sm:space-y-0">
+                  <div className="flex-1 min-w-0">
+                    <span className="font-medium text-sm text-gray-800 dark:text-gray-200 block truncate">
+                      {donation.anonymous ? 'Anonymous' : (donation.donorId && donation.donorId.name ? donation.donorId.name : 'Anonymous')}
+                    </span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {formatDistanceToNow(new Date(donation.date), { addSuffix: true })}
+                    </span>
+                  </div>
+                  <div className="text-xs sm:text-sm font-semibold text-primary-600 dark:text-primary-300 bg-primary-50 dark:bg-primary-900/50 px-2 py-1 rounded-md border border-transparent dark:border-primary-800 flex-shrink-0 self-start">
+                    Rs. {donation.amount?.toLocaleString()}
+                  </div>
                 </div>
-              )
-            )}
-            <div className="flex-1">
-              <div className="flex justify-between items-start">
-                <div>
-                  <span className="font-medium text-sm text-gray-800 dark:text-gray-200">
-                    {donation.anonymous ? 'Anonymous' : (donation.donorId && donation.donorId.name ? donation.donorId.name : 'Anonymous')}
-                  </span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400 block">
-                    {formatDistanceToNow(new Date(donation.date), { addSuffix: true })}
-                  </span>
-                </div>
-                <div className="text-sm font-semibold text-primary-600 dark:text-primary-300 bg-primary-50 dark:bg-primary-900/50 px-2 py-1 rounded-md border border-transparent dark:border-primary-800">
-                  Rs. {donation.amount}
-                </div>
+                {donation.message && (
+                  <div className="mt-2">
+                    <p className="text-xs text-gray-600 dark:text-gray-300 italic bg-white dark:bg-gray-700 p-1.5 rounded-md border border-gray-100 dark:border-gray-600 break-words">"{donation.message}"</p>
+                  </div>
+                )}
               </div>
-              {donation.message && (
-                <p className="text-xs text-gray-600 dark:text-gray-300 mt-1 italic bg-white dark:bg-gray-700 p-1.5 rounded-md border border-gray-100 dark:border-gray-600">"{donation.message}"</p>
-              )}
             </div>
           </div>
         ))}
@@ -218,7 +234,7 @@ const RecentDonations = ({ campaignId }) => {
       
       <div className="mt-3 text-center">
         <button 
-          className="text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium"
+          className="text-xs sm:text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium py-1 px-2 rounded hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors"
           onClick={() => setShowAllDonations(true)}
         >
           See all donations
@@ -419,7 +435,7 @@ const CampaignDetail = ({ campaign }) => {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8 px-4 md:px-0">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8 px-2 sm:px-4 md:px-0">
       <div className="lg:col-span-2">
         <motion.div 
           className="rounded-xl overflow-hidden shadow-lg mb-6"
@@ -521,7 +537,7 @@ const CampaignDetail = ({ campaign }) => {
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
       >
-        <div className="bg-white rounded-xl shadow-lg p-4 md:p-6 sticky top-24">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-3 sm:p-4 md:p-6 sticky top-20 sm:top-24">
           <h2 className="font-poppins font-bold text-xl md:text-2xl mb-4">{campaign.title}</h2>
           
           <div className="mb-6">

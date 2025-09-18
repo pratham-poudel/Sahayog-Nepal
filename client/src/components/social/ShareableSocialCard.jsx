@@ -1,530 +1,811 @@
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import html2canvas from 'html2canvas';
 
 const ShareableSocialCard = ({ campaign, onClose, isOpen }) => {
-  const [selectedTemplate, setSelectedTemplate] = useState('simple');
   const [isDownloading, setIsDownloading] = useState(false);
-  const [downloadUrl, setDownloadUrl] = useState('');
+  const [isDownloaded, setIsDownloaded] = useState(false);
+  const [format, setFormat] = useState('square'); // 'square' or 'story'
   const cardRef = useRef(null);
+  const previewCardRef = useRef(null);
   
-  // Templates available for sharing
-  const templates = [
-    { id: 'simple', name: 'Simple' },
-    { id: 'impact', name: 'Impact' },
-    { id: 'urgent', name: 'Urgent' },
-    { id: 'instagram', name: 'Instagram Story' }
-  ];
+  // Utility function to truncate and clean text
+  const truncateText = (text, maxLength = 120) => {
+    if (!text || typeof text !== 'string') return '';
+    
+    // Remove extra whitespace and trim
+    const cleaned = text.trim().replace(/\s+/g, ' ');
+    
+    if (cleaned.length <= maxLength) return cleaned;
+    
+    // Find the last space before maxLength to avoid cutting words
+    const truncated = cleaned.substring(0, maxLength);
+    const lastSpace = truncated.lastIndexOf(' ');
+    
+    return lastSpace > maxLength * 0.7 ? 
+      truncated.substring(0, lastSpace) + '...' : 
+      truncated + '...';
+  };
   
-  // Handle card generation and download
+  // Utility function to ensure clean display text (no duplicates)
+  const getCleanDisplayText = (text, maxLength) => {
+    const cleanText = truncateText(text, maxLength);
+    // Remove any potential duplicates by splitting on common duplicate patterns
+    const lines = cleanText.split(/[\.\.\.|…|\n]/);
+    return lines[0].trim();
+  };
+  
+  // Get campaign data once and reuse it everywhere to prevent repetition
+  const campaignData = React.useMemo(() => {
+    // Extract raw data first
+    const rawTitle = campaign?.title || campaign?.name || 'Help Support This Campaign';
+    const rawDescription = campaign?.story || campaign?.description || campaign?.shortDescription || 'Join us in making a positive impact in our community.';
+    
+    const data = {
+      title: truncateText(rawTitle, 80), // Limit title to 80 chars
+      description: truncateText(rawDescription, 120), // Limit description to 120 chars
+      fullDescription: truncateText(rawDescription, 200), // Longer version for story format
+      raised: campaign?.amountRaised || campaign?.raisedAmount || campaign?.raised || campaign?.currentAmount || 0,
+      goal: campaign?.targetAmount || campaign?.goalAmount || campaign?.goal || 100000,
+      donors: campaign?.donors || campaign?.donorsCount || campaign?.totalDonors || campaign?.supporters || 0,
+      daysLeft: campaign?.daysLeft || campaign?.remainingDays || 30,
+      image: campaign?.coverImage || campaign?.image || campaign?.imageUrl || campaign?.photo || '',
+      category: campaign?.category || 'General'
+    };
+    
+    // Calculate progress
+    data.progress = data.goal > 0 ? Math.min((data.raised / data.goal) * 100, 100) : 0;
+    
+    return data;
+  }, [campaign, truncateText]);
+  
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      // Store original overflow value
+      const originalOverflow = document.body.style.overflow;
+      // Prevent scrolling
+      document.body.style.overflow = 'hidden';
+      
+      // Cleanup function to restore scroll when modal closes
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isOpen]);
+  
+  // Convert image to data URL to avoid CORS issues
+  const imageToDataURL = async (imageUrl) => {
+    try {
+      // First try to load the image to check if it's accessible
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      
+      return new Promise((resolve) => {
+        img.onload = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = img.naturalWidth || 600;
+            canvas.height = img.naturalHeight || 280;
+            ctx.drawImage(img, 0, 0);
+            resolve(canvas.toDataURL());
+          } catch (err) {
+            resolve(null);
+          }
+        };
+        
+        img.onerror = () => {
+          resolve(null);
+        };
+        
+        // Set a timeout for image loading
+        setTimeout(() => {
+          resolve(null);
+        }, 10000);
+        
+        img.src = imageUrl;
+      });
+    } catch (error) {
+      return null;
+    }
+  };
+
+  // Create a safe fallback image
+  const createFallbackImage = (width, height, title) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = width;
+    canvas.height = height;
+    
+    // Create gradient background
+    const gradient = ctx.createLinearGradient(0, 0, width, height);
+    gradient.addColorStop(0, '#8B2325');
+    gradient.addColorStop(1, '#B91C1C');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+    
+    // Add title text
+    ctx.fillStyle = 'white';
+    ctx.font = `bold ${Math.floor(width / 20)}px Arial, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    // Split title into lines
+    const maxWidth = width * 0.8;
+    const words = title.substring(0, 60).split(' ');
+    const lines = [];
+    let currentLine = '';
+    
+    words.forEach(word => {
+      const testLine = currentLine + (currentLine ? ' ' : '') + word;
+      const metrics = ctx.measureText(testLine);
+      if (metrics.width > maxWidth && currentLine) {
+        lines.push(currentLine);
+        currentLine = word;
+      } else {
+        currentLine = testLine;
+      }
+    });
+    if (currentLine) lines.push(currentLine);
+    
+    // Draw lines
+    const lineHeight = Math.floor(width / 15);
+    const startY = height / 2 - ((lines.length - 1) * lineHeight / 2);
+    lines.forEach((line, index) => {
+      ctx.fillText(line, width / 2, startY + (index * lineHeight));
+    });
+    
+    return canvas.toDataURL();
+  };
+
+  // Helper function to get proxy URL for images
+  const getProxyImageUrl = (imageUrl) => {
+    if (!imageUrl || !imageUrl.includes('filesatsahayognepal.dallytech.com')) {
+      return null;
+    }
+    // Use your backend proxy route
+    return `${import.meta.env.VITE_API_URL}/api/proxy/image-proxy?url=${encodeURIComponent(imageUrl)}`;
+  };
+
+  // Helper function to get category-based icon
+  const getCategoryIcon = (title, description, category) => {
+    const content = `${title} ${description} ${category}`.toLowerCase();
+    
+    if (content.includes('cat') || content.includes('kitten')) return '🐱';
+    if (content.includes('dog') || content.includes('puppy')) return '🐕';
+    if (content.includes('education') || content.includes('school') || content.includes('study')) return '📚';
+    if (content.includes('medical') || content.includes('health') || content.includes('hospital')) return '🏥';
+    if (content.includes('emergency') || content.includes('urgent')) return '🚨';
+    if (content.includes('child') || content.includes('family')) return '👨‍👩‍👧‍👦';
+    if (content.includes('food') || content.includes('hunger')) return '🍚';
+    if (content.includes('house') || content.includes('shelter') || content.includes('home')) return '🏠';
+    
+    return '💝'; // Default heart icon
+  };
+
+  // Instagram Story template (9:16 aspect ratio)
+  const InstagramStoryTemplate = ({ campaignData }) => {
+    const [imageError, setImageError] = useState(false);
+
+    const handleImageError = () => {
+      setImageError(true);
+    };
+
+    return (
+      <div 
+        className="w-[400px] h-[700px] bg-white flex flex-col shadow-2xl overflow-hidden border-2 border-gray-300"
+        style={{ 
+          fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
+          colorScheme: 'light' // Force light mode for consistent image generation
+        }}
+      >
+        {/* Large background image or gradient */}
+        <div className="h-[400px] relative overflow-hidden bg-gray-200">
+          {campaignData.image && !imageError && getProxyImageUrl(campaignData.image) ? (
+            <img 
+              src={getProxyImageUrl(campaignData.image)}
+              alt={campaignData.title}
+              className="w-full h-full object-cover"
+              onError={handleImageError}
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-[#8B2325] via-[#A91B47] to-[#B91C1C] flex items-center justify-center text-white">
+              <div className="text-center px-6">
+                <div className="text-8xl mb-6">
+                  {getCategoryIcon(campaignData.title, campaignData.description, campaignData.category)}
+                </div>
+                <h3 className="text-2xl font-bold leading-tight" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.9)' }}>{campaignData.title}</h3>
+              </div>
+            </div>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20"></div>
+          
+          {/* Top branding */}
+          <div className="absolute top-6 left-6 right-6">
+            <div className="bg-white/30 backdrop-blur-md rounded-2xl p-4 border border-white/20">
+              <h2 className="text-xl font-bold text-white" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>Sahayog Nepal</h2>
+              <p className="text-white/95 text-sm" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.7)' }}>Making a difference together</p>
+            </div>
+          </div>
+
+          {/* Urgency badge */}
+          <div className="absolute top-6 right-6">
+            <div className="bg-red-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg">
+              {campaignData.daysLeft > 0 ? `${campaignData.daysLeft} days left` : 'URGENT'}
+            </div>
+          </div>
+        </div>
+
+        {/* Content section */}
+        <div className="flex-1 p-6 bg-white">
+          <h3 className="text-xl font-bold text-gray-900 mb-3 leading-tight">
+            {campaignData.title}
+          </h3>
+          
+          <p className="text-gray-700 text-sm mb-4 leading-relaxed">
+            {getCleanDisplayText(campaignData.fullDescription, 200)}
+          </p>
+
+          {/* Progress section */}
+          <div className="mb-6">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-lg font-bold text-[#8B2325]">
+                Rs. {(campaignData.raised / 1000).toFixed(0)}K
+              </span>
+              <span className="text-gray-600 text-sm font-medium">
+                of Rs. {(campaignData.goal / 1000).toFixed(0)}K goal
+              </span>
+            </div>
+            
+            <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden mb-2">
+              <div 
+                className="h-full bg-gradient-to-r from-[#8B2325] to-[#B91C1C] rounded-full transition-all duration-300"
+                style={{ width: `${campaignData.progress}%` }}
+              />
+            </div>
+            
+            <div className="flex justify-between text-xs text-gray-600">
+              <span>{campaignData.progress.toFixed(1)}% funded</span>
+              <span>{campaignData.donors} {campaignData.donors === 1 ? 'donor' : 'donors'}</span>
+            </div>
+          </div>
+
+          {/* Large CTA */}
+          <div className="text-center">
+            <div className="bg-gradient-to-r from-[#8B2325] to-[#B91C1C] text-white font-bold py-4 px-6 rounded-2xl text-lg shadow-lg mb-3">
+              Donate Now
+            </div>
+            <p className="text-gray-900 font-medium text-sm">
+              sahayog.nepal
+            </p>
+            <p className="text-gray-500 text-xs mt-1">
+              Swipe up to donate • Every contribution counts
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // GoFundMe-style simple approach: Create HTML card and convert with html2canvas
+  const generateShareImage = async () => {
+    // Use the hidden card for image generation
+    if (!cardRef.current) {
+      throw new Error('Card reference not found');
+    }
+
+    try {
+      // Make sure the card is prepared for capture
+      const cardElement = cardRef.current;
+      
+      // Temporarily make visible for capture (off-screen to avoid UI interference)
+      cardElement.style.visibility = 'visible';
+      cardElement.style.position = 'fixed';
+      cardElement.style.left = '-9999px';
+      cardElement.style.top = '-9999px';
+      cardElement.style.zIndex = '9999';
+      
+      // Wait a moment for rendering
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Capture with html2canvas - now with proper CORS handling via proxy
+      const canvas = await html2canvas(cardElement, {
+        backgroundColor: '#ffffff',
+        scale: 2, // High quality
+        useCORS: true, // Enable CORS since we're using proxy
+        allowTaint: false, // Use clean canvas for better downloads
+        width: cardElement.offsetWidth,
+        height: cardElement.offsetHeight,
+        windowWidth: 600,
+        windowHeight: 600,
+        logging: false
+      });
+      
+      // Hide the card again
+      cardElement.style.visibility = 'hidden';
+      cardElement.style.position = 'absolute';
+      cardElement.style.left = '-9999px';
+      cardElement.style.zIndex = '-1';
+      
+      return canvas;
+      
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  // Simple GoFundMe-style download
   const handleDownload = async () => {
-    if (!cardRef.current) return;
-    
     setIsDownloading(true);
     
     try {
-      // Generate image from the card element
-      const canvas = await html2canvas(cardRef.current, {
-        scale: 2, // Higher scale for better quality
-        useCORS: true, // Allow loading cross-origin images
-        backgroundColor: null // Transparent background
+      // Generate image using simple html2canvas approach
+      const canvas = await generateShareImage();
+      
+      // Simple blob conversion
+      const blob = await new Promise((resolve, reject) => {
+        canvas.toBlob(resolve, 'image/png', 1.0);
+        setTimeout(() => reject(new Error('Blob conversion timeout')), 5000);
       });
       
-      // Convert canvas to blob
-      canvas.toBlob((blob) => {
-        // Create download link
-        const url = URL.createObjectURL(blob);
-        setDownloadUrl(url);
-        
-        // Create a temporary link and trigger download
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `sahayog-nepal-${campaign.title.replace(/\s+/g, '-').toLowerCase()}.png`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        // Clean up the URL object
-        setTimeout(() => URL.revokeObjectURL(url), 100);
-        
-        setIsDownloading(false);
-      }, 'image/png');
-    } catch (err) {
-      console.error('Error generating image:', err);
+      if (!blob) {
+        throw new Error('Failed to create image blob');
+      }
+      
+      // Simple download
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `sahayog-nepal-${format}-${Date.now()}.png`;
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Cleanup
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      
+      setIsDownloaded(true);
+      
+    } catch (error) {
+      alert('Failed to generate image. Please try again.');
+    } finally {
       setIsDownloading(false);
     }
   };
   
-  // Handle social media sharing
-  const handleShare = async (platform) => {
-    if (!cardRef.current) return;
-    
-    setIsDownloading(true);
-    
+  // Copy campaign link to clipboard
+  const handleCopyLink = async () => {
     try {
-      // Generate image from the card element
-      const canvas = await html2canvas(cardRef.current, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: null
-      });
-      
-      // Convert canvas to blob
-      canvas.toBlob(async (blob) => {
-        // Create a file from the blob
-        const file = new File([blob], `sahayog-nepal-${campaign.title.replace(/\s+/g, '-').toLowerCase()}.png`, { type: 'image/png' });
-        
-        // Different share handling for different platforms
-        switch(platform) {
-          case 'facebook':
-            // For Facebook, we'll use the Web Share API if available
-            if (navigator.share) {
-              try {
-                await navigator.share({
-                  title: `Support: ${campaign.title}`,
-                  text: `Help support this campaign on Sahayog Nepal: ${campaign.description.substring(0, 100)}...`,
-                  url: window.location.href,
-                  files: [file]
-                });
-              } catch (err) {
-                // Fallback to traditional sharing
-                window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`, '_blank');
-              }
-            } else {
-              window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`, '_blank');
-            }
-            break;
-            
-          case 'twitter':
-            window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(`Help support: ${campaign.title}`)}`, '_blank');
-            break;
-            
-          case 'whatsapp':
-            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(`Help support: ${campaign.title} ${window.location.href}`)}`, '_blank');
-            break;
-            
-          case 'instagram':
-            // Instagram doesn't have a direct share URL, so we'll tell user to download and share
-            const url = URL.createObjectURL(blob);
-            setDownloadUrl(url);
-            
-            // Show instructions for Instagram
-            alert('Save the image and share it on your Instagram story or post. When sharing, add a link to: ' + window.location.href);
-            break;
-            
-          default:
-            break;
-        }
-        
-        setIsDownloading(false);
-      }, 'image/png');
+      await navigator.clipboard.writeText(window.location.href);
+      alert('Campaign link copied to clipboard!');
     } catch (err) {
-      console.error('Error generating share image:', err);
-      setIsDownloading(false);
+      // Silent fail for clipboard operations
     }
   };
   
-  // Card template for Instagram story (9:16 aspect ratio)
-  const InstagramStoryTemplate = () => (
-    <div 
-      className="w-[360px] h-[640px] bg-gradient-to-br from-[#8B2325] to-[#551415] text-white flex flex-col p-6 rounded-xl overflow-hidden"
-      style={{ fontFamily: 'Inter, sans-serif' }}
-    >
-      <div className="flex justify-between items-start mb-4">
-        <h2 className="text-2xl font-bold text-white">Sahayog Nepal</h2>
-        <div className="text-sm text-white/80 rounded-full px-3 py-1 bg-white/20 backdrop-blur-sm">
-          {campaign.daysLeft > 0 ? `${campaign.daysLeft} days left` : 'Urgent'}
-        </div>
-      </div>
-      
-      <div className="h-[300px] mb-4 rounded-lg overflow-hidden shadow-xl">
-        <img 
-          src={campaign.thumbnail} 
-          alt={campaign.title}
-          className="w-full h-full object-cover"
-        />
-      </div>
-      
-      <h3 className="text-xl font-bold text-white mb-2">{campaign.title}</h3>
-      
-      <div className="mb-3">
-        <p className="text-white/80 text-sm mb-2 line-clamp-3">
-          {campaign.description}
-        </p>
-      </div>
-      
-      <div className="mt-auto">
-        <div className="mb-2">
-          <div className="flex justify-between text-sm mb-1">
-            <span className="font-semibold">Rs. {campaign.raised.toLocaleString()}</span>
-            <span className="text-white/80">raised of Rs. {campaign.goal.toLocaleString()}</span>
+
+
+  // Full-size card template for image generation (hidden)
+  const FullSizeCardTemplate = ({ campaignData }) => {
+    const [imageError, setImageError] = useState(false);
+
+    const handleImageError = () => {
+      setImageError(true);
+    };
+
+    return (
+      <div 
+        className="w-[600px] h-[600px] bg-white flex flex-col shadow-2xl overflow-hidden border-2 border-gray-300"
+        style={{ 
+          fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
+          colorScheme: 'light' // Force light mode for consistent image generation
+        }}
+      >
+        {/* Header with branding */}
+        <div className="bg-gradient-to-r from-[#8B2325] to-[#B91C1C] p-6 text-white">
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-2xl font-bold">Sahayog Nepal</h2>
+              <p className="text-white/90 text-sm mt-1">Making a difference together</p>
+            </div>
+            <div className="text-right">
+              <div className="bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full text-sm font-medium">
+                {campaignData.daysLeft > 0 ? `${campaignData.daysLeft} days left` : 'Urgent'}
+              </div>
+            </div>
           </div>
-          <div className="w-full h-2 bg-white/30 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-white rounded-full"
-              style={{ width: `${campaign.progress}%` }}
+        </div>
+
+        {/* Campaign image - using proxy to avoid CORS issues */}
+        <div className="h-[280px] relative overflow-hidden bg-gray-200">
+          {campaignData.image && !imageError && getProxyImageUrl(campaignData.image) ? (
+            <img 
+              src={getProxyImageUrl(campaignData.image)}
+              alt={campaignData.title}
+              className="w-full h-full object-cover"
+              onError={handleImageError}
             />
-          </div>
-          <div className="text-right text-xs mt-1 text-white/80">
-            {campaign.progress}% towards goal
-          </div>
-        </div>
-        
-        <div className="mt-4 flex justify-center">
-          <div className="bg-white text-[#8B2325] font-bold py-3 px-8 rounded-lg text-center w-full">
-            Scan QR or Visit Sahayog.Nepal
-          </div>
-        </div>
-        
-        <div className="flex justify-center mt-4">
-          <div className="text-white/60 text-xs text-center">
-            Share this card and help us spread the word
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-  
-  // Card template for simple sharing (1:1 aspect ratio)
-  const SimpleTemplate = () => (
-    <div 
-      className="w-[500px] h-[500px] bg-white dark:bg-gray-800 flex flex-col p-6 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700"
-      style={{ fontFamily: 'Inter, sans-serif' }}
-    >
-      <div className="flex justify-between items-start mb-4">
-        <h2 className="text-xl font-bold text-[#8B2325] dark:text-[#ffb347]">Sahayog Nepal</h2>
-        <div className="text-xs text-white rounded-full px-3 py-1 bg-[#8B2325]">
-          {campaign.daysLeft > 0 ? `${campaign.daysLeft} days left` : 'Urgent'}
-        </div>
-      </div>
-      
-      <div className="h-[200px] mb-4 rounded-lg overflow-hidden shadow-lg">
-        <img 
-          src={campaign.thumbnail} 
-          alt={campaign.title}
-          className="w-full h-full object-cover"
-        />
-      </div>
-      
-      <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{campaign.title}</h3>
-      
-      <div className="mb-3">
-        <p className="text-gray-600 dark:text-gray-300 text-sm mb-2 line-clamp-2">
-          {campaign.description}
-        </p>
-      </div>
-      
-      <div className="mt-auto">
-        <div className="mb-2">
-          <div className="flex justify-between text-sm mb-1">
-            <span className="font-semibold text-gray-900 dark:text-white">Rs. {campaign.raised.toLocaleString()}</span>
-            <span className="text-gray-500 dark:text-gray-400">raised of Rs. {campaign.goal.toLocaleString()}</span>
-          </div>
-          <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-[#8B2325] dark:bg-[#ffb347] rounded-full"
-              style={{ width: `${campaign.progress}%` }}
-            />
-          </div>
-          <div className="text-right text-xs mt-1 text-gray-500 dark:text-gray-400">
-            {campaign.progress}% towards goal
-          </div>
-        </div>
-        
-        <div className="mt-4 text-center">
-          <div className="bg-[#8B2325] text-white dark:bg-[#ffb347] dark:text-gray-900 font-bold py-2.5 px-6 rounded-lg inline-block">
-            Donate Now at sahayog.nepal
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-  
-  // Card template for impact-focused sharing
-  const ImpactTemplate = () => (
-    <div 
-      className="w-[500px] h-[500px] bg-gradient-to-br from-gray-900 to-gray-800 text-white flex flex-col p-6 rounded-lg overflow-hidden"
-      style={{ fontFamily: 'Inter, sans-serif' }}
-    >
-      <div className="text-center mb-4">
-        <h2 className="text-2xl font-bold text-[#ffb347]">Make An Impact</h2>
-        <p className="text-white/70 text-sm">With Sahayog Nepal</p>
-      </div>
-      
-      <div className="h-[180px] mb-4 rounded-lg overflow-hidden shadow-lg">
-        <img 
-          src={campaign.thumbnail} 
-          alt={campaign.title}
-          className="w-full h-full object-cover"
-        />
-      </div>
-      
-      <h3 className="text-xl font-bold text-white mb-2">{campaign.title}</h3>
-      
-      <div className="mb-4 p-3 bg-white/10 rounded-lg">
-        <p className="text-white text-sm font-medium">
-          Your donation can help:
-        </p>
-        <ul className="mt-2 text-white/90 text-sm">
-          {campaign.category === 'Education' && (
-            <>
-              <li className="flex items-center">
-                <span className="mr-2 text-[#ffb347]">✓</span> Provide education to children in need
-              </li>
-              <li className="flex items-center">
-                <span className="mr-2 text-[#ffb347]">✓</span> Support teachers with resources
-              </li>
-            </>
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-[#8B2325] via-[#A91B47] to-[#B91C1C] flex items-center justify-center text-white">
+              <div className="text-center px-6">
+                {/* Category-based icon */}
+                <div className="text-6xl mb-4">
+                  {getCategoryIcon(campaignData.title, campaignData.description, campaignData.category)}
+                </div>
+                <h3 className="text-xl font-bold leading-tight" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.9)' }}>{campaignData.title}</h3>
+                <p className="text-white/95 text-sm mt-2 leading-relaxed" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}>{getCleanDisplayText(campaignData.description, 60)}</p>
+                {campaignData.image && (
+                  <p className="text-white/70 text-xs mt-3">📷 Campaign has cover image</p>
+                )}
+              </div>
+            </div>
           )}
-          {campaign.category === 'Healthcare' && (
-            <>
-              <li className="flex items-center">
-                <span className="mr-2 text-[#ffb347]">✓</span> Provide medical care to those in need
-              </li>
-              <li className="flex items-center">
-                <span className="mr-2 text-[#ffb347]">✓</span> Support healthcare facilities
-              </li>
-            </>
-          )}
-          {campaign.category === 'Disaster Relief' && (
-            <>
-              <li className="flex items-center">
-                <span className="mr-2 text-[#ffb347]">✓</span> Provide emergency aid to affected areas
-              </li>
-              <li className="flex items-center">
-                <span className="mr-2 text-[#ffb347]">✓</span> Help rebuild damaged homes and infrastructure
-              </li>
-            </>
-          )}
-          {campaign.category === 'Community' && (
-            <>
-              <li className="flex items-center">
-                <span className="mr-2 text-[#ffb347]">✓</span> Strengthen local community initiatives
-              </li>
-              <li className="flex items-center">
-                <span className="mr-2 text-[#ffb347]">✓</span> Support sustainable community growth
-              </li>
-            </>
-          )}
-        </ul>
-      </div>
-      
-      <div className="mt-auto">
-        <div className="mb-2">
-          <div className="flex justify-between text-sm mb-1">
-            <span className="font-semibold">Rs. {campaign.raised.toLocaleString()}</span>
-            <span className="text-white/70">raised of Rs. {campaign.goal.toLocaleString()}</span>
-          </div>
-          <div className="w-full h-2 bg-white/20 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-[#ffb347] rounded-full"
-              style={{ width: `${campaign.progress}%` }}
-            />
-          </div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent"></div>
         </div>
-        
-        <div className="mt-4 flex justify-center">
-          <div className="bg-[#ffb347] text-gray-900 font-bold py-2.5 px-6 rounded-lg text-center">
-            Join us at sahayog.nepal and make a difference today
+
+        {/* Campaign details */}
+        <div className="flex-1 p-6">
+          <h3 className="text-2xl font-bold text-gray-900 mb-3 leading-tight">
+            {campaignData.title}
+          </h3>
+          
+          <p className="text-gray-600 text-base mb-4 leading-relaxed">
+            {getCleanDisplayText(campaignData.description, 120)}
+          </p>
+
+          {/* Progress section */}
+          <div className="mb-6">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-2xl font-bold text-[#8B2325]">
+                Rs. {campaignData.raised.toLocaleString()}
+              </span>
+              <span className="text-gray-600 font-medium">
+                of Rs. {campaignData.goal.toLocaleString()}
+              </span>
+            </div>
+            
+            <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden mb-2">
+              <div 
+                className="h-full bg-gradient-to-r from-[#8B2325] to-[#B91C1C] rounded-full transition-all duration-300"
+                style={{ width: `${campaignData.progress}%` }}
+              />
+            </div>
+            
+            <div className="flex justify-between text-sm text-gray-600">
+              <span>{campaignData.progress.toFixed(1)}% funded</span>
+              <span>{campaignData.donors} {campaignData.donors === 1 ? 'donor' : 'donors'}</span>
+            </div>
+          </div>
+
+          {/* Call to action */}
+          <div className="text-center">
+            <div className="bg-gradient-to-r from-[#8B2325] to-[#B91C1C] text-white font-bold py-4 px-8 rounded-xl text-lg shadow-lg">
+              Donate Now at sahayog.nepal
+            </div>
+            <p className="text-gray-500 text-sm mt-3">
+              Every contribution makes a difference
+            </p>
           </div>
         </div>
       </div>
-    </div>
-  );
-  
-  // Card template for urgent campaigns
-  const UrgentTemplate = () => (
-    <div 
-      className="w-[500px] h-[500px] bg-gradient-to-br from-[#8B2325] to-[#4a1314] text-white flex flex-col p-6 rounded-lg overflow-hidden"
-      style={{ fontFamily: 'Inter, sans-serif' }}
-    >
-      <div className="flex items-center justify-center mb-3">
-        <div className="bg-white/20 backdrop-blur-md px-4 py-1.5 rounded-full font-bold text-white flex items-center">
-          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          URGENT APPEAL
-        </div>
-      </div>
-      
-      <div className="h-[180px] mb-4 rounded-lg overflow-hidden shadow-xl relative">
-        <div className="absolute inset-0 bg-black/40 z-10"></div>
-        <img 
-          src={campaign.thumbnail} 
-          alt={campaign.title}
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute left-3 bottom-3 z-20 bg-[#8B2325] text-white text-xs font-bold px-2 py-1 rounded-sm">
-          {campaign.daysLeft > 0 ? `${campaign.daysLeft} DAYS LEFT` : 'CRITICAL NEED'}
-        </div>
-      </div>
-      
-      <h3 className="text-xl font-bold text-white mb-2">{campaign.title}</h3>
-      
-      <div className="mb-3">
-        <p className="text-white/90 text-sm line-clamp-2">
-          {campaign.description}
-        </p>
-      </div>
-      
-      <div className="mt-auto space-y-4">
-        <div className="bg-white/10 p-3 rounded-lg">
-          <div className="flex justify-between text-sm mb-1">
-            <span className="font-semibold">RAISED: Rs. {campaign.raised.toLocaleString()}</span>
-            <span className="text-white/80">GOAL: Rs. {campaign.goal.toLocaleString()}</span>
-          </div>
-          <div className="w-full h-3 bg-white/20 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-white rounded-full"
-              style={{ width: `${campaign.progress}%` }}
-            />
-          </div>
-          <div className="mt-1 text-white/80 text-xs font-medium">
-            We need your help to reach our goal
-          </div>
-        </div>
-        
-        <div className="flex justify-center">
-          <div className="bg-white text-[#8B2325] font-bold py-3 px-6 rounded-md text-center w-full">
-            DONATE NOW - EVERY RUPEE MATTERS
-          </div>
-        </div>
-        
-        <div className="text-center text-white/70 text-xs">
-          Sahayog Nepal | www.sahayog.nepal | Making a difference together
-        </div>
-      </div>
-    </div>
-  );
-  
-  // Render appropriate template based on selection
-  const renderSelectedTemplate = () => {
-    switch(selectedTemplate) {
-      case 'simple':
-        return <SimpleTemplate />;
-      case 'impact':
-        return <ImpactTemplate />;
-      case 'urgent':
-        return <UrgentTemplate />;
-      case 'instagram':
-        return <InstagramStoryTemplate />;
-      default:
-        return <SimpleTemplate />;
-    }
+    );
   };
-  
-  // Social media platforms to share to
-  const socialPlatforms = [
-    { id: 'download', name: 'Download', icon: 'download' },
-    { id: 'facebook', name: 'Facebook', icon: 'facebook' },
-    { id: 'twitter', name: 'Twitter', icon: 'twitter' },
-    { id: 'whatsapp', name: 'WhatsApp', icon: 'whatsapp' },
-    { id: 'instagram', name: 'Instagram', icon: 'instagram' }
-  ];
+
+  // Preview card template (responsive and properly sized)  
+  const PreviewCardTemplate = ({ campaignData }) => {
+    const [imageError, setImageError] = useState(false);
+
+    const handleImageError = () => {
+      setImageError(true);
+    };
+
+    return (
+      <div 
+        className="w-full max-w-[300px] bg-white flex flex-col shadow-xl rounded-lg overflow-hidden border border-gray-200"
+        style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif', aspectRatio: '1/1' }}
+      >
+        {/* Header with branding */}
+        <div className="bg-gradient-to-r from-[#8B2325] to-[#B91C1C] p-3 text-white">
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-sm font-bold">Sahayog Nepal</h2>
+              <p className="text-white/90 text-xs mt-0.5">Making a difference together</p>
+            </div>
+            <div className="text-right">
+              <div className="bg-white/20 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-medium">
+                {campaignData.daysLeft > 0 ? `${campaignData.daysLeft}d left` : 'Urgent'}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Campaign image */}
+        <div className="h-[120px] relative overflow-hidden bg-gray-200">
+          {campaignData.image && !imageError && getProxyImageUrl(campaignData.image) ? (
+            <img 
+              src={getProxyImageUrl(campaignData.image)}
+              alt={campaignData.title}
+              className="w-full h-full object-cover"
+              onError={handleImageError}
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-[#8B2325] via-[#A91B47] to-[#B91C1C] flex items-center justify-center text-white">
+              <div className="text-center px-2">
+                <div className="text-2xl mb-1">
+                  {getCategoryIcon(campaignData.title, campaignData.description, campaignData.category)}
+                </div>
+                <h3 className="text-xs font-bold leading-tight" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}>{getCleanDisplayText(campaignData.title, 25)}</h3>
+              </div>
+            </div>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent"></div>
+        </div>
+
+        {/* Campaign details */}
+        <div className="flex-1 p-3">
+          <h3 className="text-sm font-bold text-gray-900 mb-2 leading-tight line-clamp-2">
+            {campaignData.title}
+          </h3>
+          
+          <p className="text-gray-600 text-xs mb-3 leading-relaxed">
+            {getCleanDisplayText(campaignData.description, 80)}
+          </p>
+
+          {/* Progress section */}
+          <div className="mb-3">
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-sm font-bold text-[#8B2325]">
+                Rs. {(campaignData.raised / 1000).toFixed(0)}K
+              </span>
+              <span className="text-gray-600 text-xs font-medium">
+                of {(campaignData.goal / 1000).toFixed(0)}K
+              </span>
+            </div>
+            
+            <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden mb-1">
+              <div 
+                className="h-full bg-gradient-to-r from-[#8B2325] to-[#B91C1C] rounded-full transition-all duration-300"
+                style={{ width: `${campaignData.progress}%` }}
+              />
+            </div>
+            
+            <div className="flex justify-between text-xs text-gray-600">
+              <span>{campaignData.progress.toFixed(1)}% funded</span>
+              <span>{campaignData.donors} {campaignData.donors === 1 ? 'donor' : 'donors'}</span>
+            </div>
+          </div>
+
+          {/* Call to action */}
+          <div className="text-center">
+            <div className="bg-gradient-to-r from-[#8B2325] to-[#B91C1C] text-white font-bold py-2 px-4 rounded-lg text-xs">
+              Donate Now at sahayog.nepal
+            </div>
+            <p className="text-gray-500 text-xs mt-2">
+              Every contribution makes a difference
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  };
   
   return (
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 overflow-y-auto"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
         >
           <motion.div 
-            className="bg-white dark:bg-gray-800 rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
+            className="bg-white rounded-xl sm:rounded-2xl max-w-5xl w-full max-h-[95vh] overflow-hidden shadow-2xl mx-2 sm:mx-4"
+            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.95, opacity: 0, y: 20 }}
             onClick={e => e.stopPropagation()}
           >
-            <div className="border-b border-gray-200 dark:border-gray-700 p-4 flex justify-between items-center">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Share Campaign</h2>
-              <button 
-                onClick={onClose}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+            {/* Header */}
+            <div className="bg-gradient-to-r from-[#8B2325] to-[#B91C1C] text-white p-4 sm:p-6">
+              <div className="flex justify-between items-start sm:items-center">
+                <div>
+                  <h2 className="text-xl sm:text-2xl font-bold">Share This Campaign</h2>
+                  <p className="text-white/90 mt-1 text-sm sm:text-base">Help us spread the word and make a bigger impact</p>
+                </div>
+                <button 
+                  onClick={onClose}
+                  className="text-white/80 hover:text-white p-2 rounded-full hover:bg-white/20 transition-colors flex-shrink-0"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
             </div>
             
-            <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Choose a Template</h3>
-                  
-                  <div className="space-y-3 mb-6">
-                    {templates.map(template => (
-                      <button
-                        key={template.id}
-                        className={`w-full p-3 rounded-lg flex items-center ${
-                          selectedTemplate === template.id 
-                            ? 'bg-[#8B2325] text-white' 
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
-                        }`}
-                        onClick={() => setSelectedTemplate(template.id)}
-                      >
-                        {selectedTemplate === template.id && (
-                          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div 
+              className="p-4 sm:p-6 lg:p-8 overflow-y-auto max-h-[calc(95vh-120px)]"
+              onWheel={(e) => {
+                // Prevent event bubbling to parent elements
+                e.stopPropagation();
+              }}
+            >
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+                {/* Instructions */}
+                <div className="space-y-4 sm:space-y-6 order-2 lg:order-1">
+                  <div>
+                    <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6">How to Share in 3 Simple Steps</h3>
+                    
+                    {/* Step 1 */}
+                    <div className="flex items-start space-x-3 sm:space-x-4 p-3 sm:p-4 bg-blue-50 rounded-xl mb-3 sm:mb-4">
+                      <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 bg-[#8B2325] text-white rounded-full flex items-center justify-center font-bold text-sm">
+                        1
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900 mb-1 text-sm sm:text-base">Download the share image</h4>
+                        <p className="text-gray-600 text-xs sm:text-sm">Click the download button to save this beautiful campaign card to your device.</p>
+                      </div>
+                    </div>
+
+                    {/* Step 2 */}
+                    <div className="flex items-start space-x-3 sm:space-x-4 p-3 sm:p-4 bg-green-50 rounded-xl mb-3 sm:mb-4">
+                      <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 bg-[#8B2325] text-white rounded-full flex items-center justify-center font-bold text-sm">
+                        2
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900 mb-1 text-sm sm:text-base">Post on social media</h4>
+                        <p className="text-gray-600 text-xs sm:text-sm">Share the image on Facebook, Instagram, Twitter, or WhatsApp to reach your friends and family.</p>
+                      </div>
+                    </div>
+
+                    {/* Step 3 */}
+                    <div className="flex items-start space-x-3 sm:space-x-4 p-3 sm:p-4 bg-purple-50 rounded-xl mb-4 sm:mb-6">
+                      <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 bg-[#8B2325] text-white rounded-full flex items-center justify-center font-bold text-sm">
+                        3
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900 mb-1 text-sm sm:text-base">Include the campaign link</h4>
+                        <p className="text-gray-600 text-xs sm:text-sm">Add this link so people can donate directly: <br />
+                          <span className="font-mono text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded mt-1 inline-block break-all">
+                            {window.location.href}
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="space-y-3">
+                    <button
+                      onClick={handleDownload}
+                      disabled={isDownloading}
+                      className="w-full bg-gradient-to-r from-[#8B2325] to-[#B91C1C] text-white font-bold py-3 sm:py-4 px-4 sm:px-6 rounded-xl hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 text-sm sm:text-base"
+                    >
+                      {isDownloading ? (
+                        <>
+                          <svg className="animate-spin h-4 w-4 sm:h-5 sm:w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          <span>Generating Image... Please wait</span>
+                        </>
+                      ) : isDownloaded ? (
+                        <>
+                          <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                           </svg>
-                        )}
-                        {template.name} Template
-                      </button>
-                    ))}
+                          <span>Success! Share It Now</span>
+                        </>
+                      ) : (
+                        <>
+                          <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          <span className="hidden sm:inline">
+                            Download {format === 'story' ? 'Story' : 'Post'} Image
+                          </span>
+                          <span className="sm:hidden">Download {format === 'story' ? 'Story' : 'Post'}</span>
+                        </>
+                      )}
+                    </button>
+
+                    <button
+                      onClick={handleCopyLink}
+                      className="w-full bg-gray-100 text-gray-800 font-semibold py-2.5 sm:py-3 px-4 sm:px-6 rounded-xl hover:bg-gray-200 transition-colors flex items-center justify-center space-x-2 text-sm sm:text-base"
+                    >
+                      <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                      <span>Copy Campaign Link</span>
+                    </button>
                   </div>
-                  
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Share To</h3>
-                  
-                  <div className="grid grid-cols-2 gap-3">
-                    {socialPlatforms.map(platform => (
-                      <button
-                        key={platform.id}
-                        className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-                        onClick={() => platform.id === 'download' ? handleDownload() : handleShare(platform.id)}
-                        disabled={isDownloading}
-                      >
-                        <div className="text-center">
-                          {isDownloading ? (
-                            <svg className="animate-spin mx-auto h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                          ) : (
-                            <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                              {platform.name}
-                            </span>
-                          )}
-                        </div>
-                      </button>
-                    ))}
+
+                  {/* Impact Message */}
+                  <div className="bg-gradient-to-br from-orange-50 to-yellow-50 p-3 sm:p-4 rounded-xl border border-orange-200">
+                    <h4 className="font-semibold text-orange-900 mb-2 text-sm sm:text-base">💫 Your Share Makes a Difference!</h4>
+                    <p className="text-orange-800 text-xs sm:text-sm">When you share this campaign, you're not just spreading awareness - you're directly helping us reach more potential donors and achieve our goal faster.</p>
                   </div>
                 </div>
                 
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Preview</h3>
-                  
-                  <div className="flex justify-center items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-4 overflow-hidden">
-                    <div ref={cardRef} className="transform scale-75 origin-center">
-                      {renderSelectedTemplate()}
+                  {/* Preview */}
+                <div className="order-1 lg:order-2">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Preview</h3>
+                    
+                    {/* Format selector */}
+                    <div className="flex bg-gray-100 rounded-lg p-1">
+                      <button
+                        onClick={() => {
+                          setFormat('square');
+                          setIsDownloaded(false);
+                        }}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                          format === 'square' 
+                            ? 'bg-[#8B2325] text-white shadow-sm' 
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        Square Post
+                      </button>
+                      <button
+                        onClick={() => {
+                          setFormat('story');
+                          setIsDownloaded(false);
+                        }}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                          format === 'story' 
+                            ? 'bg-[#8B2325] text-white shadow-sm' 
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        IG Story
+                      </button>
                     </div>
+                  </div>                  <div className="flex justify-center items-center bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 sm:p-6 shadow-inner">
+                    <div 
+                      ref={previewCardRef} 
+                      className={`${format === 'story' ? 'w-full max-w-[180px]' : 'w-full max-w-[280px] sm:max-w-[320px]'}`}
+                    >
+                      {format === 'story' ? (
+                        <div className="transform scale-50 origin-center">
+                          <InstagramStoryTemplate campaignData={campaignData} />
+                        </div>
+                      ) : (
+                        <PreviewCardTemplate campaignData={campaignData} />
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="mt-3 sm:mt-4 text-center">
+                    <p className="text-gray-600 text-xs sm:text-sm">
+                      {format === 'story' 
+                        ? 'High-quality 400x700 image perfect for Instagram Stories' 
+                        : 'High-quality 600x600 image perfect for all social media platforms'
+                      }
+                    </p>
                   </div>
                 </div>
               </div>
             </div>
-            
-            <div className="border-t border-gray-200 dark:border-gray-700 p-4 flex justify-end">
-              <button
-                onClick={onClose}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-              >
-                Close
-              </button>
-            </div>
           </motion.div>
+
+          {/* Hidden card for image generation - dynamic based on format */}
+          <div 
+            ref={cardRef} 
+            className="absolute top-0 left-[-1000px] pointer-events-none z-[-1]"
+            style={{ 
+              width: format === 'story' ? '400px' : '600px', 
+              height: format === 'story' ? '700px' : '600px',
+              visibility: 'hidden',
+              position: 'absolute'
+            }}
+          >
+            {format === 'story' ? <InstagramStoryTemplate campaignData={campaignData} /> : <FullSizeCardTemplate campaignData={campaignData} />}
+          </div>
         </motion.div>
       )}
     </AnimatePresence>
