@@ -117,7 +117,7 @@ const RecentDonations = ({ campaignId }) => {
             <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-amber-400/20 dark:bg-amber-400/30 rounded-full blur-xl"></div>
             
             <div className="absolute top-0 right-0 bg-gradient-to-r from-amber-500 to-yellow-500 text-white font-bold text-xs py-1.5 px-4 rounded-bl-xl shadow-md">
-              <span className="relative z-10">TOP DONOR</span>
+              <span className="relative z-4">TOP DONOR</span>
               <span className="absolute inset-0 bg-gradient-to-r from-yellow-300/30 to-amber-300/30 blur-sm"></span>
             </div>
             
