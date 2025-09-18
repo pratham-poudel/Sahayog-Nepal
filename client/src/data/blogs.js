@@ -73,7 +73,7 @@ export const blogs = [
       content: [
         {
           type: "paragraph",
-          content: "Rural communities often struggle to secure funding for essential projects. However, crowdfunding is changing this reality. Here are five remarkable success stories from Nepal's countryside."
+          content: "Rural communities often struggle to secure funding for essential projects. However, crowdfunding is changing this reality. Here are five remarkable examples from Nepal's countryside."
         },
         {
           type: "heading",
@@ -127,10 +127,10 @@ export const blogs = [
         },
         {
           type: "paragraph",
-          content: "These success stories demonstrate that with community initiative and the right platform, rural development challenges can be addressed through the power of collective giving."
+          content: "These examples demonstrate that with community initiative and the right platform, rural development challenges can be addressed through the power of collective giving."
         }
       ],
-      tags: ["success stories", "rural development", "community projects", "case studies"],
+      tags: ["case studies", "rural development", "community projects", "fundraising"],
       publishedAt: "2023-07-22T10:30:00Z",
       readTime: 7
     },

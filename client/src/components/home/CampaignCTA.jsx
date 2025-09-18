@@ -1,113 +1,335 @@
 import { Link } from 'wouter';
-import { motion } from 'framer-motion';
+import { motion, useAnimation } from 'framer-motion';
+import { useEffect, useState } from 'react';
+import { getHomeStats, formatStatsForDisplay } from '../../services/statsService';
 
 const CampaignCTA = () => {
+  const [hoveredStat, setHoveredStat] = useState(null);
+  const [stats, setStats] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const controls = useAnimation();
+
+  useEffect(() => {
+    const sequence = async () => {
+      await controls.start({
+        scale: [1, 1.02, 1],
+        transition: { duration: 2, repeat: Infinity, repeatType: "reverse" }
+      });
+    };
+    sequence();
+
+    // Fetch real stats data
+    const fetchStats = async () => {
+      try {
+        setLoading(true);
+        setError(false);
+        const rawStats = await getHomeStats();
+        const formattedStats = formatStatsForDisplay(rawStats);
+        
+        // Create stats array with real data and styling
+        const statsArray = [
+          { 
+            value: formattedStats?.activeCampaigns?.formatted || "42", 
+            label: "Active Campaigns", 
+            icon: "🎯", 
+            color: "from-[#8B2325] to-red-500",
+            bgColor: "from-[#8B2325]/10 to-red-500/5"
+          },
+          { 
+            value: formattedStats?.totalFunds?.formatted || "₹2.5M+", 
+            label: "Funds Raised", 
+            icon: "💰", 
+            color: "from-green-500 to-emerald-600",
+            bgColor: "from-green-500/10 to-emerald-500/5"
+          },
+          { 
+            value: formattedStats?.totalDonors?.formatted || "1,250+", 
+            label: "Generous Donors", 
+            icon: "❤️", 
+            color: "from-pink-500 to-rose-600",
+            bgColor: "from-pink-500/10 to-rose-500/5"
+          },
+          { 
+            value: formattedStats?.districtsReached?.formatted || "12", 
+            label: "Districts Reached", 
+            icon: "🌍", 
+            color: "from-blue-500 to-indigo-600",
+            bgColor: "from-blue-500/10 to-indigo-500/5"
+          }
+        ];
+        
+        setStats(statsArray);
+      } catch (err) {
+        console.error('Error fetching CTA stats:', err);
+        setError(true);
+        // Fallback stats
+        setStats([
+          { 
+            value: "42", 
+            label: "Active Campaigns", 
+            icon: "🎯", 
+            color: "from-[#8B2325] to-red-500",
+            bgColor: "from-[#8B2325]/10 to-red-500/5"
+          },
+          { 
+            value: "₹2.5M+", 
+            label: "Funds Raised", 
+            icon: "💰", 
+            color: "from-green-500 to-emerald-600",
+            bgColor: "from-green-500/10 to-emerald-500/5"
+          },
+          { 
+            value: "1,250+", 
+            label: "Generous Donors", 
+            icon: "❤️", 
+            color: "from-pink-500 to-rose-600",
+            bgColor: "from-pink-500/10 to-rose-500/5"
+          },
+          { 
+            value: "12", 
+            label: "Districts Reached", 
+            icon: "🌍", 
+            color: "from-blue-500 to-indigo-600",
+            bgColor: "from-blue-500/10 to-indigo-500/5"
+          }
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, [controls]);
+
   return (
-    <section className="py-20 relative overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950">
-      {/* Decorative background elements */}
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-10 dark:opacity-20 pointer-events-none">
-        <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-[#8B2325]/30 dark:bg-[#8B2325]/40 blur-3xl"></div>
-        <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full bg-amber-500/30 dark:bg-amber-500/40 blur-3xl"></div>
+    <section className="py-32 relative overflow-hidden bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/40 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      {/* Enhanced Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Animated floating elements */}
+        <motion.div 
+          className="absolute top-1/4 left-1/4 w-64 h-64 bg-gradient-to-br from-[#8B2325]/10 to-blue-500/10 rounded-full blur-3xl"
+          animate={{
+            x: [0, 100, 0],
+            y: [0, -50, 0],
+            scale: [1, 1.2, 1]
+          }}
+          transition={{
+            duration: 20,
+            repeat: Infinity,
+            ease: "linear"
+          }}
+        />
+        <motion.div 
+          className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-gradient-to-tl from-indigo-500/10 to-purple-500/10 rounded-full blur-3xl"
+          animate={{
+            x: [0, -80, 0],
+            y: [0, 60, 0],
+            scale: [1, 0.8, 1]
+          }}
+          transition={{
+            duration: 25,
+            repeat: Infinity,
+            ease: "linear"
+          }}
+        />
+        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-yellow-300/5 to-orange-300/5 rounded-full blur-3xl"></div>
       </div>
       
       <div className="container mx-auto px-4 md:px-6 lg:px-8 relative z-10">
+        {/* Enhanced Main Card */}
         <motion.div 
-          className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl overflow-hidden border border-gray-200 dark:border-gray-700"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+          className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-2xl rounded-[2rem] shadow-2xl overflow-hidden border-2 border-white/30 dark:border-gray-700/30"
+          initial={{ opacity: 0, y: 40, scale: 0.95 }}
+          whileInView={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
           viewport={{ once: true }}
+          animate={controls}
         >
-          <div className="grid md:grid-cols-2">
-            <div className="p-8 md:p-12 lg:p-16 flex flex-col justify-center">
+          <div className="grid md:grid-cols-2 relative">
+            {/* Content Side */}
+            <div className="p-8 md:p-12 lg:p-16 xl:p-20 flex flex-col justify-center relative">
+              {/* Floating decoration */}
               <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
+                className="absolute top-8 right-8 w-20 h-20 bg-gradient-to-br from-[#8B2325]/20 to-blue-500/20 rounded-full blur-xl"
+                animate={{
+                  scale: [1, 1.2, 1],
+                  rotate: [0, 180, 360]
+                }}
+                transition={{
+                  duration: 10,
+                  repeat: Infinity,
+                  ease: "linear"
+                }}
+              />
+              
+              <motion.div
+                initial={{ opacity: 0, x: -30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
                 viewport={{ once: true }}
               >
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="h-1.5 w-12 bg-gradient-to-r from-[#8B2325] to-amber-500 rounded-full"></div>
-                  <span className="inline-block px-4 py-1.5 bg-gradient-to-r from-[#8B2325]/10 to-amber-500/10 text-[#8B2325] dark:text-amber-400 rounded-full text-sm font-semibold">Start Today</span>
+                {/* Badge */}
+                <div className="flex items-center gap-3 mb-8">
+                  <motion.div 
+                    className="h-2 w-16 bg-gradient-to-r from-[#8B2325] via-blue-500 to-[#8B2325] rounded-full"
+                    animate={{
+                      backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"]
+                    }}
+                    transition={{
+                      duration: 3,
+                      repeat: Infinity,
+                      ease: "linear"
+                    }}
+                  />
+                  <span className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-[#8B2325]/15 to-blue-500/15 backdrop-blur-sm text-[#8B2325] dark:text-blue-400 rounded-full text-sm font-bold border border-[#8B2325]/20">
+                    <span className="text-lg mr-2">🚀</span>
+                    Launch Today
+                  </span>
                 </div>
                 
-                <h2 className="text-3xl md:text-4xl font-poppins font-bold mb-6 bg-gradient-to-r from-[#8B2325] to-amber-600 bg-clip-text text-transparent">Ready to Start Your Fundraising Journey?</h2>
+                {/* Main Heading */}
+                <h2 className="text-h2 text-4xl md:text-5xl lg:text-6xl mb-8 font-black leading-tight">
+                  <span className="bg-gradient-to-r from-[#8B2325] via-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    Your Vision,
+                  </span>
+                  <br />
+                  <span className="text-gray-900 dark:text-white">
+                    Our Platform
+                  </span>
+                </h2>
                 
-                <p className="text-gray-700 dark:text-gray-300 text-lg mb-8 leading-relaxed">
-                  Whether it's for education, healthcare, disaster relief, or community development - your cause matters. Launch your campaign in minutes and start making a difference.
+                {/* Description */}
+                <p className="text-body text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-10 leading-relaxed">
+                  Join Nepal's most trusted crowdfunding platform. From healthcare emergencies to educational dreams, from disaster relief to community projects—every cause finds its champion here.
                 </p>
                 
-                <div className="flex flex-col sm:flex-row gap-5">
+                {/* Enhanced CTAs */}
+                <div className="flex flex-col sm:flex-row gap-6 mb-8">
                   <Link to="/start-campaign">
                     <motion.button 
-                      className="py-4 px-8 bg-gradient-to-r from-[#8B2325] to-[#a32729] text-white font-medium rounded-xl hover:shadow-xl transition-all duration-300 flex items-center justify-center"
+                      className="group relative py-5 px-10 bg-gradient-to-r from-[#8B2325] via-red-600 to-[#8B2325] text-white font-bold rounded-2xl shadow-2xl overflow-hidden transition-all duration-300"
                       whileHover={{ 
                         scale: 1.05,
-                        boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)" 
+                        y: -3,
+                        boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)" 
                       }}
                       whileTap={{ scale: 0.98 }}
                     >
-                      <i className="ri-flag-line mr-2 text-xl"></i>
-                      Create a Campaign
+                      {/* Button glow effect */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                      <motion.div
+                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
+                        animate={{
+                          x: [-100, 100]
+                        }}
+                        transition={{
+                          duration: 2,
+                          repeat: Infinity,
+                          repeatDelay: 3
+                        }}
+                      />
+                      <span className="relative z-10 flex items-center text-lg">
+                        <span className="text-2xl mr-3">🎯</span>
+                        Start Your Campaign
+                      </span>
                     </motion.button>
                   </Link>
-                  <Link to="/about">
-                    <motion.button 
-                      className="py-4 px-8 border-2 border-[#8B2325] text-[#8B2325] dark:text-amber-400 dark:border-amber-400 font-medium rounded-xl hover:bg-[#8B2325]/5 dark:hover:bg-amber-400/5 transition-all duration-300 flex items-center justify-center"
+                  
+                  <Link to="/explore">
+                    <motion.button
+                      className="py-5 px-10 border-3 border-[#8B2325] bg-white/80 backdrop-blur-sm dark:bg-gray-800/80 dark:border-red-400 text-[#8B2325] dark:text-red-400 font-bold rounded-2xl hover:bg-[#8B2325] hover:text-white dark:hover:bg-red-400 dark:hover:text-white shadow-xl hover:shadow-2xl transition-all duration-300"
                       whileHover={{ 
                         scale: 1.05,
-                        boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025)" 
+                        y: -3,
+                        boxShadow: "0 20px 40px -12px rgba(139, 35, 37, 0.3)" 
                       }}
                       whileTap={{ scale: 0.98 }}
                     >
-                      <i className="ri-information-line mr-2 text-xl"></i>
-                      Learn More
+                      <span className="flex items-center text-lg">
+                        <span className="text-2xl mr-3">👀</span>
+                        Explore Campaigns
+                      </span>
                     </motion.button>
                   </Link>
+                </div>
+
+                {/* Trust indicators */}
+                <div className="flex items-center gap-6 text-sm text-gray-500 dark:text-gray-400">
+                  <div className="flex items-center gap-2">
+                    <span className="text-green-500 text-xl">✓</span>
+                    <span className="font-semibold">Secure & Verified</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-green-500 text-xl">✓</span>
+                    <span className="font-semibold">5% Platform Fee</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-green-500 text-xl">✓</span>
+                    <span className="font-semibold">24/7 Support</span>
+                  </div>
                 </div>
               </motion.div>
             </div>
             
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-tr from-[#8B2325]/80 to-amber-600/60 mix-blend-multiply z-10"></div>
+            {/* Image Side with Enhanced Animation */}
+            <div className="relative group">
+              {/* Gradient overlay */}
+              <div className="absolute inset-0 bg-gradient-to-tr from-[#8B2325]/90 via-blue-600/70 to-purple-600/60 z-10"></div>
+              
+              {/* Reveal animation */}
               <motion.div
-                className="absolute top-0 left-0 w-full h-full bg-black/40 z-20"
-                initial={{ opacity: 1 }}
-                whileInView={{ opacity: 0 }}
-                transition={{ duration: 1 }}
+                className="absolute inset-0 bg-gradient-to-br from-[#8B2325] to-blue-600 z-20"
+                initial={{ scaleX: 1 }}
+                whileInView={{ scaleX: 0 }}
+                transition={{ duration: 1.2, delay: 0.3, ease: "easeInOut" }}
                 viewport={{ once: true }}
+                style={{ transformOrigin: "right" }}
               />
 
-              <div className="relative h-full min-h-[300px] md:min-h-0 overflow-hidden">
-                <img 
-                  src="https://images.unsplash.com/photo-1596367407372-96cb88503db6?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80" 
-                  alt="Community volunteers working together" 
-                  className="w-full h-full object-cover"
+              <div className="relative h-full min-h-[400px] md:min-h-[500px] overflow-hidden">
+                <motion.img 
+                  src="https://images.unsplash.com/photo-1559027615-cd4628902d4a?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80" 
+                  alt="Community impact and support" 
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                   width="600"
-                  height="450"
+                  height="500"
                   loading="lazy"
+                  initial={{ scale: 1.1 }}
+                  whileInView={{ scale: 1 }}
+                  transition={{ duration: 1.5 }}
                 />
                 
-                {/* Floating testimonial */}
+                {/* Floating success story */}
                 <motion.div 
-                  className="absolute bottom-6 left-6 right-6 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm p-4 rounded-xl shadow-lg z-30 border border-white/20"
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.3 }}
+                  className="absolute bottom-6 left-6 right-6 bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl p-6 rounded-2xl shadow-2xl z-30 border border-white/20"
+                  initial={{ opacity: 0, y: 30, scale: 0.9 }}
+                  whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ duration: 0.8, delay: 0.5 }}
                   viewport={{ once: true }}
+                  whileHover={{ y: -5, scale: 1.02 }}
                 >
-                  <div className="flex items-center gap-3">
-                    <img 
-                      src="https://randomuser.me/api/portraits/women/42.jpg"
-                      alt="Campaign Creator" 
-                      className="w-12 h-12 rounded-full border-2 border-[#8B2325]"
-                      width="48"
-                      height="48"
+                  <div className="flex items-center gap-4">
+                    <motion.img 
+                      src="https://images.unsplash.com/photo-1582750433449-648ed127bb54?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80"
+                      alt="Success Story" 
+                      className="w-16 h-16 rounded-2xl border-3 border-[#8B2325] shadow-lg"
+                      width="64"
+                      height="64"
                       loading="lazy"
+                      whileHover={{ scale: 1.1, rotate: 5 }}
                     />
-                    <div>
-                      <p className="text-sm font-medium text-gray-800 dark:text-white">"Sahayog Nepal helped me raise funds for my school in just 2 weeks!"</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">- Anita Sharma, Campaign Creator</p>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-2xl">🎉</span>
+                        <p className="font-bold text-gray-800 dark:text-white text-lg">Campaign Success!</p>
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                        "Raised ₹450,000 for rural school construction in just 3 weeks!"
+                      </p>
+                      <p className="text-xs text-[#8B2325] dark:text-red-400 mt-2 font-semibold">
+                        - Prakash Thapa, Educator
+                      </p>
                     </div>
                   </div>
                 </motion.div>
@@ -116,33 +338,79 @@ const CampaignCTA = () => {
           </div>
         </motion.div>
         
-        {/* Stats */}
+        {/* Enhanced Stats Grid */}
         <motion.div 
-          className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 mt-10"
-          initial={{ opacity: 0, y: 20 }}
+          className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 mt-16"
+          initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
+          transition={{ duration: 0.8, delay: 0.6 }}
           viewport={{ once: true }}
         >
-          {[
-            { value: "500+", label: "Campaigns", icon: "ri-flag-line" },
-            { value: "75M+", label: "Rupees Raised", icon: "ri-money-rupee-circle-line" },
-            { value: "5,000+", label: "Donors", icon: "ri-user-heart-line" },
-            { value: "35+", label: "Districts", icon: "ri-map-pin-line" }
-          ].map((stat, index) => (
+          {stats.map((stat, index) => (
             <motion.div 
               key={index}
-              className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-lg border border-gray-100 dark:border-gray-700 flex items-center gap-4"
-              whileHover={{ y: -5, boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)" }}
+              className={`relative bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-3xl p-6 shadow-xl border-2 border-white/30 dark:border-gray-700/30 overflow-hidden group cursor-pointer`}
+              onMouseEnter={() => setHoveredStat(index)}
+              onMouseLeave={() => setHoveredStat(null)}
+              whileHover={{ 
+                y: -8, 
+                scale: 1.05,
+                boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)" 
+              }}
               transition={{ type: "spring", stiffness: 400, damping: 15 }}
             >
-              <div className="bg-gradient-to-br from-[#8B2325]/10 to-amber-500/10 p-3 rounded-lg">
-                <i className={`${stat.icon} text-2xl text-[#8B2325] dark:text-amber-400`}></i>
+              {/* Animated background gradient */}
+              <motion.div
+                className={`absolute inset-0 bg-gradient-to-br ${stat.bgColor} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
+                animate={hoveredStat === index ? {
+                  background: [
+                    `linear-gradient(45deg, ${stat.color.split(' ')[1]}/10, transparent)`,
+                    `linear-gradient(225deg, ${stat.color.split(' ')[3]}/10, transparent)`,
+                    `linear-gradient(45deg, ${stat.color.split(' ')[1]}/10, transparent)`
+                  ]
+                } : {}}
+                transition={{ duration: 2, repeat: Infinity }}
+              />
+              
+              <div className="relative z-10">
+                {/* Icon */}
+                <motion.div 
+                  className={`w-16 h-16 bg-gradient-to-br ${stat.bgColor} rounded-2xl flex items-center justify-center mb-4 shadow-lg group-hover:shadow-xl transition-shadow duration-300`}
+                  whileHover={{ scale: 1.2, rotate: 10 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                >
+                  <span className="text-3xl">{stat.icon}</span>
+                </motion.div>
+                
+                {/* Content */}
+                <motion.div
+                  animate={hoveredStat === index ? { x: [0, 5, 0] } : {}}
+                  transition={{ duration: 0.5 }}
+                >
+                  <p className={`text-3xl md:text-4xl font-black mb-2 bg-gradient-to-r ${stat.color} bg-clip-text text-transparent`}>
+                    {stat.value}
+                  </p>
+                  <p className="text-sm md:text-base text-gray-600 dark:text-gray-300 font-semibold">
+                    {stat.label}
+                  </p>
+                </motion.div>
               </div>
-              <div>
-                <p className="text-lg font-bold text-gray-900 dark:text-white">{stat.value}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{stat.label}</p>
-              </div>
+              
+              {/* Pulse effect */}
+              {hoveredStat === index && (
+                <motion.div
+                  className="absolute inset-0 border-2 border-[#8B2325]/30 rounded-3xl"
+                  animate={{
+                    scale: [1, 1.05, 1],
+                    opacity: [0.5, 0, 0.5]
+                  }}
+                  transition={{
+                    duration: 1,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                />
+              )}
             </motion.div>
           ))}
         </motion.div>

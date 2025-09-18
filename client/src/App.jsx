@@ -25,7 +25,6 @@ import CampaignDetails from "./pages/CampaignDetails";
 import StartCampaign from "./pages/StartCampaign";
 import About from "./pages/About";
 import Team from "./pages/Team";
-import SuccessStories from "./pages/SuccessStories";
 import UserDashboard from "./pages/UserDashboard";
 import Profile from "./pages/Profile";
 import NotFound from "@/pages/not-found";
@@ -39,7 +38,6 @@ import UserDetail from './pages/admin/UserDetail';
 import PaymentDetail from './pages/admin/PaymentDetail';
 import PaymentSuccess from './pages/payment/PaymentSuccess';
 import PaymentCancel from './pages/payment/PaymentCancel';
-import EarnWithUs from "./pages/EarnWithUs";
 import Blog from "./pages/Blog";
 import BlogDetail from "./pages/BlogDetail";
 import WriteBlog from "./pages/WriteBlog";
@@ -124,8 +122,6 @@ function AppContent() {
               </Route>
               <Route path="/about" component={About} />
               <Route path="/team" component={Team} />
-              <Route path="/success-stories" component={SuccessStories} />
-              <Route path="/earn" component={EarnWithUs} />
               <Route path="/blog" component={Blog} />
               <Route path="/blog/write">
                 {() => (

@@ -8,9 +8,7 @@ const Navbar = () => {
     { path: '/', label: 'Home' },
     { path: '/explore', label: 'Explore' },
     { path: '/start-campaign', label: 'Start a Campaign' },
-    { path: '/earn', label: 'Earn with Us' },
-    { path: '/about', label: 'About Us' },
-    { path: '/success-stories', label: 'Success Stories' }
+    { path: '/about', label: 'About Us' }
   ];
 
   return (

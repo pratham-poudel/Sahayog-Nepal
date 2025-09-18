@@ -1,58 +1,37 @@
 export const stats = [
   {
     label: "Funds Raised",
-    value: "₹45M+",
-    description: "Total funding raised through our platform"
+    value: "₹2.5M+",
+    target: 2500000,
+    description: "Total funding raised through our platform",
+    suffix: "",
+    icon: "💰"
   },
   {
-    label: "Successful Campaigns",
-    value: "320+",
-    description: "Campaigns that have met or exceeded their goals"
+    label: "Active Campaigns",
+    value: "42",
+    target: 42,
+    description: "Ongoing campaigns seeking support",
+    suffix: "",
+    icon: "🎯"
   },
   {
-    label: "Donors",
-    value: "5,600+",
-    description: "Individuals who have contributed to campaigns"
+    label: "Generous Hearts",
+    value: "1,250+",
+    target: 1250,
+    description: "Amazing people who have contributed",
+    suffix: "+",
+    icon: "❤️"
   },
   {
-    label: "Communities Helped",
-    value: "75+",
-    description: "Communities across Nepal that have benefited"
+    label: "Districts Reached",
+    value: "12",
+    target: 12,
+    description: "Across beautiful Nepal",
+    suffix: "",
+    icon: "🗺️"
   }
 ];
-
-export const successStory = {
-  title: "Rebuilding Sindhupalchok After the Earthquake",
-  description: "One of our most impactful campaigns helped rebuild homes and lives in Sindhupalchok district after the devastating earthquake.",
-  image: "https://images.unsplash.com/photo-1595427648952-c59163b40315?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
-  leaders: [
-    {
-      name: "Ramesh Karki",
-      image: "https://randomuser.me/api/portraits/men/82.jpg"
-    },
-    {
-      name: "Sarita Tamang",
-      image: "https://randomuser.me/api/portraits/women/79.jpg"
-    }
-  ],
-  quote: "After the earthquake destroyed our village, we felt hopeless. Thanks to the support from Sahayog Nepal donors, we've built back stronger than before. Not just homes, but a renewed community spirit.",
-  raised: 7500000,
-  target: 6000000,
-  impact: [
-    {
-      value: "32",
-      label: "Homes Built"
-    },
-    {
-      value: "1",
-      label: "School Repaired"
-    },
-    {
-      value: "165+",
-      label: "Lives Improved"
-    }
-  ]
-};
 
 export const teamMembers = [
   {

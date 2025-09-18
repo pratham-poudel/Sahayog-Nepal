@@ -44,19 +44,9 @@ const MobileMenu = ({ isOpen, onClose }) => {
               Start a Campaign
             </div>
           </Link>
-          <Link href="/earn" onClick={handleLinkClick}>
-            <div className="block py-3 px-4 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors font-medium">
-              Earn with Us
-            </div>
-          </Link>
           <Link href="/about" onClick={handleLinkClick}>
             <div className="block py-3 px-4 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors font-medium">
               About Us
-            </div>
-          </Link>
-          <Link href="/success-stories" onClick={handleLinkClick}>
-            <div className="block py-3 px-4 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors font-medium">
-              Success Stories
             </div>
           </Link>
           

@@ -78,9 +78,9 @@ const TitleSection = React.memo(() => (
       whileInView={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.5, delay: 0.4 }}
       viewport={{ once: true }}
-      className="mt-8 inline-flex items-center px-6 py-3 bg-gradient-to-r from-[#8B2325]/10 to-[#D5A021]/10 border border-[#8B2325]/20 rounded-full"
+      className="mt-8 inline-flex items-center px-6 py-3 bg-gradient-to-r from-[#8B2325]/10 to-blue-500/10 border border-[#8B2325]/20 rounded-full"
     >
-      <span className="text-2xl mr-3">🏆</span>
+      <div className="w-3 h-3 bg-gradient-to-r from-[#8B2325] to-blue-500 rounded-full mr-3"></div>
       <span className="text-[#8B2325] dark:text-[#e05759] font-semibold font-poppins">
         Recognition • Impact • Legacy
       </span>
@@ -156,9 +156,9 @@ const ScrollButton = React.memo(({ direction, canScroll, onClick }) => (
 
 const DonorCard = React.memo(({ donor, index }) => {
   const formatAmount = useCallback((amount) => {
-    if (amount >= 100000) return `रू ${(amount / 100000).toFixed(1)}L`;
-    if (amount >= 1000) return `रू ${(amount / 1000).toFixed(1)}K`;
-    return `रू ${amount.toLocaleString()}`;
+    if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`;
+    if (amount >= 1000) return `₹${(amount / 1000).toFixed(1)}K`;
+    return `₹${amount.toLocaleString()}`;
   }, []);
 
   const getDefaultAvatar = useCallback((name) => {
@@ -172,36 +172,40 @@ const DonorCard = React.memo(({ donor, index }) => {
 
   const getRankDecoration = useCallback((rank) => {
     if (rank === 1) return {
-      crown: '👑',
+      icon: '🏆',
       ringColor: 'ring-yellow-400/50',
       bgGradient: 'from-yellow-50 via-amber-50 to-yellow-100 dark:from-yellow-900/20 dark:via-amber-900/20 dark:to-yellow-800/20',
       accentColor: 'text-yellow-600 dark:text-yellow-400',
       badgeGradient: 'from-yellow-400 via-amber-400 to-yellow-500',
-      shadowColor: 'shadow-yellow-500/20'
+      shadowColor: 'shadow-yellow-500/20',
+      title: 'Top Donor'
     };
     if (rank === 2) return {
-      crown: '🥈',
+      icon: '🥈',
       ringColor: 'ring-gray-400/50',
       bgGradient: 'from-gray-50 via-slate-50 to-gray-100 dark:from-gray-800/20 dark:via-slate-800/20 dark:to-gray-700/20',
       accentColor: 'text-gray-600 dark:text-gray-400',
       badgeGradient: 'from-gray-400 via-slate-400 to-gray-500',
-      shadowColor: 'shadow-gray-500/20'
+      shadowColor: 'shadow-gray-500/20',
+      title: 'Major Supporter'
     };
     if (rank === 3) return {
-      crown: '🥉',
+      icon: '🥉',
       ringColor: 'ring-amber-600/50',
       bgGradient: 'from-amber-50 via-orange-50 to-amber-100 dark:from-amber-900/20 dark:via-orange-900/20 dark:to-amber-800/20',
       accentColor: 'text-amber-700 dark:text-amber-400',
       badgeGradient: 'from-amber-600 via-orange-500 to-amber-700',
-      shadowColor: 'shadow-amber-600/20'
+      shadowColor: 'shadow-amber-600/20',
+      title: 'Key Contributor'
     };
     return {
-      crown: '⭐',
+      icon: '⭐',
       ringColor: 'ring-[#8B2325]/30',
       bgGradient: 'from-rose-50 via-red-50 to-rose-100 dark:from-red-900/20 dark:via-rose-900/20 dark:to-red-800/20',
       accentColor: 'text-[#8B2325] dark:text-red-400',
       badgeGradient: 'from-[#8B2325] via-red-600 to-[#8B2325]',
-      shadowColor: 'shadow-red-500/20'
+      shadowColor: 'shadow-red-500/20',
+      title: 'Valued Supporter'
     };
   }, []);
 
@@ -213,9 +217,9 @@ const DonorCard = React.memo(({ donor, index }) => {
       whileInView={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: index * 0.15 }}
       viewport={{ once: true }}
-      className="flex-none w-96 group"
+      className="flex-none w-full sm:w-80 lg:w-96 group"
     >
-      <div className={`relative h-[560px] bg-gradient-to-br ${decoration.bgGradient} backdrop-blur-xl rounded-3xl border-2 border-white/60 dark:border-gray-600/30 overflow-hidden hover:shadow-2xl ${decoration.shadowColor} hover:border-[#8B2325]/60 dark:hover:border-[#8B2325]/60 transition-all duration-500 hover:-translate-y-1 transform ring-4 ${decoration.ringColor} hover:ring-8 hover:ring-[#8B2325]/20`}>
+      <div className={`relative h-auto sm:h-[520px] bg-gradient-to-br ${decoration.bgGradient} backdrop-blur-xl rounded-2xl border-2 border-white/60 dark:border-gray-600/30 overflow-hidden hover:shadow-2xl ${decoration.shadowColor} hover:border-[#8B2325]/60 dark:hover:border-[#8B2325]/60 transition-all duration-500 hover:-translate-y-1 transform ring-2 ${decoration.ringColor} hover:ring-4 hover:ring-[#8B2325]/20`}>
         
         {/* Premium Background Elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -227,24 +231,19 @@ const DonorCard = React.memo(({ donor, index }) => {
           <div className="absolute bottom-12 left-8 w-2 h-2 bg-[#D5A021]/30 rounded-full animate-pulse delay-500"></div>
           <div className="absolute top-1/2 left-6 w-1.5 h-1.5 bg-[#8B2325]/15 rounded-full animate-pulse delay-1000"></div>
         </div>
-          {/* Rank Crown & Badge */}
-        <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 z-30">
-          <div className="flex flex-col items-center">
-            <span className="text-3xl mb-1 animate-bounce">{decoration.crown}</span>
-            <div className={`bg-gradient-to-r ${decoration.badgeGradient} text-white rounded-xl px-3 py-1.5 text-sm font-black shadow-xl border-2 border-white/30 backdrop-blur-sm`}>
-              <span className="text-xs opacity-90">RANK</span>
-              <div className="text-lg font-black leading-none">#{donor.rank}</div>
-            </div>
+          {/* Rank Badge */}
+        <div className="absolute top-2 right-4 z-30">
+          <div className={`bg-gradient-to-r ${decoration.badgeGradient} text-white rounded-lg px-3 py-1 text-xs font-bold shadow-lg border border-white/30 backdrop-blur-sm`}>
+            #{donor.rank}
           </div>
         </div>
         
         {/* Hero Profile Section */}
-        <div className="relative h-56 bg-gradient-to-br from-[#8B2325] via-[#a32729] to-[#D5A021] p-6 text-center overflow-hidden flex flex-col justify-center mt-8">
-          {/* Elegant background pattern */}
-          <div className="absolute inset-0 opacity-15">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full -translate-y-16 translate-x-16"></div>
-            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white rounded-full translate-y-12 -translate-x-12"></div>
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-40 h-40 border-2 border-white/20 rounded-full"></div>
+        <div className="relative bg-gradient-to-br from-[#8B2325] via-[#a32729] to-[#8B2325] p-6 text-center overflow-hidden">
+          {/* Clean background pattern */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-white rounded-full -translate-y-12 translate-x-12"></div>
+            <div className="absolute bottom-0 left-0 w-20 h-20 bg-white rounded-full translate-y-10 -translate-x-10"></div>
           </div>
           
           <div className="relative z-20">
@@ -253,93 +252,87 @@ const DonorCard = React.memo(({ donor, index }) => {
                 <img
                   src={donor.donor.profilePictureUrl || getDefaultAvatar(donor.donor.name)}
                   alt={donor.donor.name}
-                  className="w-24 h-24 rounded-full mx-auto border-4 border-white shadow-2xl object-cover transition-transform duration-500 group-hover:scale-110 ring-4 ring-white/30"
+                  className="w-20 h-20 rounded-full mx-auto border-3 border-white shadow-xl object-cover transition-transform duration-300 group-hover:scale-105"
                   onError={(e) => {
                     e.target.src = getDefaultAvatar(donor.donor.name);
                   }}
                   loading="lazy"
                 />
                 
-                {/* Verification Badge */}
-                <div className="absolute -bottom-2 -right-2">
-                  <div className="bg-gradient-to-r from-[#D5A021] to-yellow-400 w-8 h-8 rounded-full border-3 border-white flex items-center justify-center shadow-xl">
-                    <span className="text-white text-sm font-bold">✓</span>
+                {/* Status Indicator */}
+                <div className="absolute -bottom-1 -right-1">
+                  <div className="bg-green-500 w-6 h-6 rounded-full border-2 border-white flex items-center justify-center shadow-lg">
+                    <div className="w-2 h-2 bg-white rounded-full"></div>
                   </div>
                 </div>
-                
-                {/* Glow effect */}
-                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-white/20 to-transparent blur-md"></div>
               </div>
             </div>
             
-            <h3 className="text-white font-black text-xl mb-2 truncate px-4 font-poppins tracking-wide">
+            <h3 className="text-white font-bold text-lg mb-1 truncate px-2">
               {donor.donor.name}
             </h3>
             
-            <div className="flex items-center justify-center gap-3">
-              <div className="bg-white/20 backdrop-blur-sm rounded-full px-4 py-1.5 border border-white/30">
-                <p className="text-white/95 text-sm font-semibold">
-                  Pretty Human since {new Date(donor.donor.createdAt).getFullYear()}
-                </p>
-              </div>
+            <div className="bg-white/20 backdrop-blur-sm rounded-full px-3 py-1 border border-white/30 inline-block">
+              <p className="text-white/95 text-xs font-medium">
+                {decoration.title}
+              </p>
             </div>
           </div>
         </div>
         
-        {/* Premium Stats Section */}
-        <div className="flex-1 p-6 bg-gradient-to-br from-white/80 to-white/60 dark:from-gray-700/60 dark:to-gray-800/40 backdrop-blur-xl">
+        {/* Stats Section */}
+        <div className="flex-1 p-4 bg-gradient-to-br from-white/80 to-white/60 dark:from-gray-700/60 dark:to-gray-800/40 backdrop-blur-xl">
           
           {/* Impact Metrics */}
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="text-center bg-gradient-to-br from-[#D5A021]/15 via-yellow-400/10 to-[#D5A021]/15 rounded-2xl p-4 border-2 border-[#D5A021]/30 backdrop-blur-sm group-hover:shadow-lg transition-all duration-300">
-              <div className="text-2xl font-black bg-gradient-to-r from-[#D5A021] to-yellow-600 bg-clip-text text-transparent mb-1">
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <div className="text-center bg-gradient-to-br from-green-500/15 to-emerald-500/10 rounded-xl p-3 border border-green-500/30 backdrop-blur-sm">
+              <div className="text-xl font-black bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-1">
                 {formatAmount(donor.totalDonated)}
               </div>
-              <p className="text-gray-600 dark:text-gray-400 text-xs font-bold uppercase tracking-wider">Total Impact</p>
+              <p className="text-gray-600 dark:text-gray-400 text-xs font-semibold">Total Donated</p>
             </div>
             
-            <div className="text-center bg-gradient-to-br from-[#8B2325]/15 via-red-500/10 to-[#8B2325]/15 rounded-2xl p-4 border-2 border-[#8B2325]/30 backdrop-blur-sm group-hover:shadow-lg transition-all duration-300">
-              <div className="text-2xl font-black bg-gradient-to-r from-[#8B2325] to-red-600 bg-clip-text text-transparent mb-1">
+            <div className="text-center bg-gradient-to-br from-blue-500/15 to-indigo-500/10 rounded-xl p-3 border border-blue-500/30 backdrop-blur-sm">
+              <div className="text-xl font-black bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-1">
                 {donor.donationCount}
               </div>
-              <p className="text-gray-600 dark:text-gray-400 text-xs font-bold uppercase tracking-wider">Donations</p>
+              <p className="text-gray-600 dark:text-gray-400 text-xs font-semibold">Contributions</p>
             </div>
           </div>
 
-          {/* Inspirational Quote/Bio */}
+          {/* Bio or Default Message */}
           <div className="mb-4">
             {donor.donor.bio ? (
-              <div className="bg-gradient-to-r from-gray-50/80 to-white/80 dark:from-gray-800/80 dark:to-gray-700/80 rounded-2xl p-4 border border-gray-200/60 dark:border-gray-600/40 backdrop-blur-sm">
-                <div className="flex items-start gap-2">
-                  <span className="text-[#8B2325] text-lg">"</span>
-                  <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed italic font-medium line-clamp-3 flex-1">
-                    {donor.donor.bio}
-                  </p>
-                  <span className="text-[#8B2325] text-lg self-end">"</span>
-                </div>
+              <div className="bg-gradient-to-r from-gray-50/80 to-white/80 dark:from-gray-800/80 dark:to-gray-700/80 rounded-xl p-3 border border-gray-200/60 dark:border-gray-600/40 backdrop-blur-sm">
+                <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed line-clamp-3">
+                  {donor.donor.bio}
+                </p>
               </div>
             ) : (
-              <div className="bg-gradient-to-r from-[#8B2325]/10 to-[#D5A021]/10 rounded-2xl p-4 border border-[#8B2325]/20 backdrop-blur-sm">
+              <div className="bg-gradient-to-r from-[#8B2325]/10 to-blue-500/10 rounded-xl p-3 border border-[#8B2325]/20 backdrop-blur-sm">
                 <div className="text-center">
-                  <span className="text-2xl mb-2 block">💫</span>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm font-semibold italic">
-                    "Creating waves of positive change"
+                  <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">
+                    Making Nepal stronger, one donation at a time
                   </p>
                 </div>
               </div>
             )}
-          </div>          {/* Activity Status */}
-          <div className="border-t-2 border-gray-200/50 dark:border-gray-600/30 pt-4">
-            <div className="flex items-center justify-center gap-3">
+          </div>
+
+          {/* Activity Status */}
+          <div className="border-t border-gray-200/50 dark:border-gray-600/30 pt-3">
+            <div className="flex items-center justify-between text-xs">
               <div className="flex items-center gap-2">
-                <div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-gray-600 dark:text-gray-400 text-xs font-semibold">
-                  Active Supporter
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span className="text-gray-600 dark:text-gray-400 font-medium">
+                  Active since {new Date(donor.donor.createdAt).getFullYear()}
                 </span>
               </div>
-              <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
-              <span className="text-gray-500 dark:text-gray-400 text-xs">
-                Last: {new Date(donor.lastDonation).toLocaleDateString()}
+              <span className="text-gray-500 dark:text-gray-400">
+                {new Date(donor.lastDonation).toLocaleDateString('en-GB', { 
+                  day: '2-digit', 
+                  month: 'short' 
+                })}
               </span>
             </div>
           </div>
@@ -422,7 +415,9 @@ const TopDonors = () => {
       <div className="container mx-auto px-4 relative z-10">
         <TitleSection />
         <div className="text-center py-20">
-          <div className="text-6xl mb-6">⚠️</div>
+          <div className="w-16 h-16 bg-gradient-to-br from-red-500/20 to-orange-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="w-8 h-8 bg-gradient-to-r from-red-500 to-orange-500 rounded-full"></div>
+          </div>
           <div className="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 backdrop-blur-sm rounded-2xl border border-red-200/50 dark:border-red-700/50 p-6 max-w-md mx-auto">
             <p className="text-[#8B2325] dark:text-red-400 text-lg font-medium">{error}</p>
           </div>
@@ -438,8 +433,10 @@ const TopDonors = () => {
       <div className="container mx-auto px-4 relative z-10">
         <TitleSection />
         <div className="text-center py-20">
-          <div className="text-8xl mb-8">💝</div>
-          <div className="bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-900/20 dark:to-purple-900/20 backdrop-blur-sm rounded-2xl border border-pink-200/50 dark:border-pink-700/50 p-8 max-w-lg mx-auto">
+          <div className="w-24 h-24 bg-gradient-to-br from-[#8B2325]/20 to-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-8">
+            <div className="w-12 h-12 bg-gradient-to-r from-[#8B2325] to-blue-500 rounded-full"></div>
+          </div>
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 backdrop-blur-sm rounded-2xl border border-blue-200/50 dark:border-blue-700/50 p-8 max-w-lg mx-auto">
             <p className="text-gray-600 dark:text-gray-400 text-xl font-medium">Be the first to make a difference!</p>
             <p className="text-gray-500 dark:text-gray-500 text-sm mt-2">Your contribution can inspire others to join this noble cause.</p>
           </div>
@@ -495,7 +492,7 @@ const TopDonors = () => {
             </div>            {/* Donors Container */}
             <div 
               ref={scrollContainerRef}
-              className="flex gap-6 overflow-x-auto scrollbar-hide scroll-smooth pb-4 pt-8 px-2"
+              className="flex gap-4 md:gap-6 overflow-x-auto scrollbar-hide scroll-smooth pb-4 pt-4 px-2"
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
               {donors.map((donor, index) => (

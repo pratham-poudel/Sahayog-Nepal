@@ -1,6 +1,7 @@
 import { Link } from 'wouter';
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
+import { getLiveImpactStats, formatLiveImpactStats } from '../../services/statsService';
 
 // Real impact stories
 const impactImages = [
@@ -80,9 +81,41 @@ const categories = [
 const Hero = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [liveStats, setLiveStats] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState(false);
   
   useEffect(() => {
     setIsVisible(true);
+    
+    // Fetch live impact stats
+    const fetchLiveStats = async () => {
+      try {
+        setStatsLoading(true);
+        setStatsError(false);
+        const stats = await getLiveImpactStats();
+        const formattedStats = formatLiveImpactStats(stats);
+        setLiveStats(formattedStats);
+      } catch (error) {
+        console.error('Error fetching live stats:', error);
+        setStatsError(true);
+        // Set fallback stats
+        setLiveStats({
+          activeCampaigns: 42,
+          totalRaised: 2500000,
+          recentDonations: 5,
+          formatted: {
+            activeCampaigns: "42",
+            totalRaised: "₹2.5M",
+            recentDonations: "5"
+          }
+        });
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+
+    fetchLiveStats();
     
     // Auto-rotate impact images
     const rotationInterval = setInterval(() => {
@@ -90,8 +123,14 @@ const Hero = () => {
         prevIndex === impactImages.length - 1 ? 0 : prevIndex + 1
       );
     }, 5000);
+
+    // Refresh stats every 2 minutes
+    const statsInterval = setInterval(fetchLiveStats, 2 * 60 * 1000);
     
-    return () => clearInterval(rotationInterval);
+    return () => {
+      clearInterval(rotationInterval);
+      clearInterval(statsInterval);
+    };
   }, []);
 
   // Parallax effect for decorative elements
@@ -102,33 +141,47 @@ const Hero = () => {
   };
 
   return (
-    <section className="relative overflow-hidden py-16 md:py-24 bg-gradient-to-br from-white to-blue-50 dark:from-gray-900 dark:to-gray-800">
-      {/* Nepali flag-inspired decorative elements */}
-      <motion.div 
-        className="absolute top-0 left-0 w-40 h-40 bg-[#DC143C] rounded-full opacity-10 blur-3xl"
-        animate={{ 
-          scale: [1, 1.1, 1],
-          opacity: [0.1, 0.15, 0.1] 
-        }}
-        transition={{ 
-          duration: 8,
-          repeat: Infinity,
-          repeatType: "reverse"
-        }}
-      />
-      <motion.div 
-        className="absolute bottom-20 right-0 w-60 h-60 bg-[#003893] rounded-full opacity-10 blur-3xl"
-        animate={{ 
-          scale: [1, 1.2, 1],
-          opacity: [0.1, 0.2, 0.1] 
-        }}
-        transition={{ 
-          duration: 10,
-          repeat: Infinity,
-          repeatType: "reverse",
-          delay: 1
-        }}
-      />
+    <section className="relative overflow-hidden py-20 md:py-32 bg-gradient-to-br from-white via-gray-50/50 to-blue-50/30 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      {/* Enhanced Professional Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Main gradient overlays */}
+        <motion.div 
+          className="absolute -top-96 -left-96 w-[800px] h-[800px] bg-gradient-to-br from-[#8B2325]/8 via-blue-500/6 to-transparent rounded-full blur-3xl"
+          animate={{ 
+            scale: [1, 1.1, 1],
+            opacity: [0.4, 0.6, 0.4],
+            rotate: [0, 10, 0]
+          }}
+          transition={{ 
+            duration: 20,
+            repeat: Infinity,
+            repeatType: "reverse"
+          }}
+        />
+        <motion.div 
+          className="absolute -bottom-96 -right-96 w-[600px] h-[600px] bg-gradient-to-tr from-blue-500/8 via-[#8B2325]/6 to-transparent rounded-full blur-3xl"
+          animate={{ 
+            scale: [1, 1.2, 1],
+            opacity: [0.3, 0.5, 0.3],
+            rotate: [0, -15, 0]
+          }}
+          transition={{ 
+            duration: 25,
+            repeat: Infinity,
+            repeatType: "reverse",
+            delay: 2
+          }}
+        />
+        
+        {/* Accent elements */}
+        <div className="absolute top-1/4 right-1/3 w-64 h-64 bg-gradient-to-br from-[#8B2325]/4 to-transparent rounded-full blur-2xl animate-gentle-glow"></div>
+        <div className="absolute bottom-1/4 left-1/3 w-96 h-96 bg-gradient-to-tr from-blue-500/4 to-transparent rounded-full blur-2xl animate-gentle-glow delay-1000"></div>
+        
+        {/* Geometric patterns */}
+        <div className="absolute top-20 right-32 w-3 h-3 bg-[#8B2325]/20 rounded-full animate-pulse"></div>
+        <div className="absolute bottom-32 left-20 w-2 h-2 bg-blue-500/30 rounded-full animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-16 w-2.5 h-2.5 bg-[#8B2325]/15 rounded-full animate-pulse delay-2000"></div>
+      </div>
       
       {/* Mountain silhouette in the background - Nepal-inspired element */}
       <div className="absolute bottom-0 left-0 right-0 h-16 md:h-24 bg-gradient-to-t from-gray-200/30 to-transparent dark:from-gray-700/20 z-0 overflow-hidden">
@@ -158,88 +211,142 @@ const Hero = () => {
               transition={{ duration: 5, repeat: Infinity }}
             />
             
-            <h1 className="font-poppins font-bold text-3xl md:text-4xl lg:text-5xl xl:text-6xl mb-4 leading-tight">
-              <span className="block text-gray-900 dark:text-white mb-2 text-[min(8vw,2.25rem)] md:text-[min(6vw,2.5rem)] lg:text-[min(4vw,3rem)]">
-                Empower Nepal Through
-              </span>
-              <motion.span 
-                className="block bg-clip-text text-transparent bg-gradient-to-r from-[#DC143C] to-[#003893] dark:from-[#ff3358] dark:to-[#1e68ff] font-extrabold text-[min(7.5vw,2.5rem)] md:text-[min(6vw,3rem)] lg:text-[min(5vw,3.5rem)] tracking-normal md:tracking-wide"
-                animate={{ 
-                  backgroundPosition: ['0% center', '100% center', '0% center'],
-                }}
-                transition={{ 
-                  duration: 10,
-                  repeat: Infinity,
-                  repeatType: "reverse"
-                }}
-                style={{ letterSpacing: "0.01em" }}
+            <h1 className="relative z-10">
+              {/* Startup-focused Hero Headline */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+                className="mb-4"
               >
-                Community Crowdfunding
+                <span className="inline-block text-caption text-[#8B2325] dark:text-red-400 bg-gradient-to-r from-[#8B2325]/10 to-blue-500/10 px-4 py-2 rounded-full font-semibold mb-6 border border-[#8B2325]/20">
+                  Nepal's Leading Crowdfunding Platform
+                </span>
+              </motion.div>
+
+              <motion.span 
+                className="block text-display text-5xl md:text-6xl lg:text-7xl xl:text-8xl mb-2 bg-gradient-to-br from-[#8B2325] via-blue-600 to-[#8B2325] bg-clip-text text-transparent font-black leading-[0.85]"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 1, ease: "easeOut", delay: 0.2 }}
+              >
+                Transform
+              </motion.span>
+              
+              <motion.span 
+                className="block text-display text-4xl md:text-5xl lg:text-6xl xl:text-7xl text-gray-900 dark:text-white font-bold mb-6 leading-[0.9]"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.8, ease: "easeOut", delay: 0.4 }}
+              >
+                Communities Through
+                <span className="text-gradient-nepal ml-3 font-black">Giving</span>
               </motion.span>
             </h1>
             
-            <p className="text-lg text-gray-700 dark:text-gray-300 mb-8 max-w-xl mx-auto md:mx-0 leading-relaxed">
-              Join Nepal's first donation platform to support causes that matter. Together, we can make a difference in communities across Nepal.
-            </p>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.6 }}
+              className="mb-10"
+            >
+              <p className="text-body text-xl md:text-2xl text-gray-700 dark:text-gray-300 mb-6 max-w-2xl mx-auto md:mx-0 leading-relaxed font-medium">
+                Connect hearts, fund dreams, and build a stronger Nepal. 
+                <span className="text-[#8B2325] dark:text-red-400 font-semibold"> Every rupee counts.</span>
+              </p>
+              
+              <div className="flex items-center gap-4 justify-center md:justify-start">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">Live since 2024</span>
+                </div>
+                <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                <span className="text-sm text-gray-500 dark:text-gray-500">Trusted • Transparent • Impactful</span>
+              </div>
+            </motion.div>
             
-            <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 justify-center md:justify-start w-full">
-              <Link to="/start-campaign" className="w-full sm:w-auto">
+            <motion.div 
+              className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start w-full"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.8 }}
+            >
+              <Link to="/start-campaign" className="group">
                 <motion.button 
-                  className="w-full py-3 sm:py-4 px-6 sm:px-8 bg-[#8B2325] hover:bg-[#7a1f21] text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform transition-all duration-300 flex items-center justify-center"
+                  className="relative w-full sm:w-auto py-4 px-8 bg-gradient-to-r from-[#8B2325] via-[#a32729] to-[#8B2325] text-white font-bold rounded-xl shadow-xl hover:shadow-2xl transform transition-all duration-300 flex items-center justify-center overflow-hidden"
                   whileHover={{ 
-                    scale: 1.03,
-                    boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
+                    scale: 1.05,
+                    y: -2
                   }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                  Start a Campaign
+                  {/* Animated background glow */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  
+                  <span className="relative z-10 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 group-hover:rotate-90 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Start Your Campaign
+                  </span>
                 </motion.button>
               </Link>
-              <Link to="/explore" className="w-full sm:w-auto">
+              
+              <Link to="/explore" className="group">
                 <motion.button
-                  className="w-full py-3 sm:py-4 px-6 sm:px-8 border-2 border-[#8B2325] dark:border-[#a32729] bg-white dark:bg-gray-800 text-[#8B2325] dark:text-[#a32729] font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center justify-center"
-                  whileHover={{ scale: 1.03 }}
+                  className="relative w-full sm:w-auto py-4 px-8 border-2 border-[#8B2325] bg-white/80 backdrop-blur-sm dark:bg-gray-800/80 dark:border-[#a32729] text-[#8B2325] dark:text-[#a32729] font-bold rounded-xl hover:bg-[#8B2325] hover:text-white dark:hover:bg-[#a32729] shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center overflow-hidden"
+                  whileHover={{ 
+                    scale: 1.05,
+                    y: -2
+                  }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                  Explore Campaigns
+                  <span className="relative z-10 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 group-hover:scale-110 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    Explore Campaigns
+                  </span>
                 </motion.button>
               </Link>
-            </div>
+            </motion.div>
             
             <motion.div 
-              className="flex items-center justify-center md:justify-start mt-10"
+              className="flex items-center justify-center md:justify-start mt-12"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: isVisible ? 1 : 0, y: isVisible ? 0 : 20 }}
-              transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
+              transition={{ duration: 0.8, delay: 1.0, ease: "easeOut" }}
             >
-              <div className="flex -space-x-4">
-                {[22, 43, 76, 35, 18].map((id, index) => (
-                  <motion.img 
-                    key={id}
-                    className="h-10 w-10 rounded-full border-2 border-white dark:border-gray-800 object-cover shadow-md"
-                    src={`https://randomuser.me/api/portraits/${index % 2 === 0 ? 'women' : 'men'}/${id}.jpg`}
-                    alt="Supporter"
-                    width="40"
-                    height="40"
-                    loading="lazy"
-                    fetchpriority="low"
-                    initial={{ opacity: 0, scale: 0.8, x: -10 }}
-                    animate={{ opacity: 1, scale: 1, x: 0 }}
-                    transition={{ duration: 0.3, delay: 0.5 + (index * 0.1) }}
-                  />
-                ))}
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  <span className="font-bold text-primary-600 dark:text-primary-400">5,000+</span> donors
-                </p>
-                <p className="text-xs text-gray-600 dark:text-gray-400">making an impact in Nepal</p>
+              {/* Social proof with better design */}
+              <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-full p-4 border border-white/20 dark:border-gray-700/20 shadow-lg">
+                <div className="flex items-center gap-4">
+                  <div className="flex -space-x-3">
+                    {[22, 43, 76, 35, 18].map((id, index) => (
+                      <motion.img 
+                        key={id}
+                        className="h-12 w-12 rounded-full border-3 border-white dark:border-gray-800 object-cover shadow-lg"
+                        src={`https://randomuser.me/api/portraits/${index % 2 === 0 ? 'women' : 'men'}/${id}.jpg`}
+                        alt="Supporter"
+                        width="48"
+                        height="48"
+                        loading="lazy"
+                        fetchpriority="low"
+                        initial={{ opacity: 0, scale: 0.8, x: -10 }}
+                        animate={{ opacity: 1, scale: 1, x: 0 }}
+                        transition={{ duration: 0.3, delay: 1.2 + (index * 0.1) }}
+                      />
+                    ))}
+                  </div>
+                  
+                  <div>
+                    <p className="text-body font-bold text-gray-900 dark:text-white">
+                      <span className="text-2xl font-black bg-gradient-to-r from-[#8B2325] to-blue-600 bg-clip-text text-transparent">
+                        {liveStats?.formatted?.activeCampaigns ? `${liveStats.formatted.activeCampaigns}+` : "1,250+"}
+                      </span>
+                    </p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 font-semibold">generous hearts joined</p>
+                  </div>
+                </div>
               </div>
             </motion.div>
           </motion.div>
@@ -250,26 +357,35 @@ const Hero = () => {
             animate={{ opacity: isVisible ? 1 : 0, scale: isVisible ? 1 : 0.9 }}
             transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
           >
-            {/* Simplified Impact Showcase */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
-              {/* Header */}
-              <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Real Impact Stories
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Communities we've helped across Nepal
-                </p>
+            {/* Compact Modern Dashboard */}
+            <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-2xl shadow-xl overflow-hidden border border-white/20 dark:border-gray-700/20 max-w-md mx-auto">
+              
+              {/* Minimal Header */}
+              <div className="px-6 py-4 bg-gradient-to-r from-[#8B2325]/10 to-blue-500/10 border-b border-white/20 dark:border-gray-700/20">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
+                      Live Impact
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      <span className="text-xs text-[#8B2325] dark:text-red-400 font-medium">Real-time</span>
+                    </div>
+                  </div>
+                </div>
               </div>
               
-              {/* Main image showcase */}
-              <div className="relative h-64 md:h-80 overflow-hidden">
+              {/* Compact Image Showcase */}
+              <div className="relative h-48 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800">
                 {impactImages.map((image, index) => (
                   <motion.div 
                     key={index}
                     className="absolute inset-0 w-full h-full"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: index === activeImageIndex ? 1 : 0 }}
+                    initial={{ opacity: 0, scale: 1.1 }}
+                    animate={{ 
+                      opacity: index === activeImageIndex ? 1 : 0,
+                      scale: index === activeImageIndex ? 1 : 1.1
+                    }}
                     transition={{ duration: 0.8 }}
                   >
                     <img 
@@ -278,27 +394,37 @@ const Hero = () => {
                       className="w-full h-full object-cover"
                       loading={index === 0 ? "eager" : "lazy"}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                    <div className="absolute bottom-4 left-4 text-white">
-                      <div className="bg-black/30 backdrop-blur-sm rounded-lg px-3 py-2">
-                        <p className="text-sm font-medium">
-                          {image.category} • {image.location}
-                        </p>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/10" />
+                    
+                    {/* Minimal overlay info */}
+                    <div className="absolute bottom-3 left-3 right-3">
+                      <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-lg px-4 py-2 border border-white/20">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-bold text-gray-900 dark:text-white">
+                              {image.category}
+                            </p>
+                            <p className="text-xs text-[#8B2325] dark:text-red-400 font-medium">
+                              {image.location}
+                            </p>
+                          </div>
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        </div>
                       </div>
                     </div>
                   </motion.div>
                 ))}
                 
-                {/* Simple navigation dots */}
-                <div className="absolute bottom-4 right-4 flex space-x-2">
+                {/* Minimal navigation dots */}
+                <div className="absolute top-3 right-3 flex space-x-1">
                   {impactImages.map((_, index) => (
                     <button
                       key={index}
                       onClick={() => setActiveImageIndex(index)}
-                      className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                      className={`transition-all duration-300 rounded-full ${
                         index === activeImageIndex 
-                          ? 'bg-white w-6' 
-                          : 'bg-white/60 hover:bg-white/80'
+                          ? 'w-6 h-2 bg-white shadow-md' 
+                          : 'w-2 h-2 bg-white/60 hover:bg-white/80'
                       }`}
                       aria-label={`View image ${index + 1}`}
                     />
@@ -306,61 +432,90 @@ const Hero = () => {
                 </div>
               </div>
               
-              {/* Impact stats */}
+              {/* Compact Metrics - Real Data */}
               <div className="px-6 py-4">
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="text-center">
-                    <motion.p 
-                      className="text-2xl font-bold text-[#8B2325] dark:text-[#ff3358]"
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.5, delay: 1 }}
-                    >
-                      500+
-                    </motion.p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Campaigns</p>
+                {statsLoading ? (
+                  // Loading state
+                  <div className="grid grid-cols-3 gap-4">
+                    {[1, 2, 3].map((_, index) => (
+                      <div key={index} className="text-center">
+                        <div className="animate-pulse">
+                          <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
+                          <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div className="text-center">
-                    <motion.p 
-                      className="text-2xl font-bold text-green-600 dark:text-green-400"
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.5, delay: 1.2 }}
-                    >
-                      75M+
-                    </motion.p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Rupees</p>
+                ) : (
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="text-center">
+                      <motion.p 
+                        className="text-xl font-black bg-gradient-to-r from-[#8B2325] to-blue-600 bg-clip-text text-transparent"
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.5, delay: 1 }}
+                        key={liveStats?.activeCampaigns} // Re-animate when value changes
+                      >
+                        {liveStats?.formatted?.activeCampaigns || "42"}
+                      </motion.p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">Campaigns</p>
+                      {statsError && (
+                        <div className="w-1 h-1 bg-yellow-500 rounded-full mx-auto mt-1" title="Using cached data"></div>
+                      )}
+                    </div>
+                    <div className="text-center">
+                      <motion.p 
+                        className="text-xl font-black bg-gradient-to-r from-green-500 to-emerald-600 bg-clip-text text-transparent"
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.5, delay: 1.2 }}
+                        key={liveStats?.totalRaised} // Re-animate when value changes
+                      >
+                        {liveStats?.formatted?.totalRaised || "₹2.5M"}
+                      </motion.p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">Raised</p>
+                    </div>
+                    <div className="text-center">
+                      <motion.p 
+                        className="text-xl font-black bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent"
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.5, delay: 1.4 }}
+                        key={liveStats?.recentDonations} // Re-animate when value changes
+                      >
+                        {liveStats?.recentDonations || "5"}
+                      </motion.p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">Recent</p>
+                    </div>
                   </div>
-                  <div className="text-center">
-                    <motion.p 
-                      className="text-2xl font-bold text-blue-600 dark:text-blue-400"
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.5, delay: 1.4 }}
-                    >
-                      35+
-                    </motion.p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Districts</p>
-                  </div>
+                )}
+                
+                {/* Real-time indicator */}
+                <div className="flex items-center justify-center mt-3 gap-2">
+                  <div className={`w-1.5 h-1.5 rounded-full ${statsError ? 'bg-yellow-500' : 'bg-green-500'} ${!statsLoading ? 'animate-pulse' : ''}`}></div>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    {statsLoading ? 'Updating...' : statsError ? 'Offline mode' : 'Live data'}
+                  </span>
                 </div>
               </div>
               
-              {/* Category links */}
+              {/* Category Pills */}
               <div className="px-6 pb-6">
-                <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
-                  {categories.map((category, index) => (
+                <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-3">Browse Categories</h4>
+                <div className="flex flex-wrap gap-2">
+                  {categories.slice(0, 4).map((category, index) => (
                     <Link key={category.name} to={category.link}>
                       <motion.div
-                        className="flex flex-col items-center p-3 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-[#8B2325] dark:hover:border-[#ff3358] hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-300 group"
+                        className="flex items-center gap-1 px-3 py-2 rounded-full bg-gradient-to-r from-white/60 to-white/30 dark:from-gray-700/60 dark:to-gray-800/30 border border-white/40 dark:border-gray-600/40 hover:border-[#8B2325]/60 dark:hover:border-red-400/60 hover:shadow-md backdrop-blur-sm transition-all duration-300 group"
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3, delay: 1.6 + (index * 0.1) }}
-                        whileHover={{ y: -2 }}
+                        whileHover={{ y: -2, scale: 1.05 }}
                       >
-                        <div className="mb-2">{category.icon}</div>
-                        <p className="text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-[#8B2325] dark:group-hover:text-[#ff3358] transition-colors text-center">
+                        <div className="text-sm">{category.icon}</div>
+                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-[#8B2325] dark:group-hover:text-red-400 transition-colors">
                           {category.name}
-                        </p>
+                        </span>
                       </motion.div>
                     </Link>
                   ))}

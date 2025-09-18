@@ -194,7 +194,7 @@ const Blog = () => {
       <SEO 
         title="Blog - Stories of Impact & Change"
         description="Discover inspiring stories, expert insights, and community journeys that are transforming lives across Nepal and beyond. Read about successful campaigns, social impact, and community development initiatives."
-        keywords="Nepal blog, social impact stories, crowdfunding success, community development, charity stories, Nepal community, social change, fundraising insights"
+        keywords="Nepal blog, social impact stories, crowdfunding, community development, charity stories, Nepal community, social change, fundraising insights"
         ogImage="https://images.unsplash.com/photo-1552664730-d307ca884978?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80"
         ogUrl={`${window.location.origin}/blog`}
       />

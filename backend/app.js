@@ -38,6 +38,7 @@ const topDonorsRoutes = require('./routes/topDonorsRoutes');
 const bankRoutes = require('./routes/bankRoutes');
 const withdrawalRoutes = require('./routes/withdrawalRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
+const statsRoutes = require('./routes/statsRoutes');
 
 
 app.use('/api/users', userRoutes);
@@ -50,6 +51,7 @@ app.use('/api/donors', topDonorsRoutes);
 app.use('/api/bank', bankRoutes);
 app.use('/api/withdrawals', withdrawalRoutes);
 app.use('/api/uploads', uploadRoutes);
+app.use('/api/stats', statsRoutes);
 
 // Basic route for testing
 app.get('/', (req, res) => {

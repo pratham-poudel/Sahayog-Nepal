@@ -8,9 +8,7 @@ import Stats from '../components/home/Stats';
 import FeaturedCampaigns from '../components/home/FeaturedCampaigns';
 import TopDonors from '../components/home/TopDonors';
 import HowItWorks from '../components/home/HowItWorks';
-import SuccessStory from '../components/home/SuccessStory';
 import CampaignCTA from '../components/home/CampaignCTA';
-import Testimonials from '../components/home/Testimonials';
 import Newsletter from '../components/home/Newsletter';
 
 const Home = () => {
@@ -46,9 +44,7 @@ const Home = () => {
         <FeaturedCampaigns />
         <TopDonors />
         <HowItWorks />
-        <SuccessStory />
         <CampaignCTA />
-        <Testimonials />
         <Newsletter />
       </motion.div>
     </>
