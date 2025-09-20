@@ -8,6 +8,7 @@ import DonationForm from './DonationForm';
 import ShareableSocialCard from '../social/ShareableSocialCard';
 import DonationsModal from './DonationsModal';
 import { API_URL as CONFIG_API_URL, MINIO_URL } from '../../config/index.js';
+import { formatCurrencyShort } from '../../utils/formatCurrency';
 import { 
   Carousel, 
   CarouselContent, 
@@ -164,7 +165,7 @@ const RecentDonations = ({ campaignId }) => {
                     </span>
                   </div>
                   <div className="font-bold text-sm sm:text-base text-amber-900 dark:text-amber-100 bg-gradient-to-r from-amber-100 to-yellow-200 dark:from-amber-700/80 dark:to-yellow-600/80 px-3 py-1 sm:px-4 sm:py-1.5 rounded-lg border border-amber-300 dark:border-amber-600 shadow-sm self-start">
-                    Rs. {topDonor.amount?.toLocaleString()}
+                    {formatCurrencyShort(topDonor.amount)}
                   </div>
                 </div>
                 {topDonor.message && (
@@ -218,7 +219,7 @@ const RecentDonations = ({ campaignId }) => {
                     </span>
                   </div>
                   <div className="text-xs sm:text-sm font-semibold text-primary-600 dark:text-primary-300 bg-primary-50 dark:bg-primary-900/50 px-2 py-1 rounded-md border border-transparent dark:border-primary-800 flex-shrink-0 self-start">
-                    Rs. {donation.amount?.toLocaleString()}
+                    {formatCurrencyShort(donation.amount)}
                   </div>
                 </div>
                 {donation.message && (
@@ -324,7 +325,7 @@ const CampaignDetail = ({ campaign }) => {
                 <div key={index} className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-green-200 dark:border-green-700 hover:shadow-md transition-shadow">
                   <div className="text-center">
                     <div className="text-2xl font-bold text-green-600 dark:text-green-400 mb-2">
-                      Rs. {item.amount.toLocaleString()}
+                      {formatCurrencyShort(item.amount)}
                     </div>
                     <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
                       {item.description}
@@ -371,7 +372,7 @@ const CampaignDetail = ({ campaign }) => {
             
             <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
               <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                Rs. {Math.round(campaign.raised / campaign.donors || 0).toLocaleString()}
+                {formatCurrencyShort(Math.round(campaign.raised / campaign.donors || 0))}
               </div>
               <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Avg. Donation</p>
             </div>
@@ -542,8 +543,8 @@ const CampaignDetail = ({ campaign }) => {
           
           <div className="mb-6">
             <div className="flex justify-between text-xs md:text-sm mb-1">
-              <span className="font-medium">Rs. {campaign.raised.toLocaleString()} raised</span>
-              <span className="text-gray-600">of Rs. {campaign.goal.toLocaleString()}</span>
+              <span className="font-medium">{formatCurrencyShort(campaign.raised)} raised</span>
+              <span className="text-gray-600">of {formatCurrencyShort(campaign.goal)}</span>
             </div>
             <Progress value={campaign.progress} />
             <div className="flex items-center justify-between mt-2 text-xs md:text-sm text-gray-600">
@@ -553,15 +554,24 @@ const CampaignDetail = ({ campaign }) => {
           </div>
           
           <div className="flex items-center mb-6">
-            <img 
-              src={campaign.creator.image} 
-              alt={campaign.creator.name} 
-              className="h-8 w-8 md:h-10 md:w-10 rounded-full object-cover mr-3 border-2 border-white"
-            />
-            <div>
-              <p className="text-xs text-gray-500">Created by</p>
-              <p className="font-medium text-sm md:text-base">{campaign.creator.name}</p>
-            </div>
+            <Link href={`/profile/${campaign.creator._id}`} className="flex items-center hover:opacity-80 transition-opacity cursor-pointer">
+              <img 
+                src={campaign.creator.image} 
+                alt={campaign.creator.name} 
+                className="h-8 w-8 md:h-10 md:w-10 rounded-full object-cover mr-3 border-2 border-white"
+              />
+              <div>
+                <p className="text-xs text-gray-500">Created by</p>
+                <div className="flex items-center">
+                  <p className="font-medium text-sm md:text-base hover:text-primary-600 transition-colors">{campaign.creator.name}</p>
+                  {campaign.creator.isPremiumAndVerified && (
+                    <svg className="w-4 h-4 ml-1 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                </div>
+              </div>
+            </Link>
           </div>
           
           <DonationForm campaignId={campaign.id} />

@@ -10,7 +10,7 @@ import {
   Search, Filter, ChevronDown, RefreshCw, Calendar,
   CheckCircle, XCircle, Clock, AlertTriangle, Star,
   FileText, Activity, CreditCard, UserCheck, MoreVertical,
-  Edit3, Trash2, Flag, Ban, Check
+  Edit3, Trash2, Flag, Ban, Check, Shield, ShieldX
 } from 'lucide-react';
 import VerifyBank from './admin/VerifyBank';
 import WithdrawalManagement from './admin/WithdrawalManagement';
@@ -384,6 +384,59 @@ const AdminDashboard = () => {
       console.error('Error performing bulk action:', error);
     } finally {
       setActionLoading(prev => ({ ...prev, bulkAction: false }));
+    }
+  };
+
+  // Handle user promotion to verified status
+  const handleUserPromote = async (userId, userName) => {
+    if (!window.confirm(`Are you sure you want to promote "${userName}" to verified premium partner? This will send them a congratulatory email.`)) {
+      return;
+    }
+
+    setActionLoading(prev => ({ ...prev, [`promote_${userId}`]: true }));
+
+    try {
+      const data = await apiCall(`/users/${userId}/promote`, {
+        method: 'PUT',
+        body: JSON.stringify({ sendEmail: true })
+      });
+      
+      if (data?.success) {
+        // Refresh users list
+        await fetchUsers();
+        alert(`Successfully promoted ${userName} to verified premium partner!`);
+      }
+    } catch (error) {
+      console.error('Error promoting user:', error);
+      alert('Failed to promote user. Please try again.');
+    } finally {
+      setActionLoading(prev => ({ ...prev, [`promote_${userId}`]: false }));
+    }
+  };
+
+  // Handle user demotion (remove verified status)
+  const handleUserDemote = async (userId, userName) => {
+    if (!window.confirm(`Are you sure you want to remove verified status from "${userName}"?`)) {
+      return;
+    }
+
+    setActionLoading(prev => ({ ...prev, [`demote_${userId}`]: true }));
+
+    try {
+      const data = await apiCall(`/users/${userId}/demote`, {
+        method: 'PUT'
+      });
+      
+      if (data?.success) {
+        // Refresh users list
+        await fetchUsers();
+        alert(`Successfully removed verified status from ${userName}.`);
+      }
+    } catch (error) {
+      console.error('Error demoting user:', error);
+      alert('Failed to remove verified status. Please try again.');
+    } finally {
+      setActionLoading(prev => ({ ...prev, [`demote_${userId}`]: false }));
     }
   };
 
@@ -1072,8 +1125,15 @@ const AdminDashboard = () => {
                               </div>
                             </div>
                             <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                {user.name}
+                              <div className="flex items-center gap-2">
+                                <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                  {user.name}
+                                </div>
+                                {user.isPremiumAndVerified && (
+                                  <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path>
+                                  </svg>
+                                )}
                               </div>
                               <div className="text-sm text-gray-500 dark:text-gray-400">
                                 {user.email}
@@ -1091,12 +1151,43 @@ const AdminDashboard = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                           {new Date(user.createdAt).toLocaleDateString()}
-                        </td>                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">                          <button
-                            onClick={() => setLocation(`/admin/user/${user._id}`)}
-                            className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-                          >
-                            <Eye className="w-5 h-5" />
-                          </button>
+                        </td>                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => setLocation(`/admin/user/${user._id}`)}
+                              className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                              title="View Details"
+                            >
+                              <Eye className="w-5 h-5" />
+                            </button>
+                            {user.isPremiumAndVerified ? (
+                              <button
+                                onClick={() => handleUserDemote(user._id, user.name)}
+                                disabled={actionLoading[`demote_${user._id}`]}
+                                className="text-orange-600 hover:text-orange-900 dark:text-orange-400 dark:hover:text-orange-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="Remove Verification"
+                              >
+                                {actionLoading[`demote_${user._id}`] ? (
+                                  <div className="w-5 h-5 border-2 border-orange-600 border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                  <ShieldX className="w-5 h-5" />
+                                )}
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleUserPromote(user._id, user.name)}
+                                disabled={actionLoading[`promote_${user._id}`]}
+                                className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="Promote to Verified"
+                              >
+                                {actionLoading[`promote_${user._id}`] ? (
+                                  <div className="w-5 h-5 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                  <Shield className="w-5 h-5" />
+                                )}
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))

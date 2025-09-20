@@ -42,6 +42,7 @@ import Blog from "./pages/Blog";
 import BlogDetail from "./pages/BlogDetail";
 import WriteBlog from "./pages/WriteBlog";
 import DetailedStatistics from "./pages/DetailedStatistics";
+import UserProfile from "./pages/UserProfile";
 
 // App wrapper to use auth context
 function AppContent() {
@@ -146,6 +147,9 @@ function AppContent() {
                     <Profile />
                   </ProtectedRoute>
                 )}
+              </Route>
+              <Route path="/profile/:id">
+                {(params) => <UserProfile id={params.id} />}
               </Route>
               <Route path="/login" component={Login} />
               <Route path="/signup" component={Signup} />

@@ -264,7 +264,7 @@ exports.getCampaignStatistics = async (req, res) => {
 
     // Get campaign details
     const campaign = await Campaign.findById(campaignId)
-      .populate('creator', 'name email profilePicture');
+      .populate('creator', 'name email profilePicture isPremiumAndVerified');
 
     if (!campaign) {
       return res.status(404).json({

@@ -129,8 +129,10 @@ const CampaignDetails = () => {
                 donors: campaign.donors || 0,
                 longDescription: campaign.story,
                 creator: {
+                  _id: campaign.creator?._id,
                   name: campaign.creator?.name || 'Anonymous',
-                  image: campaign.creator ? getProfilePictureUrl(campaign.creator) : 'https://ui-avatars.com/api/?name=Anonymous&background=random'
+                  image: campaign.creator ? getProfilePictureUrl(campaign.creator) : 'https://ui-avatars.com/api/?name=Anonymous&background=random',
+                  isPremiumAndVerified: campaign.creator?.isPremiumAndVerified || false
                 }
               }} />
               

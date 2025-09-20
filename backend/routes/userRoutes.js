@@ -8,7 +8,8 @@ const {
     emailLimiter, 
     otpLimiter, 
     otpResendLimiter, 
-    dailyEmailLimiter 
+    dailyEmailLimiter,
+    publicProfileLimiter 
 } = require('../middlewares/rateLimitMiddleware');
 
 // Import email abuse protection middleware
@@ -36,7 +37,9 @@ const {
     uploadProfilePicture,
     changePassword,
     updateNotificationSettings,
-    getMydonation
+    getMydonation,
+    getPublicUserProfile,
+    getUserCampaigns
 
 } = require('../controllers/userController');
 const { protect } = require('../middlewares/authMiddleware');
@@ -110,6 +113,18 @@ router.post('/profile-picture', protect, upload.single('profilePicture'), upload
 router.put('/change-password', protect, changePassword);
 router.put('/notification-settings', protect, updateNotificationSettings);
 router.get('/mydonation/:id', protect, getMydonation);
+
+// Public profile routes with rate limiting and caching
+router.get('/:id/profile', 
+    publicProfileLimiter, 
+    cacheMiddleware((req) => `user_profile:${req.params.id}`, 300), 
+    getPublicUserProfile
+);
+router.get('/:id/campaigns', 
+    publicProfileLimiter, 
+    cacheMiddleware((req) => `user_campaigns:${req.params.id}:page:${req.query.page || 1}`, 300), 
+    getUserCampaigns
+);
 
 module.exports = router; 
 

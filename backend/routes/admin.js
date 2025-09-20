@@ -9,6 +9,7 @@ const Donation = require('../models/Donation');
 const adminAuth = require('../middleware/adminAuth');
 const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
+const { sendVerificationEmail } = require('../utils/SendVerificationEmail');
 
 // Import email abuse monitoring routes
 const emailAbuseMonitoring = require('./emailAbuseMonitoring');
@@ -1499,6 +1500,127 @@ router.put('/campaigns/:id/tags', adminAuth, async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Server error'
+        });
+    }
+});
+
+// Promote user to verified/premium status
+router.put('/users/:id/promote', adminAuth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { sendEmail = true } = req.body;
+
+        // Validate user ID
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid user ID'
+            });
+        }
+
+        // Find user
+        const user = await User.findById(id);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // Check if user is already verified
+        if (user.isPremiumAndVerified) {
+            return res.status(400).json({
+                success: false,
+                message: 'User is already verified and premium'
+            });
+        }
+
+        // Update user status
+        user.isPremiumAndVerified = true;
+        await user.save();
+
+        // Send verification email if requested
+        if (sendEmail) {
+            try {
+                await sendVerificationEmail(
+                    user.email, 
+                    user.name, 
+                    req.ip || req.connection.remoteAddress
+                );
+            } catch (emailError) {
+                console.error('Error sending verification email:', emailError);
+                // Don't fail the promotion if email fails
+            }
+        }
+
+        res.json({
+            success: true,
+            message: `User ${user.name} has been successfully promoted to verified premium partner`,
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                isPremiumAndVerified: user.isPremiumAndVerified
+            }
+        });
+    } catch (error) {
+        console.error('Error promoting user:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while promoting user'
+        });
+    }
+});
+
+// Remove verified status from user
+router.put('/users/:id/demote', adminAuth, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Validate user ID
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid user ID'
+            });
+        }
+
+        // Find user
+        const user = await User.findById(id);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // Check if user is not verified
+        if (!user.isPremiumAndVerified) {
+            return res.status(400).json({
+                success: false,
+                message: 'User is not verified'
+            });
+        }
+
+        // Update user status
+        user.isPremiumAndVerified = false;
+        await user.save();
+
+        res.json({
+            success: true,
+            message: `Verified status removed from user ${user.name}`,
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                isPremiumAndVerified: user.isPremiumAndVerified
+            }
+        });
+    } catch (error) {
+        console.error('Error demoting user:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while removing verification'
         });
     }
 });

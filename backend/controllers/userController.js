@@ -941,3 +941,237 @@ module.exports.getMydonation = async (req, res) => {
         });
     }
 };
+
+// @desc    Get public user profile
+// @route   GET /api/users/:id/profile
+// @access  Public
+exports.getPublicUserProfile = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Validate ObjectId
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid user ID'
+            });
+        }
+
+        // Find user with selected fields only (security)
+        const user = await User.findById(id).select(
+            'name email bio profilePicture profilePictureUrl createdAt isPremiumAndVerified'
+        );
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // Get user's campaign statistics
+        const Campaign = require('../models/Campaign');
+        const Donation = require('../models/Donation');
+
+        // Get campaign stats efficiently
+        const campaignStats = await Campaign.aggregate([
+            { $match: { creator: user._id, status: { $ne: 'draft' } } },
+            {
+                $group: {
+                    _id: null,
+                    campaignCount: { $sum: 1 },
+                    totalRaised: { $sum: '$amountRaised' }
+                }
+            }
+        ]);
+
+        // Get total donation count across all user's campaigns
+        const donorStats = await Donation.aggregate([
+            {
+                $lookup: {
+                    from: 'campaigns',
+                    localField: 'campaignId', 
+                    foreignField: '_id',
+                    as: 'campaign'
+                }
+            },
+            { $unwind: '$campaign' },
+            { $match: { 'campaign.creator': user._id } },
+            {
+                $group: {
+                    _id: null,
+                    totalDonations: { $sum: 1 }
+                }
+            }
+        ]);
+
+        const stats = {
+            campaignCount: campaignStats[0]?.campaignCount || 0,
+            totalRaised: campaignStats[0]?.totalRaised || 0,
+            totalDonors: donorStats[0]?.totalDonations || 0
+        };
+
+        // Process profile picture URL
+        let profilePictureUrl = '';
+        if (user.profilePictureUrl) {
+            profilePictureUrl = user.profilePictureUrl;
+        } else if (user.profilePicture) {
+            if (user.profilePicture.startsWith('http://') || user.profilePicture.startsWith('https://')) {
+                profilePictureUrl = user.profilePicture;
+            } else {
+                const fileService = require('../services/fileService');
+                const key = `users/profile-pictures/${user.profilePicture}`;
+                profilePictureUrl = fileService.processUploadedFile({ 
+                    key: key,
+                    originalname: user.profilePicture
+                }).url;
+            }
+        }
+
+        // Prepare user profile response
+        const userProfile = {
+            _id: user._id,
+            name: user.name,
+            bio: user.bio || `Passionate about making a difference in the world. Every small step counts towards building a better tomorrow.`,
+            profilePicture: user.profilePicture,
+            profilePictureUrl: profilePictureUrl,
+            createdAt: user.createdAt,
+            isPremiumAndVerified: user.isPremiumAndVerified,
+            stats
+        };
+
+        res.status(200).json({
+            success: true,
+            user: userProfile
+        });
+
+    } catch (error) {
+        console.error('Error fetching public user profile:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching user profile',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Get user campaigns with pagination
+// @route   GET /api/users/:id/campaigns
+// @access  Public
+exports.getUserCampaigns = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const page = parseInt(req.query.page) || 1;
+        const limit = Math.min(parseInt(req.query.limit) || 12, 50); // Max 50 campaigns per page
+        const skip = (page - 1) * limit;
+
+        // Validate ObjectId
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid user ID'
+            });
+        }
+
+        // Check if user exists
+        const userExists = await User.findById(id);
+        if (!userExists) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        const Campaign = require('../models/Campaign');
+
+        // Get campaigns with pagination
+        const campaigns = await Campaign.find({
+            creator: id,
+            status: { $ne: 'draft' } // Exclude draft campaigns from public view
+        })
+        .select('title shortDescription coverImage amountRaised targetAmount donors status createdAt category subcategory endDate')
+        .sort({ createdAt: -1 }) // Most recent first
+        .skip(skip)
+        .limit(limit)
+        .lean(); // Use lean() for better performance
+
+        // Process campaigns to add URLs and calculated fields
+        const fileService = require('../services/fileService');
+        const processedCampaigns = campaigns.map(campaign => {
+            // Process cover image URL
+            let thumbnailUrl = '';
+            if (campaign.coverImage) {
+                if (campaign.coverImage.startsWith('http://') || campaign.coverImage.startsWith('https://')) {
+                    thumbnailUrl = campaign.coverImage;
+                } else {
+                    const key = `campaigns/cover-images/${campaign.coverImage}`;
+                    thumbnailUrl = fileService.processUploadedFile({ 
+                        key: key,
+                        originalname: campaign.coverImage
+                    }).url;
+                }
+            }
+
+            // Calculate progress percentage
+            const progress = campaign.targetAmount > 0 
+                ? Math.round((campaign.amountRaised / campaign.targetAmount) * 100)
+                : 0;
+
+            // Calculate days left
+            const today = new Date();
+            const endDate = new Date(campaign.endDate);
+            const timeDiff = endDate.getTime() - today.getTime();
+            const daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
+
+            return {
+                _id: campaign._id,
+                title: campaign.title,
+                description: campaign.shortDescription,
+                coverImage: campaign.coverImage,
+                thumbnail: thumbnailUrl,
+                thumbnailUrl: thumbnailUrl, // Add this field as well for frontend compatibility
+                raised: campaign.amountRaised,
+                goal: campaign.targetAmount,
+                progress,
+                donors: campaign.donors,
+                status: campaign.status,
+                createdAt: campaign.createdAt,
+                category: campaign.category,
+                subcategory: campaign.subcategory,
+                daysLeft: daysLeft > 0 ? daysLeft : 0
+            };
+        });
+
+        // Get total count for pagination
+        const totalCampaigns = await Campaign.countDocuments({
+            creator: id,
+            status: { $ne: 'draft' }
+        });
+
+        const totalPages = Math.ceil(totalCampaigns / limit);
+        const hasNextPage = page < totalPages;
+        const hasPrevPage = page > 1;
+
+        res.status(200).json({
+            success: true,
+            campaigns: processedCampaigns,
+            pagination: {
+                currentPage: page,
+                totalPages,
+                totalCampaigns,
+                hasNextPage,
+                hasPrevPage,
+                nextPage: hasNextPage ? page + 1 : null,
+                prevPage: hasPrevPage ? page - 1 : null
+            }
+        });
+
+    } catch (error) {
+        console.error('Error fetching user campaigns:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching user campaigns',
+            error: error.message
+        });
+    }
+};

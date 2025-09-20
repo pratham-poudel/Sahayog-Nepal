@@ -3,7 +3,7 @@ import { useLocation } from 'wouter';
 import { API_URL } from '../../config/index';
 import { 
   ArrowLeft, User, Mail, Phone, Calendar, CreditCard, 
-  TrendingUp, Activity, Eye, Download, MapPin
+  TrendingUp, Activity, Eye, Download, MapPin, Shield, ShieldX
 } from 'lucide-react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -36,6 +36,58 @@ const UserDetail = ({ id }) => {
       console.error('Error fetching user:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUserPromote = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/admin/users/${id}/promote`, {
+        method: 'PUT',
+        credentials: 'include'
+      });
+      const data = await response.json();
+      if (data.success) {
+        // Update the user state
+        setUser(prev => ({
+          ...prev,
+          user: {
+            ...prev.user,
+            isPremiumAndVerified: true
+          }
+        }));
+        alert('User promoted to verified successfully!');
+      } else {
+        alert(data.message || 'Failed to promote user');
+      }
+    } catch (error) {
+      console.error('Error promoting user:', error);
+      alert('Error promoting user');
+    }
+  };
+
+  const handleUserDemote = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/admin/users/${id}/demote`, {
+        method: 'PUT',
+        credentials: 'include'
+      });
+      const data = await response.json();
+      if (data.success) {
+        // Update the user state
+        setUser(prev => ({
+          ...prev,
+          user: {
+            ...prev.user,
+            isPremiumAndVerified: false
+          }
+        }));
+        alert('User verification removed successfully!');
+      } else {
+        alert(data.message || 'Failed to remove user verification');
+      }
+    } catch (error) {
+      console.error('Error demoting user:', error);
+      alert('Error removing user verification');
     }
   };
 
@@ -101,6 +153,23 @@ const UserDetail = ({ id }) => {
                 <span className="text-sm text-gray-500 dark:text-gray-400">
                   Joined {new Date(user.user.createdAt).toLocaleDateString()}
                 </span>
+                {user.user.isPremiumAndVerified ? (
+                  <button
+                    onClick={() => handleUserDemote()}
+                    className="px-4 py-2 bg-orange-600 text-white text-sm rounded-lg hover:bg-orange-700 transition-colors flex items-center space-x-2"
+                  >
+                    <ShieldX className="w-4 h-4" />
+                    <span>Remove Verification</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleUserPromote()}
+                    className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
+                  >
+                    <Shield className="w-4 h-4" />
+                    <span>Promote to Verified</span>
+                  </button>
+                )}
               </div>
             </div>
 
@@ -110,7 +179,14 @@ const UserDetail = ({ id }) => {
                 <div className="w-32 h-32 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center mx-auto mb-4">
                   <User className="w-16 h-16 text-gray-600 dark:text-gray-400" />
                 </div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{user.user.name}</h1>
+                <div className="flex items-center justify-center space-x-2 mb-2">
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{user.user.name}</h1>
+                  {user.user.isPremiumAndVerified && (
+                    <svg className="w-6 h-6 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  )}
+                </div>
                 <p className="text-gray-600 dark:text-gray-400 mb-4">{user.user.email}</p>
                 
                 <div className="grid grid-cols-3 gap-4 text-center">

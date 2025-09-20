@@ -322,7 +322,7 @@ const formatCampaignWithUrls = (campaign) => {
 exports.getCampaignById = async (req, res) => {
     try {
         const campaign = await Campaign.findById(req.params.id)
-            .populate('creator', 'name email profilePicture');
+            .populate('creator', 'name email profilePicture isPremiumAndVerified');
         
         if (!campaign) {
             return res.status(404).json({
@@ -944,7 +944,7 @@ exports.getCampaignsByCategory = async (req, res) => {
         }
 
         const campaigns = await Campaign.find(query)
-            .populate('creator', 'name email profilePicture')
+            .populate('creator', 'name email profilePicture isPremiumAndVerified')
             .sort({ createdAt: -1 })  // Sorting by creation date in descending order
             .limit(limit);  // Apply the limit
 
@@ -1145,7 +1145,7 @@ exports.getRotatingFeaturedCampaigns = async (req, res) => {
             const skip = (page - 1) * count;
             
             const campaigns = await Campaign.find(fallbackQuery)
-                .populate('creator', 'name email profilePicture')
+                .populate('creator', 'name email profilePicture isPremiumAndVerified')
                 .sort({ createdAt: -1 }) // Sort by newest first as fallback
                 .skip(skip)
                 .limit(count)
@@ -1474,7 +1474,7 @@ exports.getCampaignsByHierarchicalCategory = async (req, res) => {
 
         // Get campaigns with pagination
         const campaigns = await Campaign.find(query)
-            .populate('creator', 'name email profilePicture')
+            .populate('creator', 'name email profilePicture isPremiumAndVerified')
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)

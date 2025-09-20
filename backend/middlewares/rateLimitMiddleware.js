@@ -146,6 +146,21 @@ const transactionEmailLimiter = rateLimit({
     keyGenerator: (req) => `transaction-email:${req.ip}`,
 });
 
+// Public profile access limiter - Prevent profile scraping
+const publicProfileLimiter = rateLimit({
+    windowMs: 10 * 60 * 1000, // 10 minutes
+    max: 100, // Limit each IP to 100 profile requests per 10 minutes
+    message: {
+        success: false,
+        message: 'Too many profile requests. Please try again later.',
+        retryAfter: 10 * 60,
+        errorCode: 'PROFILE_RATE_LIMIT_EXCEEDED'
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req) => `profile:${req.ip}`,
+});
+
 module.exports = {
     generalApiLimiter,
     dataHeavyLimiter,
@@ -155,5 +170,6 @@ module.exports = {
     otpLimiter,
     otpResendLimiter,
     dailyEmailLimiter,
-    transactionEmailLimiter
+    transactionEmailLimiter,
+    publicProfileLimiter
 };
