@@ -8,6 +8,7 @@ const { v4: uuidv4 } = require('uuid');
 require('dotenv').config();
 const redis=require('../utils/RedisClient')
 const { sendTransactionEmail } = require('../utils/sendTransactionEmail');
+const { clearCampaignCaches, clearSpecificCampaignCache } = require('../utils/cacheUtils');
 const WebSocket = require('ws');
 
 
@@ -282,7 +283,7 @@ exports.handleKhaltiCallback = async (req, res) => {
 
     console.log('Khalti callback received:', req.query);
 
-    if (!pidx) {
+    if (!transaction_id) {
       console.error('No pidx found in callback');
       return res.redirect(`${WEBSITE_URL}/payment/error?message=No+payment+identifier+found`);
     }
@@ -336,7 +337,11 @@ const donation = new Donation({
   anonymous: isAnonymous,
 });
     await donation.save();
-    await redis.del(`campaignById:${payment.campaignId._id}`);
+    
+    // Clear campaign-related caches since payment affects campaign statistics
+    await clearCampaignCaches();
+    await clearSpecificCampaignCache(payment.campaignId._id);
+    
     await sendTransactionEmail(payment.donorEmail, payment);
 
     // Determine redirect URL based on payment status
@@ -700,7 +705,11 @@ exports.handleEsewaCallback = async (req, res) => {
             anonymous: isAnonymous,
 });
       await donation.save();
-      await redis.del(`campaignById:${payment.campaignId._id}`);
+      
+      // Clear campaign-related caches since payment affects campaign statistics
+      await clearCampaignCaches();
+      await clearSpecificCampaignCache(payment.campaignId._id);
+      
       await sendTransactionEmail(payment.donorEmail, payment);
       return res.redirect(`${WEBSITE_URL}/payment/success?paymentId=${payment._id}`);
     } else {
@@ -997,8 +1006,10 @@ exports.checkFonepayStatus = async (req, res) => {
         
         await donation.save();
         
-        // Clear cache and send email
-        await redis.del(`campaignById:${payment.campaignId}`);
+        // Clear campaign-related caches since payment affects campaign statistics
+        await clearCampaignCaches();
+        await clearSpecificCampaignCache(payment.campaignId);
+        
         await sendTransactionEmail(payment.donorEmail, payment);
         
         // Mark as processed

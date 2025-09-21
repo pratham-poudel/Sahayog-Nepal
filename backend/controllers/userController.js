@@ -3,6 +3,7 @@ const Payment = require('../models/Payment');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const redis = require('../utils/RedisClient');
+const { clearCampaignCaches } = require('../utils/cacheUtils');
 const { sendOtpEmail } = require('../utils/sendOtpEmail');
 const { sendLoginWithOtp } = require('../utils/sendLoginWithOtp');
 const { sendWelcomeEmail } = require('../utils/SendWelcomeEmail');
@@ -675,7 +676,10 @@ exports.updateUserProfile = async (req, res) => {
             updateData,
             { new: true, runValidators: true }
         );
-        await redis.del(`profile:${req.user._id}`)
+        await redis.del(`profile:${req.user._id}`);
+        
+        // Clear campaign caches since user profile data affects campaign display
+        await clearCampaignCaches();
         
         // Get the profile picture URL if it exists
         let responseProfilePictureUrl = '';
@@ -750,7 +754,10 @@ exports.uploadProfilePicture = async (req, res) => {
             { profilePicture: filename },
             { new: true }
         );
-        await redis.del(`profile:${req.user._id}`)
+        await redis.del(`profile:${req.user._id}`);
+        
+        // Clear campaign caches since profile picture affects campaign display
+        await clearCampaignCaches();
         
         // Return success response with public URL
         res.status(200).json({

@@ -10,6 +10,7 @@ const adminAuth = require('../middleware/adminAuth');
 const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
 const { sendVerificationEmail } = require('../utils/SendVerificationEmail');
+const { clearCampaignCaches } = require('../utils/cacheUtils');
 
 // Import email abuse monitoring routes
 const emailAbuseMonitoring = require('./emailAbuseMonitoring');
@@ -1539,6 +1540,9 @@ router.put('/users/:id/promote', adminAuth, async (req, res) => {
         user.isPremiumAndVerified = true;
         await user.save();
 
+        // Clear campaign caches since user verification status affects campaign display
+        await clearCampaignCaches();
+
         // Send verification email if requested
         if (sendEmail) {
             try {
@@ -1605,6 +1609,9 @@ router.put('/users/:id/demote', adminAuth, async (req, res) => {
         // Update user status
         user.isPremiumAndVerified = false;
         await user.save();
+
+        // Clear campaign caches since user verification status affects campaign display
+        await clearCampaignCaches();
 
         res.json({
             success: true,

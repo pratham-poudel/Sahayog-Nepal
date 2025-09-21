@@ -6,6 +6,7 @@ const fs = require('fs');
 const fileService = require('../services/fileService');
 const redis=require('../utils/RedisClient');
 const axios = require('axios');
+const { clearCampaignCaches, clearUserCampaignCache, clearCategoryCampaignCache, clearSpecificCampaignCache } = require('../utils/cacheUtils');
 
 // @desc    Create a new campaign
 // @route   POST /api/campaigns
@@ -89,9 +90,12 @@ exports.createCampaign = async (req, res) => {
         // Add campaign to user's campaigns list
         await User.findByIdAndUpdate(req.user._id, {
             $push: { campaigns: campaign._id }
-        });        await redis.del('allCampaigns'); // if you cached all campaigns
-        await redis.del(`userCampaigns:${req.user.id}`);
-        await redis.del(`categoryCampaigns:${campaign.category}`); // if you cached user-specific campaigns
+        });
+        
+        // Clear relevant caches
+        await clearCampaignCaches(); // Clear all campaign-related caches
+        await clearUserCampaignCache(req.user._id); // Clear user-specific cache
+        await clearCategoryCampaignCache(campaign.category); // Clear category cache
         
         res.status(201).json({
             success: true,
@@ -169,7 +173,8 @@ exports.getAllCampaigns = async (req, res) => {
                             $project: {
                                 name: 1,
                                 email: 1,
-                                profilePicture: 1
+                                profilePicture: 1,
+                                isPremiumAndVerified: 1
                             }
                         }
                     ]
@@ -477,9 +482,11 @@ exports.addCampaignUpdate = async (req, res) => {
         });
         
         await campaign.save();
-        await redis.del('allCampaigns'); // if you cached all campaigns
-        await redis.del(`userCampaigns:${req.user.id}`);
-        await redis.del(`campaignById:${campaign._id}`);
+        
+        // Clear relevant caches
+        await clearCampaignCaches();
+        await clearUserCampaignCache(req.user._id);
+        await clearSpecificCampaignCache(campaign._id);
         
         res.status(200).json({
             success: true,
@@ -571,10 +578,10 @@ exports.updateCampaignStatus = async (req, res) => {
                 await Campaign.findByIdAndDelete(req.params.id);
                 
                 // Clear related cache
-                await redis.del('allCampaigns');
-                await redis.del(`userCampaigns:${req.user.id}`);
-                await redis.del(`categoryCampaigns:${campaign.category}`);
-                await redis.del(`campaignById:${campaign._id}`);
+                await clearCampaignCaches();
+                await clearUserCampaignCache(req.user._id);
+                await clearCategoryCampaignCache(campaign.category);
+                await clearSpecificCampaignCache(campaign._id);
                 
                 return res.status(200).json({
                     success: true,
@@ -615,10 +622,10 @@ exports.updateCampaignStatus = async (req, res) => {
             await campaign.save();
             
             // Clear related cache
-            await redis.del('allCampaigns');
-            await redis.del(`userCampaigns:${campaign.creator}`);
-            await redis.del(`categoryCampaigns:${campaign.category}`);
-            await redis.del(`campaignById:${campaign._id}`);
+            await clearCampaignCaches();
+            await clearUserCampaignCache(campaign.creator);
+            await clearCategoryCampaignCache(campaign.category);
+            await clearSpecificCampaignCache(campaign._id);
             
             return res.status(200).json({
                 success: true,
@@ -742,10 +749,12 @@ exports.deleteCampaign = async (req, res) => {
         
         // Delete the campaign
         await campaign.remove();
-        await redis.del('allCampaigns'); // if you cached all campaigns
-        await redis.del(`userCampaigns:${req.user.id}`);
-        await redis.del('categoryCampaigns');
-        await redis.del(`campaignById:${campaign._id}`);
+        
+        // Clear relevant caches
+        await clearCampaignCaches();
+        await clearUserCampaignCache(req.user._id);
+        await clearCategoryCampaignCache(campaign.category);
+        await clearSpecificCampaignCache(campaign._id);
         
         res.status(200).json({
             success: true,
@@ -902,10 +911,12 @@ exports.updateCampaign = async (req, res) => {
             updateData,
             { new: true, runValidators: true }
         );
-        await redis.del('allCampaigns'); // if you cached all campaigns
-        await redis.del(`userCampaigns:${req.user.id}`);
-        await redis.del('categoryCampaigns');
-        await redis.del(`campaignById:${updatedCampaign._id}`); // Clear cache for this specific campaign
+        
+        // Clear relevant caches
+        await clearCampaignCaches();
+        await clearUserCampaignCache(req.user._id);
+        await clearCategoryCampaignCache(updatedCampaign.category);
+        await clearSpecificCampaignCache(updatedCampaign._id);
         
         res.status(200).json({
             success: true,
