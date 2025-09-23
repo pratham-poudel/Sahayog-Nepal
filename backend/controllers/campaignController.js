@@ -1244,6 +1244,7 @@ exports.getRotatingFeaturedCampaigns = async (req, res) => {
                             $project: {
                                 name: 1,
                                 email: 1,
+                                isPremiumAndVerified: 1,
                                 profilePicture: 1
                             }
                         }

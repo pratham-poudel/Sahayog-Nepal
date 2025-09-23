@@ -149,7 +149,7 @@ const ScrollButton = React.memo(({ direction, canScroll, onClick }) => (
     </svg>
     
     {canScroll && (
-      <div className="absolute -inset-1 bg-gradient-to-br from-[#8B2325] to-[#D5A021] rounded-2xl opacity-20 blur-md group-hover:opacity-30 transition-opacity duration-300"></div>
+      <div className="absolute -inset-1 bg-gradient-to-br from-[#8B2325] to-[#302b1f] rounded-2xl opacity-20 blur-md group-hover:opacity-30 transition-opacity duration-300"></div>
     )}
   </button>
 ));

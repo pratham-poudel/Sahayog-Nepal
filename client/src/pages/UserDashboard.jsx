@@ -124,6 +124,25 @@ const UserDashboard = () => {
   const [passwordUpdateLoading, setPasswordUpdateLoading] = useState(false);
   const [notificationUpdateLoading, setNotificationUpdateLoading] = useState(false);
   
+  // Original data states to track changes
+  const [originalProfileData, setOriginalProfileData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    bio: '',
+    profilePicture: ''
+  });
+  const [originalPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [originalNotificationSettings, setOriginalNotificationSettings] = useState({
+    emailUpdates: true,
+    newDonations: true,
+    marketingEmails: false
+  });
+  
   // Bank account states
   const [showAddBankAccount, setShowAddBankAccount] = useState(false);
   const [bankAccountsRefresh, setBankAccountsRefresh] = useState(0);
@@ -236,6 +255,9 @@ const UserDashboard = () => {
         // Force refresh of user data
         refreshAuth();
         
+        // Update original data to reflect the new saved state
+        setOriginalProfileData({...profileData});
+        
         toast({
           title: "Profile updated",
           description: "Your profile information has been updated successfully."
@@ -307,6 +329,9 @@ const UserDashboard = () => {
       const response = await apiRequest('PUT', '/api/users/notification-settings', notificationSettings);
       
       if (response.ok) {
+        // Update original data to reflect the new saved state
+        setOriginalNotificationSettings({...notificationSettings});
+        
         toast({
           title: "Preferences updated",
           description: "Your notification preferences have been updated successfully."
@@ -337,6 +362,21 @@ const UserDashboard = () => {
     if (window.location.hash.substring(1) !== tabName) {
       window.history.replaceState(null, '', `#${tabName}`);
     }
+  };
+
+  // Utility functions to check if data has changed
+  const hasProfileDataChanged = () => {
+    return JSON.stringify(profileData) !== JSON.stringify(originalProfileData);
+  };
+  
+  const hasPasswordDataChanged = () => {
+    return passwordData.currentPassword !== '' || 
+           passwordData.newPassword !== '' || 
+           passwordData.confirmPassword !== '';
+  };
+  
+  const hasNotificationSettingsChanged = () => {
+    return JSON.stringify(notificationSettings) !== JSON.stringify(originalNotificationSettings);
   };
 
   // Add this computed value after all useEffect hooks
@@ -370,21 +410,27 @@ const UserDashboard = () => {
   useEffect(() => {
     if (user && activeTab === 'profile') {
       console.log('Loading profile data:', user);
-      setProfileData({
+      const profileDataToSet = {
         name: user.name || '',
         email: user.email || '',
         phone: user.phone || '',
         bio: user.bio || '',
         profilePicture: user.profilePicture || ''
-      });
+      };
+      
+      setProfileData(profileDataToSet);
+      setOriginalProfileData(profileDataToSet);
       
       // In a real app, you would fetch notification settings from backend
       // Here we just use default values
-      setNotificationSettings({
+      const notificationSettingsToSet = {
         emailUpdates: true,
         newDonations: true,
         marketingEmails: false
-      });
+      };
+      
+      setNotificationSettings(notificationSettingsToSet);
+      setOriginalNotificationSettings(notificationSettingsToSet);
     }
   }, [user, activeTab]);
   
@@ -919,7 +965,7 @@ const UserDashboard = () => {
             <div className="flex justify-between items-start">
               <div>
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Raised</p>
-                <h3 className="text-2xl font-bold mt-1 text-gray-900 dark:text-white">Rs. {analytics.totalRaised.toLocaleString()}</h3>
+                <h3 className="text-3xl font-semibold mt-1 text-gray-900 dark:text-white" style={{ fontFamily: 'Space Grotesk, -apple-system, BlinkMacSystemFont, sans-serif', letterSpacing: '-0.015em', fontFeatureSettings: '"tnum", "lnum"' }}>Rs. {analytics.totalRaised.toLocaleString()}</h3>
               </div>
               <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
                 <CurrencyDollarIcon className="w-6 h-6 text-green-600 dark:text-green-400" />
@@ -936,7 +982,7 @@ const UserDashboard = () => {
             <div className="flex justify-between items-start">
               <div>
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Active Campaigns</p>
-                <h3 className="text-2xl font-bold mt-1 text-gray-900 dark:text-white">{statusCounts.active}</h3>
+                <h3 className="text-3xl font-semibold mt-1 text-gray-900 dark:text-white" style={{ fontFamily: 'Space Grotesk, -apple-system, BlinkMacSystemFont, sans-serif', letterSpacing: '-0.015em', fontFeatureSettings: '"tnum", "lnum"' }}>{statusCounts.active}</h3>
               </div>
               <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
                 <ChartBarIcon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
@@ -953,7 +999,7 @@ const UserDashboard = () => {
             <div className="flex justify-between items-start">
               <div>
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Donors</p>
-                <h3 className="text-2xl font-bold mt-1 text-gray-900 dark:text-white">{analytics.totalDonors}</h3>
+                <h3 className="text-3xl font-semibold mt-1 text-gray-900 dark:text-white" style={{ fontFamily: 'Space Grotesk, -apple-system, BlinkMacSystemFont, sans-serif', letterSpacing: '-0.015em', fontFeatureSettings: '"tnum", "lnum"' }}>{analytics.totalDonors}</h3>
               </div>
               <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
                 <UserCircleIcon className="w-6 h-6 text-purple-600 dark:text-purple-400" />
@@ -970,7 +1016,7 @@ const UserDashboard = () => {
             <div className="flex justify-between items-start">
               <div>
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Completion Rate</p>
-                <h3 className="text-2xl font-bold mt-1 text-gray-900 dark:text-white">{analytics.averageProgress}%</h3>
+                <h3 className="text-3xl font-semibold mt-1 text-gray-900 dark:text-white" style={{ fontFamily: 'Space Grotesk, -apple-system, BlinkMacSystemFont, sans-serif', letterSpacing: '-0.015em', fontFeatureSettings: '"tnum", "lnum"' }}>{analytics.averageProgress}%</h3>
               </div>
               <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
                 <ArrowPathIcon className="w-6 h-6 text-amber-600 dark:text-amber-400" />
@@ -1723,7 +1769,7 @@ const UserDashboard = () => {
               <div className="pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
                <button 
   onClick={handleProfileUpdate}
-  disabled={profileUpdateLoading}
+  disabled={profileUpdateLoading || !hasProfileDataChanged()}
   className="inline-flex items-center px-4 py-2 bg-[#800000] text-white font-medium rounded-lg hover:bg-[#660000] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 >
   {profileUpdateLoading ? (
@@ -1783,7 +1829,7 @@ const UserDashboard = () => {
                 <div className="pt-2 flex justify-end">
                   <button 
   onClick={handleChangePassword}
-  disabled={passwordUpdateLoading || passwordData.newPassword !== passwordData.confirmPassword}
+  disabled={passwordUpdateLoading || passwordData.newPassword !== passwordData.confirmPassword || !hasPasswordDataChanged()}
   className="inline-flex items-center px-4 py-2 bg-[#800000] text-white font-medium rounded-lg hover:bg-[#660000] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 >
   {passwordUpdateLoading ? (
@@ -1835,8 +1881,8 @@ const UserDashboard = () => {
                 <div className="pt-3 flex justify-end">
                   <button 
                     onClick={handleNotificationSettingsUpdate}
-                    disabled={notificationUpdateLoading}
-                    className="inline-flex items-center px-4 py-2 bg-[#800000] text-white font-medium rounded-lg hover:bg-[#660000] transition-colors"
+                    disabled={notificationUpdateLoading || !hasNotificationSettingsChanged()}
+                    className="inline-flex items-center px-4 py-2 bg-[#800000] text-white font-medium rounded-lg hover:bg-[#660000] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {notificationUpdateLoading ? (
                       <>
