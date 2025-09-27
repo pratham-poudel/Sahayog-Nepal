@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, useInView } from 'framer-motion';
-import { getHomeStats, formatStatsForDisplay } from '../../services/statsService';
+import { useStats } from '../../contexts/StatsContext';
 
 const CountUp = ({ target, suffix = "", duration = 2000, isVisible }) => {
   const [count, setCount] = useState(0);
@@ -51,72 +51,58 @@ const CountUp = ({ target, suffix = "", duration = 2000, isVisible }) => {
 const Stats = () => {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const { formattedHomeStats, loading, error } = useStats();
   const [stats, setStats] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
 
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        setLoading(true);
-        setError(false);
-        const rawStats = await getHomeStats();
-        const formattedStats = formatStatsForDisplay(rawStats);
-        
-        // Convert to array format for existing component logic
-        const statsArray = [
-          formattedStats.totalFunds,
-          formattedStats.activeCampaigns,
-          formattedStats.totalUsers,
-          formattedStats.districtsReached
-        ].filter(Boolean); // Remove any null values
-        
-        setStats(statsArray);
-      } catch (err) {
-        console.error('Error fetching stats:', err);
-        setError(true);
-        // Set fallback stats
-        setStats([
-          {
-            label: "Funds Raised",
-            value: "₹2.5M+",
-            target: 2500000,
-            description: "Total funding raised through our platform",
-            suffix: "",
-            icon: "💰"
-          },
-          {
-            label: "Active Campaigns",
-            value: "42",
-            target: 42,
-            description: "Ongoing campaigns seeking support",
-            suffix: "",
-            icon: "🎯"
-          },
-          {
-            label: "Generous Hearts",
-            value: "1,250+",
-            target: 1250,
-            description: "Amazing people who have contributed",
-            suffix: "+",
-            icon: "❤️"
-          },
-          {
-            label: "Districts Reached",
-            value: "12",
-            target: 12,
-            description: "Across beautiful Nepal",
-            suffix: "",
-            icon: "🗺️"
-          }
-        ]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStats();
-  }, []);
+    if (formattedHomeStats) {
+      // Convert to array format for existing component logic
+      const statsArray = [
+        formattedHomeStats.totalFunds,
+        formattedHomeStats.activeCampaigns,
+        formattedHomeStats.totalUsers,
+        formattedHomeStats.districtsReached
+      ].filter(Boolean); // Remove any null values
+      
+      setStats(statsArray);
+    } else if (error) {
+      // Set fallback stats on error
+      setStats([
+        {
+          label: "Funds Raised",
+          value: "₹2.5M+",
+          target: 2500000,
+          description: "Total funding raised through our platform",
+          suffix: "",
+          icon: "💰"
+        },
+        {
+          label: "Active Campaigns",
+          value: "42",
+          target: 42,
+          description: "Ongoing campaigns seeking support",
+          suffix: "",
+          icon: "🎯"
+        },
+        {
+          label: "Generous Hearts",
+          value: "1,250+",
+          target: 1250,
+          description: "Amazing people who have contributed",
+          suffix: "+",
+          icon: "❤️"
+        },
+        {
+          label: "Districts Reached",
+          value: "12",
+          target: 12,
+          description: "Across beautiful Nepal",
+          suffix: "",
+          icon: "🗺️"
+        }
+      ]);
+    }
+  }, [formattedHomeStats, error]);
   
   return (
     <section className="py-20 bg-gradient-to-br from-white via-gray-50 to-blue-50/30 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 relative overflow-hidden">

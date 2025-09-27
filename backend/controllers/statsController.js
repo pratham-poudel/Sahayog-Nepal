@@ -159,6 +159,7 @@ const getHomeStats = async (req, res) => {
                 totalUsers: formatNumber(totalUsers),
                 totalFunds: formatCurrency(totalFunds),
                 activeCampaigns: formatNumber(activeCampaigns),
+                totalCampaigns: formatNumber(totalCampaigns),
                 totalDonors: formatNumber(totalDonors),
                 districtsReached: formatNumber(districtsReached)
             },

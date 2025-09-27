@@ -1,13 +1,12 @@
 import { Link } from 'wouter';
 import { motion, useAnimation } from 'framer-motion';
 import { useEffect, useState } from 'react';
-import { getHomeStats, formatStatsForDisplay } from '../../services/statsService';
+import { useStats } from '../../contexts/StatsContext';
 
 const CampaignCTA = () => {
   const [hoveredStat, setHoveredStat] = useState(null);
   const [stats, setStats] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const { formattedHomeStats, loading, error } = useStats();
   const controls = useAnimation();
 
   useEffect(() => {
@@ -18,89 +17,77 @@ const CampaignCTA = () => {
       });
     };
     sequence();
-
-    // Fetch real stats data
-    const fetchStats = async () => {
-      try {
-        setLoading(true);
-        setError(false);
-        const rawStats = await getHomeStats();
-        const formattedStats = formatStatsForDisplay(rawStats);
-        
-        // Create stats array with real data and styling
-        const statsArray = [
-          { 
-            value: formattedStats?.activeCampaigns?.formatted || "42", 
-            label: "Active Campaigns", 
-            icon: "🎯", 
-            color: "from-[#8B2325] to-red-500",
-            bgColor: "from-[#8B2325]/10 to-red-500/5"
-          },
-          { 
-            value: formattedStats?.totalFunds?.formatted || "₹2.5M+", 
-            label: "Funds Raised", 
-            icon: "💰", 
-            color: "from-green-500 to-emerald-600",
-            bgColor: "from-green-500/10 to-emerald-500/5"
-          },
-          { 
-            value: formattedStats?.totalDonors?.formatted || "1,250+", 
-            label: "Generous Donors", 
-            icon: "❤️", 
-            color: "from-pink-500 to-rose-600",
-            bgColor: "from-pink-500/10 to-rose-500/5"
-          },
-          { 
-            value: formattedStats?.districtsReached?.formatted || "12", 
-            label: "Districts Reached", 
-            icon: "🌍", 
-            color: "from-blue-500 to-indigo-600",
-            bgColor: "from-blue-500/10 to-indigo-500/5"
-          }
-        ];
-        
-        setStats(statsArray);
-      } catch (err) {
-        console.error('Error fetching CTA stats:', err);
-        setError(true);
-        // Fallback stats
-        setStats([
-          { 
-            value: "42", 
-            label: "Active Campaigns", 
-            icon: "🎯", 
-            color: "from-[#8B2325] to-red-500",
-            bgColor: "from-[#8B2325]/10 to-red-500/5"
-          },
-          { 
-            value: "₹2.5M+", 
-            label: "Funds Raised", 
-            icon: "💰", 
-            color: "from-green-500 to-emerald-600",
-            bgColor: "from-green-500/10 to-emerald-500/5"
-          },
-          { 
-            value: "1,250+", 
-            label: "Generous Donors", 
-            icon: "❤️", 
-            color: "from-pink-500 to-rose-600",
-            bgColor: "from-pink-500/10 to-rose-500/5"
-          },
-          { 
-            value: "12", 
-            label: "Districts Reached", 
-            icon: "🌍", 
-            color: "from-blue-500 to-indigo-600",
-            bgColor: "from-blue-500/10 to-indigo-500/5"
-          }
-        ]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStats();
   }, [controls]);
+
+  useEffect(() => {
+    if (formattedHomeStats) {
+      // Create stats array with real data from context
+      const statsArray = [
+        { 
+          value: formattedHomeStats.activeCampaigns?.formatted || "42", 
+          label: "Active Campaigns", 
+          icon: "🎯", 
+          color: "from-[#8B2325] to-red-500",
+          bgColor: "from-[#8B2325]/10 to-red-500/5"
+        },
+        { 
+          value: formattedHomeStats.totalFunds?.formatted || "₹2.5M+", 
+          label: "Funds Raised", 
+          icon: "💰", 
+          color: "from-green-500 to-emerald-600",
+          bgColor: "from-green-500/10 to-emerald-500/5"
+        },
+        { 
+          value: formattedHomeStats.totalUsers?.formatted || "1,250+", 
+          label: "Generous Donors", 
+          icon: "❤️", 
+          color: "from-pink-500 to-rose-600",
+          bgColor: "from-pink-500/10 to-rose-500/5"
+        },
+        { 
+          value: formattedHomeStats.districtsReached?.formatted || "12", 
+          label: "Districts Reached", 
+          icon: "🌍", 
+          color: "from-blue-500 to-indigo-600",
+          bgColor: "from-blue-500/10 to-indigo-500/5"
+        }
+      ];
+      
+      setStats(statsArray);
+    } else if (error) {
+      // Fallback stats on error
+      setStats([
+        { 
+          value: "42", 
+          label: "Active Campaigns", 
+          icon: "🎯", 
+          color: "from-[#8B2325] to-red-500",
+          bgColor: "from-[#8B2325]/10 to-red-500/5"
+        },
+        { 
+          value: "₹2.5M+", 
+          label: "Funds Raised", 
+          icon: "💰", 
+          color: "from-green-500 to-emerald-600",
+          bgColor: "from-green-500/10 to-emerald-500/5"
+        },
+        { 
+          value: "1,250+", 
+          label: "Generous Donors", 
+          icon: "❤️", 
+          color: "from-pink-500 to-rose-600",
+          bgColor: "from-pink-500/10 to-rose-500/5"
+        },
+        { 
+          value: "12", 
+          label: "Districts Reached", 
+          icon: "🌍", 
+          color: "from-blue-500 to-indigo-600",
+          bgColor: "from-blue-500/10 to-indigo-500/5"
+        }
+      ]);
+    }
+  }, [formattedHomeStats, error]);
 
   return (
     <section className="py-32 relative overflow-hidden bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/40 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">

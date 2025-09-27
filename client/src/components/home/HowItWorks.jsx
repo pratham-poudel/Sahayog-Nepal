@@ -1,25 +1,11 @@
 import { Link } from 'wouter';
 import { motion } from 'framer-motion';
-import { useState, useEffect } from 'react';
-import { getHomeStats, formatStatsForDisplay } from '@/services/statsService';
+import { useState } from 'react';
+import { useStats } from '../../contexts/StatsContext';
 
 const HowItWorks = () => {
   const [activeStep, setActiveStep] = useState(0);
-  const [stats, setStats] = useState(null);
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const rawStats = await getHomeStats();
-        const formattedStats = formatStatsForDisplay(rawStats);
-        setStats(formattedStats);
-      } catch (error) {
-        console.error('Error fetching HowItWorks stats:', error);
-      }
-    };
-
-    fetchStats();
-  }, []);
+  const { formattedHomeStats: stats } = useStats();
   
   const steps = [
     {

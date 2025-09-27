@@ -1,28 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
-import { getHomeStats, formatStatsForDisplay } from '@/services/statsService';
+import { useStats } from '../../contexts/StatsContext';
 
 const Newsletter = () => {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
-  const [stats, setStats] = useState(null);
+  const { formattedHomeStats: stats } = useStats();
   const { toast } = useToast();
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const rawStats = await getHomeStats();
-        const formattedStats = formatStatsForDisplay(rawStats);
-        setStats(formattedStats);
-      } catch (error) {
-        console.error('Error fetching Newsletter stats:', error);
-      }
-    };
-
-    fetchStats();
-  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

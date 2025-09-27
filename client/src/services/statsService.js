@@ -176,6 +176,14 @@ export const formatStatsForDisplay = (rawStats) => {
       icon: "🎯",
       suffix: ""
     },
+    totalCampaigns: {
+      value: rawStats.totalCampaigns || 0,
+      formatted: rawStats.formatted?.totalCampaigns || (rawStats.totalCampaigns || 0).toString(),
+      label: "Total Campaigns",
+      description: "All campaigns ever created",
+      icon: "📊",
+      suffix: ""
+    },
     totalDonors: {
       value: rawStats.totalDonors || 0,
       formatted: rawStats.formatted?.totalDonors || formatNumber(rawStats.totalDonors || 0),

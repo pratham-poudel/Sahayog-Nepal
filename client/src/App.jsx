@@ -10,6 +10,7 @@ import { AuthProvider, useAuthContext } from "./contexts/AuthContext";
 import { CampaignProvider } from "./contexts/CampaignContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
+import { StatsProvider } from "./contexts/StatsContext";
 
 // Layout components
 import Header from "./components/layout/Header";
@@ -215,8 +216,10 @@ function App() {
         <LanguageProvider>
           <AuthProvider>
             <CampaignProvider>
+              <StatsProvider>
                 <AppContent />
                 <Toaster />
+              </StatsProvider>
             </CampaignProvider>
           </AuthProvider>
         </LanguageProvider>

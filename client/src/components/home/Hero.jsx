@@ -1,7 +1,7 @@
 import { Link } from 'wouter';
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
-import { getLiveImpactStats, formatLiveImpactStats } from '../../services/statsService';
+import { useStats } from '../../contexts/StatsContext';
 
 // Real impact stories
 const impactImages = [
@@ -81,41 +81,10 @@ const categories = [
 const Hero = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
-  const [liveStats, setLiveStats] = useState(null);
-  const [statsLoading, setStatsLoading] = useState(true);
-  const [statsError, setStatsError] = useState(false);
+  const { formattedHomeStats, formattedLiveStats: liveStats, loading: statsLoading, error: statsError } = useStats();
   
   useEffect(() => {
     setIsVisible(true);
-    
-    // Fetch live impact stats
-    const fetchLiveStats = async () => {
-      try {
-        setStatsLoading(true);
-        setStatsError(false);
-        const stats = await getLiveImpactStats();
-        const formattedStats = formatLiveImpactStats(stats);
-        setLiveStats(formattedStats);
-      } catch (error) {
-        console.error('Error fetching live stats:', error);
-        setStatsError(true);
-        // Set fallback stats
-        setLiveStats({
-          activeCampaigns: 42,
-          totalRaised: 2500000,
-          recentDonations: 5,
-          formatted: {
-            activeCampaigns: "42",
-            totalRaised: "₹2.5M",
-            recentDonations: "5"
-          }
-        });
-      } finally {
-        setStatsLoading(false);
-      }
-    };
-
-    fetchLiveStats();
     
     // Auto-rotate impact images
     const rotationInterval = setInterval(() => {
@@ -123,13 +92,9 @@ const Hero = () => {
         prevIndex === impactImages.length - 1 ? 0 : prevIndex + 1
       );
     }, 5000);
-
-    // Refresh stats every 2 minutes
-    const statsInterval = setInterval(fetchLiveStats, 2 * 60 * 1000);
     
     return () => {
       clearInterval(rotationInterval);
-      clearInterval(statsInterval);
     };
   }, []);
 
@@ -341,7 +306,7 @@ const Hero = () => {
                   <div>
                     <p className="text-body font-bold text-gray-900 dark:text-white">
                       <span className="text-2xl font-black bg-gradient-to-r from-[#8B2325] to-blue-600 bg-clip-text text-transparent">
-                        {liveStats?.formatted?.activeCampaigns ? `${liveStats.formatted.activeCampaigns}+` : "1,250+"}
+                        {formattedHomeStats?.totalUsers?.formatted ? `${formattedHomeStats.totalUsers.formatted}+` : "1,250+"}
                       </span>
                     </p>
                     <p className="text-xs text-gray-600 dark:text-gray-400 font-semibold">generous hearts joined</p>
@@ -454,9 +419,9 @@ const Hero = () => {
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ duration: 0.5, delay: 1 }}
-                        key={liveStats?.activeCampaigns} // Re-animate when value changes
+                        key={formattedHomeStats?.totalCampaigns} // Re-animate when value changes
                       >
-                        {liveStats?.formatted?.activeCampaigns || "42"}
+                        {formattedHomeStats?.totalCampaigns?.formatted || "42"}
                       </motion.p>
                       <p className="text-xs text-gray-600 dark:text-gray-400">Campaigns</p>
                       {statsError && (
