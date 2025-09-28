@@ -124,13 +124,15 @@ exports.getTopDonor = async (req, res) => {
       });
     }
 
-    const topDonor = await Donation.findOne({ campaignId })
-      .populate({
-        path: 'donorId',
-        select: 'name email profilePicture',
-        options: { strictPopulate: false } // Allow null donorId for guest donations
-      })
-      .sort({ amount: -1 });
+   const topDonor = await Donation.findOne({ campaignId })
+  .select('donorId donorName amount message date') // donorId included from Donation
+  .populate({
+    path: 'donorId',
+    select: '_id name profilePicture', // _id is the donor's actual ID
+    options: { strictPopulate: false } 
+  })
+  .sort({ amount: -1 });
+      console.log(topDonor);
     
     // Format donation to handle guest donation
     let formattedTopDonor = topDonor;
@@ -140,7 +142,6 @@ exports.getTopDonor = async (req, res) => {
         ...topDonor.toObject(),
         donorId: {
           name: topDonor.donorName,
-          email: topDonor.donorEmail,
           profilePicture: null
         }
       };

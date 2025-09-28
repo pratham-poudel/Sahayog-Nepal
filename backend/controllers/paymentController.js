@@ -37,6 +37,7 @@ const FONEPAY_PASSWORD = process.env.FONEPAY_PASSWORD || 'admin123456';
  */
 exports.initiateKhaltiPayment = async (req, res) => {
   try {
+    console.log('Khalti payment initiation request:', req.body);
     const { 
       campaignId, 
       amount, 
@@ -47,6 +48,7 @@ exports.initiateKhaltiPayment = async (req, res) => {
       donorEmail, 
       donorMessage,
       isAnonymous,
+      userId
     } = req.body;
 
     // Validate required fields
@@ -86,9 +88,8 @@ exports.initiateKhaltiPayment = async (req, res) => {
     // Create payment object in database with initial status
     const payment = new Payment({
       amount: amount/100,
-      userId: req.user ? req.user._id : null,
       campaignId,
-      userId: req.user ? req.user._id : null,
+      userId: userId || null, // Use userId from request body
       donorName: isAnonymous ? 'Anonymous' : donorName,
       donorEmail,
       donorMessage,
@@ -528,6 +529,7 @@ exports.initiateEsewaPayment = async (req, res) => {
       donorEmail, 
       donorMessage,
       isAnonymous,
+      userId
     } = req.body;
 
     console.log('eSewa payment initiation request:', req.body);
@@ -577,7 +579,7 @@ exports.initiateEsewaPayment = async (req, res) => {
     // Save initial Payment in database
     const payment = new Payment({
       amount,
-      userId: req.user ? req.user._id : null,
+      userId: userId || null, // Use userId from request body
       campaignId,
       donorName: isAnonymous ? 'Anonymous' : donorName,
       donorEmail,
@@ -820,6 +822,7 @@ exports.initiateFonepayPayment = async (req, res) => {
       donorEmail, 
       donorMessage,
       isAnonymous,
+      userId
     } = req.body;
 
     // Validate required fields
@@ -863,7 +866,7 @@ exports.initiateFonepayPayment = async (req, res) => {
     // Create payment record in database
     const payment = new Payment({
       amount,
-      userId: req.user ? req.user._id : null,
+      userId: userId || null, // Use userId from request body
       campaignId,
       donorName: isAnonymous ? 'Anonymous' : donorName,
       donorEmail,

@@ -372,7 +372,8 @@ const DonationForm = ({ campaignId, campaignTitle = "This Campaign" }) => {
         donorName: isAnonymous ? 'Anonymous' : name,
         donorEmail: email,
         donorMessage: message,
-        isAnonymous
+        isAnonymous,
+        userId: isAuthenticated && user ? user._id : null // Include user ID if user is logged in
       };
 
       console.log('Payment Data:', paymentData);
