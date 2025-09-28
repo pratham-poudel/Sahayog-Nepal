@@ -11,6 +11,8 @@ const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
 const { sendVerificationEmail } = require('../utils/SendVerificationEmail');
 const { clearCampaignCaches } = require('../utils/cacheUtils');
+const { sendAdminOtpEmail } = require('../utils/sendAdminOtpEmail');
+const redis = require('../utils/RedisClient');
 
 // Import email abuse monitoring routes
 const emailAbuseMonitoring = require('./emailAbuseMonitoring');
@@ -31,17 +33,242 @@ router.get('/check-auth', adminAuth, (req, res) => {
         }
     });
 });
+
+// Step 1: Validate Access Code
+router.post('/validate-access-code', async (req, res) => {
+    try {
+        const { accessCode } = req.body;
+        const VALID_ACCESS_CODE = '250529';
+        
+        if (!accessCode) {
+            return res.status(400).json({
+                success: false,
+                message: 'Access code is required'
+            });
+        }
+        
+        if (accessCode !== VALID_ACCESS_CODE) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid access code'
+            });
+        }
+        
+        res.json({
+            success: true,
+            message: 'Access code validated successfully'
+        });
+    } catch (error) {
+        console.error('Access code validation error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error'
+        });
+    }
+});
+
+// Step 2: Verify Admin Credentials and Send OTP
+router.post('/verify-credentials', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        
+        if (!username || !password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Username and password are required'
+            });
+        }
+        
+        const admin = await Admin.findOne({ username });
+        if (!admin) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid credentials'
+            });
+        }
+
+        const isMatch = await admin.comparePassword(password);
+        if (!isMatch) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid credentials'
+            });
+        }
+        
+        if (!admin.email) {
+            return res.status(500).json({
+                success: false,
+                message: 'Admin email not configured. Please contact system administrator.'
+            });
+        }
+        
+        // Generate 6-digit OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        
+        // Store OTP in Redis with 10 minutes expiry
+        const otpKey = `admin_otp:${admin._id}`;
+        await redis.setex(otpKey, 600, otp); // 10 minutes = 600 seconds
+        
+        // Send OTP email
+        await sendAdminOtpEmail(admin.email, otp);
+        
+        res.json({
+            success: true,
+            message: 'OTP sent to admin email',
+            adminId: admin._id,
+            maskedEmail: admin.email.replace(/(.{2})(.*)(@.*)/, '$1****$3')
+        });
+    } catch (error) {
+        console.error('Credential verification error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error'
+        });
+    }
+});
+
+// Step 3: Verify OTP and Complete Login
+router.post('/verify-otp-login', async (req, res) => {
+    try {
+        const { adminId, otp } = req.body;
+        
+        if (!adminId || !otp) {
+            return res.status(400).json({
+                success: false,
+                message: 'Admin ID and OTP are required'
+            });
+        }
+        
+        // Get stored OTP from Redis
+        const otpKey = `admin_otp:${adminId}`;
+        const storedOtp = await redis.get(otpKey);
+        
+        if (!storedOtp) {
+            return res.status(401).json({
+                success: false,
+                message: 'OTP expired or invalid'
+            });
+        }
+        
+        if (storedOtp !== otp) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid OTP'
+            });
+        }
+        
+        // OTP is valid, proceed with login
+        const admin = await Admin.findById(adminId);
+        if (!admin) {
+            return res.status(401).json({
+                success: false,
+                message: 'Admin not found'
+            });
+        }
+        
+        // Update last login
+        admin.lastLogin = new Date();
+        await admin.save();
+
+        // Generate token
+        const token = jwt.sign(
+            { id: admin._id },
+            process.env.JWT_SECRET,
+            { expiresIn: '1d' }
+        );
+
+        // Set cookie
+        res.cookie('adminToken', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: 24 * 60 * 60 * 1000 // 24 hours
+        });
+        
+        // Clear OTP from Redis
+        await redis.del(otpKey);
+
+        res.json({
+            success: true,
+            message: 'Login successful'
+        });
+    } catch (error) {
+        console.error('OTP verification error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error'
+        });
+    }
+});
+
+// Resend OTP
+router.post('/resend-otp', async (req, res) => {
+    try {
+        const { adminId } = req.body;
+        
+        if (!adminId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Admin ID is required'
+            });
+        }
+        
+        const admin = await Admin.findById(adminId);
+        if (!admin) {
+            return res.status(404).json({
+                success: false,
+                message: 'Admin not found'
+            });
+        }
+        
+        if (!admin.email) {
+            return res.status(500).json({
+                success: false,
+                message: 'Admin email not configured'
+            });
+        }
+        
+        // Generate new 6-digit OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        
+        // Store new OTP in Redis with 10 minutes expiry
+        const otpKey = `admin_otp:${admin._id}`;
+        await redis.setex(otpKey, 600, otp); // 10 minutes = 600 seconds
+        
+        // Send OTP email
+        await sendAdminOtpEmail(admin.email, otp);
+        
+        res.json({
+            success: true,
+            message: 'New OTP sent to admin email',
+            maskedEmail: admin.email.replace(/(.{2})(.*)(@.*)/, '$1****$3')
+        });
+    } catch (error) {
+        console.error('Resend OTP error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error'
+        });
+    }
+});
+
 // Create admin user with authpass check
 router.post('/create-admin', async (req, res) => {
     try {
         // Check if the 'authpass' matches the predefined password
-        const { authpass } = req.body;
+        const { authpass, email } = req.body;
         const predefinedPassword = 'heelothisispassword';  // This should be stored securely in production (like in .env file)
         
         if (authpass !== predefinedPassword) {
             return res.status(403).json({
                 success: false,
                 message: 'Unauthorized access'
+            });
+        }
+
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email is required for admin user'
             });
         }
 
@@ -57,6 +284,7 @@ router.post('/create-admin', async (req, res) => {
         // Create admin user (without manually hashing the password)
         const admin = new Admin({
             username: 'admin',
+            email: email,
             password: 'admin123',  // Plaintext password will be hashed in the model's 'pre' hook
             role: 'super_admin'
         });
@@ -68,6 +296,7 @@ router.post('/create-admin', async (req, res) => {
             message: 'Admin user created successfully',
             adminCredentials: {
                 username: 'admin',
+                email: email,
                 password: 'admin123' // Only showing this in development
             }
         });
