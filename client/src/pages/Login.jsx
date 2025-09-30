@@ -44,10 +44,12 @@ const Login = () => {
     setOtpStep(1);
     setOtpEmail('');
     
-    // Reset turnstile widget
-    if (turnstileRef.current) {
-      turnstileRef.current.reset();
-    }
+    // Reset turnstile widget with a slight delay to ensure proper cleanup
+    setTimeout(() => {
+      if (turnstileRef.current) {
+        turnstileRef.current.reset();
+      }
+    }, 100);
   };
   
   // Form for email/password login
@@ -80,6 +82,27 @@ const Login = () => {
       setLocation('/dashboard');
     }
   }, [setLocation]);
+
+  // Cleanup effect for login mode changes
+  useEffect(() => {
+    // Reset turnstile token when login mode changes
+    setTurnstileToken('');
+  }, [loginMode]);
+
+  // Cleanup effect on component unmount
+  useEffect(() => {
+    return () => {
+      // Clear any pending timeouts or cleanup
+      if (turnstileRef.current) {
+        try {
+          // Attempt to reset the widget on unmount
+          turnstileRef.current.reset();
+        } catch (error) {
+          console.warn('Error cleaning up Turnstile on unmount:', error);
+        }
+      }
+    };
+  }, []);
 
   // Email/Password login
   const onSubmit = async (data) => {
@@ -349,6 +372,7 @@ const Login = () => {
                 Security Verification
               </label>
               <TurnstileWidget
+                key={`turnstile-${loginMode}-${otpStep}`}
                 ref={turnstileRef}
                 siteKey={TURNSTILE_CONFIG.siteKey}
                 onVerify={handleTurnstileVerify}

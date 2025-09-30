@@ -1,6 +1,5 @@
 import { createRoot } from "react-dom/client";
 import { Helmet, HelmetProvider } from 'react-helmet-async';
-import { BrowserRouter } from "react-router-dom";
 import App from "./App.jsx";
 import "./index.css";
 
@@ -8,7 +7,6 @@ const rootElement = document.getElementById("root");
 if (rootElement) {
   createRoot(rootElement).render(
     <HelmetProvider>
-      <BrowserRouter> 
       <Helmet>
         <title>Sahayog Nepal - Nepal's First Crowdfunding Platform</title>
         <meta name="description" content="Nepal's first and foremost crowdfunding platform. Support local causes, communities, and initiatives across Nepal. Make a difference with your donation today." />
@@ -29,7 +27,6 @@ if (rootElement) {
   ></script>
       </Helmet>
       <App />
-      </BrowserRouter>
     </HelmetProvider>
   );
 }

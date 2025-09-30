@@ -5,7 +5,6 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { Link, useLocation } from 'wouter';
 import { useAuthContext } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
 import TurnstileWidget from '../components/common/TurnstileWidget';
 import { TURNSTILE_CONFIG } from '../config/index.js';
 
@@ -22,7 +21,7 @@ const Signup = () => {
     otp: ''
   });  const { toast } = useToast();
   const { forceUpdate } = useAuthContext();
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
   
   // Turnstile handlers
   const handleTurnstileVerify = (token) => {
@@ -196,7 +195,8 @@ const Signup = () => {
           description: "Welcome! Your account has been created and you are now logged in."
         });
         
-        navigate('/dashboard');      } else {
+        setLocation('/dashboard');
+      } else {
         throw new Error(result.message || "OTP verification failed");
       }
     } catch (error) {

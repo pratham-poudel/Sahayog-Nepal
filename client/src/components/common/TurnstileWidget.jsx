@@ -24,7 +24,6 @@ const TurnstileWidget = forwardRef(({
       if (document.querySelector('script[src*="turnstile"]')) {
         if (window.turnstile) {
           setIsLoaded(true);
-          renderWidget();
         }
         return;
       }
@@ -34,7 +33,6 @@ const TurnstileWidget = forwardRef(({
       script.async = true;
       script.onload = () => {
         setIsLoaded(true);
-        renderWidget();
       };
       script.onerror = () => {
         console.error('Failed to load Turnstile script');
@@ -49,20 +47,37 @@ const TurnstileWidget = forwardRef(({
   const renderWidget = () => {
     if (!window.turnstile || !containerRef.current) return;
 
+    // Clean up existing widget first
+    if (widgetId !== null) {
+      try {
+        window.turnstile.remove(widgetId);
+        setWidgetId(null);
+      } catch (error) {
+        console.warn('Error removing existing widget:', error);
+      }
+    }
+
+    // Clear the container to ensure clean state
+    if (containerRef.current) {
+      containerRef.current.innerHTML = '';
+    }
+
     setTimeout(() => {
+      if (!containerRef.current) return;
+      
       try {
         const id = window.turnstile.render(containerRef.current, {
           sitekey: siteKey,
-          callback: onVerify,
-          'expired-callback': onExpire,
-          'error-callback': onError,
+          callback: handleVerify,
+          'expired-callback': handleExpire,
+          'error-callback': handleError,
           theme,
           size
         });
         setWidgetId(id);
       } catch (error) {
         console.error('Error rendering Turnstile widget:', error);
-        if (onError) onError();
+        handleError('render-error');
       }
     }, 100);
   };
@@ -118,11 +133,23 @@ const TurnstileWidget = forwardRef(({
 
     if (window.turnstile && widgetId !== null) {
       try {
+        // Try to reset first, if that fails, remove and recreate
         window.turnstile.reset(widgetId);
         setError(null);
         setIsExpired(false);
       } catch (error) {
-        console.error('Error resetting Turnstile widget:', error);
+        console.warn('Error resetting widget, recreating:', error);
+        // If reset fails, remove and recreate the widget
+        try {
+          window.turnstile.remove(widgetId);
+          setWidgetId(null);
+          setError(null);
+          setIsExpired(false);
+          // Trigger re-render by updating isLoaded
+          setTimeout(() => renderWidget(), 100);
+        } catch (removeError) {
+          console.error('Error removing widget:', removeError);
+        }
       }
     }
   };
@@ -135,33 +162,12 @@ const TurnstileWidget = forwardRef(({
     hasError: () => !!error
   }));
 
-  // Update renderWidget to use enhanced callbacks
+  // Render widget when loaded and ensure single instance
   useEffect(() => {
-    const renderWidget = () => {
-      if (!window.turnstile || !containerRef.current) return;
-
-      setTimeout(() => {
-        try {
-          const id = window.turnstile.render(containerRef.current, {
-            sitekey: siteKey,
-            callback: handleVerify,
-            'expired-callback': handleExpire,
-            'error-callback': handleError,
-            theme,
-            size
-          });
-          setWidgetId(id);
-        } catch (error) {
-          console.error('Error rendering Turnstile widget:', error);
-          handleError('render-error');
-        }
-      }, 100);
-    };
-
-    if (isLoaded) {
+    if (isLoaded && !widgetId) {
       renderWidget();
     }
-  }, [isLoaded]);
+  }, [isLoaded, widgetId]);
 
   // Cleanup on unmount
   useEffect(() => {
