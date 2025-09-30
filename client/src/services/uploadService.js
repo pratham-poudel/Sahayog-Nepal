@@ -64,6 +64,17 @@ class UploadService {
    * @returns {Promise<string>} Public URL of uploaded file
    */
   async uploadToStorage(file, presignedData, onProgress = null) {
+    console.log('uploadToStorage called with:', {
+      fileName: file.name,
+      fileSize: file.size,
+      fileType: file.type,
+      isFileObject: file instanceof File,
+      fileConstructor: file.constructor.name,
+      hasArrayBuffer: typeof file.arrayBuffer === 'function',
+      presignedUrl: presignedData.uploadUrl,
+      method: presignedData.method
+    });
+
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       
@@ -72,24 +83,31 @@ class UploadService {
         xhr.upload.addEventListener('progress', (e) => {
           if (e.lengthComputable) {
             const percentComplete = (e.loaded / e.total) * 100;
+            console.log(`Upload progress: ${percentComplete.toFixed(2)}%`);
             onProgress(percentComplete);
           }
         });
       }
 
       xhr.addEventListener('load', () => {
+        console.log('Upload completed with status:', xhr.status, xhr.statusText);
+        console.log('Response:', xhr.responseText);
+        
         if (xhr.status >= 200 && xhr.status < 300) {
+          console.log('Upload successful, returning publicUrl:', presignedData.publicUrl);
           resolve(presignedData.publicUrl);
         } else {
           reject(new Error(`Upload failed with status ${xhr.status}: ${xhr.statusText}`));
         }
       });
 
-      xhr.addEventListener('error', () => {
+      xhr.addEventListener('error', (e) => {
+        console.error('Upload error event:', e);
         reject(new Error('Upload failed due to network error'));
       });
 
       xhr.addEventListener('timeout', () => {
+        console.error('Upload timeout');
         reject(new Error('Upload timed out'));
       });
 
@@ -99,17 +117,22 @@ class UploadService {
       // Check if this is a PUT upload (Cloudflare R2) or POST upload (S3/MinIO)
       const method = presignedData.method || 'POST';
       
+      console.log('Upload method:', method);
+      
       if (method === 'PUT') {
         // For Cloudflare R2 - direct PUT upload
+        console.log('Initiating PUT upload to:', presignedData.uploadUrl);
         xhr.open('PUT', presignedData.uploadUrl);
         xhr.setRequestHeader('Content-Type', file.type);
         xhr.send(file);
       } else {
         // For S3/MinIO - POST with form data
+        console.log('Initiating POST upload to:', presignedData.uploadUrl);
         const formData = new FormData();
         
         // Add all the presigned fields first
         Object.entries(presignedData.formData || {}).forEach(([key, value]) => {
+          console.log('Adding form field:', key, value);
           formData.append(key, value);
         });
         
@@ -234,6 +257,7 @@ class UploadService {
       'profile-picture': ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
       'campaign-cover': ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
       'campaign-image': ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
+      'campaign-verification': ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'],
       'blog-cover': ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
       'blog-image': ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
       'document-license': ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'application/pdf'],
@@ -311,6 +335,9 @@ export const uploadCampaignCover = (file, onProgress) =>
 
 export const uploadCampaignImages = (files, onProgress) => 
   uploadService.uploadFiles(files, { fileType: 'campaign-image' }, onProgress);
+
+export const uploadCampaignVerification = (files, onProgress) => 
+  uploadService.uploadFiles(files, { fileType: 'campaign-verification' }, onProgress);
 
 export const uploadBlogCover = (file, onProgress) => 
   uploadService.uploadFile(file, { fileType: 'blog-cover' }, onProgress);

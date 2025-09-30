@@ -32,6 +32,7 @@ router.post('/presigned-url', protect, async (req, res) => {
       'profile-picture',
       'campaign-cover', 
       'campaign-image',
+      'campaign-verification',
       'blog-cover',
       'blog-image',
       'document-license',

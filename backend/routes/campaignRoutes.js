@@ -60,7 +60,7 @@ router.get('/:id',cacheMiddleware((req) => `campaignById:${req.params.id}`) ,get
 
 // Protected routes for campaign creators
 router.post('/', protect, turnstileMiddleware, createCampaign);
-router.put('/:id', protect, updateCampaign);
+router.put('/:id', protect, turnstileMiddleware, updateCampaign);
 
 router.get('/user/campaigns', protect,getUserCampaigns);
 router.post('/:id/updates', protect, addCampaignUpdate);

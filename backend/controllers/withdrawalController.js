@@ -34,6 +34,9 @@ const getWithdrawalSummary = async (req, res) => {
       status: { $in: ['pending', 'approved', 'processing'] }
     }).populate('bankAccount', 'bankName accountNumber accountName');
 
+    // Check if campaign is ended
+    const isCampaignEnded = campaign.status === 'completed' || new Date(campaign.endDate) < new Date();
+    
     const withdrawalSummary = {
       campaign: {
         id: campaign._id,
@@ -44,14 +47,18 @@ const getWithdrawalSummary = async (req, res) => {
         pendingWithdrawals: campaign.pendingWithdrawals,
         availableForWithdrawal: campaign.availableForWithdrawal,
         isWithdrawalEligible: campaign.isWithdrawalEligible,
-        withdrawalPercentage: campaign.withdrawalPercentage
+        withdrawalPercentage: campaign.withdrawalPercentage,
+        isCampaignEnded: isCampaignEnded
       },
       verifiedBankAccounts,
       pendingRequests,
       withdrawalRules: {
-        minimumAmount: 10000,
+        minimumAmount: isCampaignEnded ? 1 : 10000,
         processingTime: '3-5 business days',
-        processingFee: 0 // or percentage
+        processingFee: 0, // or percentage
+        note: isCampaignEnded 
+          ? 'Campaign has ended - you can withdraw any available amount' 
+          : 'Campaign is active - minimum NPR 10,000 required for withdrawal'
       }
     };
 
@@ -83,12 +90,22 @@ const createWithdrawalRequest = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Not authorized' });
     }
 
+    // Check campaign end status for flexible withdrawal rules
+    const isCampaignEnded = campaign.status === 'completed' || new Date(campaign.endDate) < new Date();
+    
+    // For ended campaigns: allow any amount > 0
+    // For active campaigns: require minimum 10,000 NPR
+    const minimumAmount = isCampaignEnded ? 1 : 10000;
+    
     // Check if campaign has minimum amount for withdrawal
-    if (campaign.availableForWithdrawal < 10000) {
+    if (campaign.availableForWithdrawal < minimumAmount) {
       return res.status(400).json({ 
         success: false, 
-        message: 'Minimum NPR 10,000 required for withdrawal',
-        availableAmount: campaign.availableForWithdrawal
+        message: isCampaignEnded 
+          ? 'No funds available for withdrawal'
+          : 'Minimum NPR 10,000 required for withdrawal from active campaigns',
+        availableAmount: campaign.availableForWithdrawal,
+        campaignEnded: isCampaignEnded
       });
     }
 
@@ -101,10 +118,15 @@ const createWithdrawalRequest = async (req, res) => {
       });
     }
 
-    if (requestedAmount < 1000) {
+    // Validate minimum requested amount
+    const minimumRequestAmount = isCampaignEnded ? 1 : 1000;
+    
+    if (requestedAmount < minimumRequestAmount) {
       return res.status(400).json({
         success: false,
-        message: 'Minimum withdrawal amount is NPR 1,000'
+        message: isCampaignEnded 
+          ? 'Minimum withdrawal amount is NPR 1'
+          : 'Minimum withdrawal amount is NPR 1,000 for active campaigns'
       });
     }    // Validate bank account
     const bankAccount = await BankAccount.findById(bankAccountId);
@@ -210,6 +232,35 @@ const getMyWithdrawalRequests = async (req, res) => {
     const query = { creator: userId };
     if (status) query.status = status;
 
+    // Let's debug this step by step
+    console.log('=== DEBUGGING WITHDRAWAL REQUESTS ===');
+    console.log('User ID:', userId);
+    console.log('Query:', query);
+
+    // First, get raw withdrawal requests
+    const rawRequests = await WithdrawalRequest.find(query)
+      .sort({ createdAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+
+    console.log('Raw requests count:', rawRequests.length);
+    console.log('Raw requests campaign IDs:', rawRequests.map(r => r.campaign));
+
+    // Check if campaigns exist in database
+    const campaignIds = rawRequests.map(r => r.campaign).filter(Boolean);
+    console.log('Campaign IDs to lookup:', campaignIds);
+
+    if (campaignIds.length > 0) {
+      const existingCampaigns = await Campaign.find({ _id: { $in: campaignIds } });
+      console.log('Found campaigns:', existingCampaigns.length);
+      console.log('Campaign details:', existingCampaigns.map(c => ({
+        id: c._id,
+        title: c.title,
+        status: c.status
+      })));
+    }
+
+    // Now try the regular populate
     const requests = await WithdrawalRequest.find(query)
       .populate('campaign', 'title targetAmount amountRaised coverImage')
       .populate('bankAccount', 'bankName accountNumber accountName')
@@ -217,6 +268,11 @@ const getMyWithdrawalRequests = async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit);
+
+    console.log('After populate - campaign results:', requests.map(r => ({
+      id: r._id,
+      campaign: r.campaign
+    })));
 
     const total = await WithdrawalRequest.countDocuments(query);
 
@@ -232,6 +288,7 @@ const getMyWithdrawalRequests = async (req, res) => {
     });
 
   } catch (error) {
+    console.error('Get my withdrawal requests error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };

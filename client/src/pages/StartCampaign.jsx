@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useContext } from 'react';
 import { useForm } from 'react-hook-form';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from 'wouter';
@@ -6,11 +6,12 @@ import { useToast } from '@/hooks/use-toast';
 import SEO from '../utils/seo.jsx';
 import { useAuthContext } from '../contexts/AuthContext';
 import { ThemeContext } from '../contexts/ThemeContext';
-import { useContext } from 'react';
 import useCategories from '../hooks/useCategories';
 import HierarchicalCategorySelector from '../components/campaigns/HierarchicalCategorySelector';
 import TurnstileWidget from '../components/common/TurnstileWidget';
-import FileUpload from '../components/common/FileUpload.jsx';
+import FileSelector from '../components/common/FileSelector';
+import UploadProgressModal from '../components/common/UploadProgressModal';
+import uploadService, { uploadCampaignCover, uploadCampaignImages, uploadCampaignVerification } from '../services/uploadService';
 import axios from 'axios';
 import { API_URL as CONFIG_API_URL, TURNSTILE_CONFIG } from '../config/index.js';
 
@@ -21,11 +22,19 @@ const StartCampaign = () => {
   const { categories, loading: categoriesLoading } = useCategories();
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
-  const [coverImageUpload, setCoverImageUpload] = useState(null);
-  const [additionalImageUploads, setAdditionalImageUploads] = useState([]);
+  const [selectedCoverImage, setSelectedCoverImage] = useState(null);
+  const [selectedAdditionalImages, setSelectedAdditionalImages] = useState([]);
+  const [selectedVerificationDocs, setSelectedVerificationDocs] = useState([]);
   const [turnstileToken, setTurnstileToken] = useState(null);
   const [turnstileKey, setTurnstileKey] = useState(0); // Force re-render of Turnstile widget
   const [showTurnstile, setShowTurnstile] = useState(false); // Show/hide Turnstile widget
+  
+  // Upload progress states
+  const [showUploadProgress, setShowUploadProgress] = useState(false);
+  const [uploadStages, setUploadStages] = useState([]);
+  const [currentUploadStage, setCurrentUploadStage] = useState('');
+  const [overallProgress, setOverallProgress] = useState(0);
+  const [uploadErrors, setUploadErrors] = useState([]);
   
   // Hierarchical categories state
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -51,7 +60,8 @@ const StartCampaign = () => {
       shortDescription: '',
       story: '',
       coverImage: null,
-      additionalImages: []
+      additionalImages: [],
+      verificationDocuments: []
     },
     mode: 'onChange'
   });
@@ -104,9 +114,11 @@ const StartCampaign = () => {
       timestamp: Date.now(),
       userId: user?.id,
       images: {
-        coverPreview: uploadedCoverPreview,
-        additionalPreviews: uploadedAdditionalPreviews,
-        hasCoverImage: !!coverImage // Track if cover image exists
+        hasCoverImage: !!selectedCoverImage,
+        hasAdditionalImages: selectedAdditionalImages.length > 0,
+        hasVerificationDocs: selectedVerificationDocs.length > 0,
+        additionalImagesCount: selectedAdditionalImages.length,
+        verificationDocsCount: selectedVerificationDocs.length
       }
     };
     
@@ -165,26 +177,26 @@ const StartCampaign = () => {
       setCurrentStep(savedData.step);
     }
     
+    // Note: We cannot restore actual File objects from localStorage
+    // Only form data is restored, users will need to re-select files
     if (savedData.images) {
-      if (savedData.images.coverPreview) {
-        setUploadedCoverPreview(savedData.images.coverPreview);
-        // Note: We can't restore the actual file object, but we track that there was one
-        // The user will need to re-upload if they want to submit
-        if (savedData.images.hasCoverImage) {
-          // Set a flag to indicate this is a restored preview, not a new upload
-          setCoverImage('RESTORED_PREVIEW'); // Special marker to indicate restored state
-        }
-      }
-      if (savedData.images.additionalPreviews) {
-        setUploadedAdditionalPreviews(savedData.images.additionalPreviews);
-      }
+      // Clear any existing file selections since we can't restore File objects
+      setSelectedCoverImage(null);
+      setSelectedAdditionalImages([]);
+      setSelectedVerificationDocs([]);
+      
+      toast({
+        title: "Campaign Restored",
+        description: "Your form data has been restored. Please re-select your images and documents to continue.",
+        variant: "default"
+      });
+    } else {
+      toast({
+        title: "Campaign Restored",
+        description: "Your campaign data has been restored.",
+        variant: "default"
+      });
     }
-    
-    toast({
-      title: "Campaign Restored",
-      description: "Your previous campaign data has been restored. You may need to re-upload your cover image to submit.",
-      variant: "default"
-    });
   };
 
   const handleContinueDraft = () => {
@@ -230,7 +242,11 @@ const StartCampaign = () => {
       const formData = getValues();
       // Only save if there's meaningful data
       if (formData.title?.trim() || formData.category || formData.shortDescription?.trim()) {
-        saveFormData(formData, currentStep, { coverImage, additionalImages });
+        saveFormData(formData, currentStep, { 
+          coverImage: selectedCoverImage, 
+          additionalImages: selectedAdditionalImages,
+          verificationDocuments: selectedVerificationDocs
+        });
       }
     }, 2000); // Save after 2 seconds of inactivity
     
@@ -282,10 +298,10 @@ const StartCampaign = () => {
       isStepValid = await trigger(['shortDescription', 'story']);
       
       // Validate cover image
-      if (!coverImageUpload) {
+      if (!selectedCoverImage) {
         toast({
           title: "Cover image required",
-          description: "Please upload a cover image for your campaign",
+          description: "Please select a cover image for your campaign",
           variant: "destructive"
         });
         return;
@@ -303,22 +319,37 @@ const StartCampaign = () => {
     }
   };
 
-  // Handle cover image upload
-  const handleCoverImageUpload = (uploadResult) => {
-    setCoverImageUpload(uploadResult);
-    toast({
-      title: "Cover image uploaded",
-      description: "Cover image has been uploaded successfully.",
-    });
+  // Handle cover image selection
+  const handleCoverImageSelection = (file) => {
+    setSelectedCoverImage(file);
+    if (file) {
+      toast({
+        title: "Cover image selected",
+        description: "Cover image has been selected successfully.",
+      });
+    }
   };
 
-  // Handle additional images upload
-  const handleAdditionalImagesUpload = (uploadResults) => {
-    setAdditionalImageUploads(uploadResults);
-    toast({
-      title: "Additional images uploaded", 
-      description: `${uploadResults.length} additional image(s) uploaded successfully.`,
-    });
+  // Handle additional images selection
+  const handleAdditionalImagesSelection = (files) => {
+    setSelectedAdditionalImages(files || []);
+    if (files && files.length > 0) {
+      toast({
+        title: "Additional images selected", 
+        description: `${files.length} additional image(s) selected successfully.`,
+      });
+    }
+  };
+
+  // Handle verification documents selection
+  const handleVerificationDocsSelection = (files) => {
+    setSelectedVerificationDocs(files || []);
+    if (files && files.length > 0) {
+      toast({
+        title: "Verification documents selected", 
+        description: `${files.length} verification document(s) selected successfully.`,
+      });
+    }
   };
   
   const nextStep = () => setCurrentStep(prev => prev + 1);
@@ -390,11 +421,166 @@ const StartCampaign = () => {
       });
       return;
     }
+
+    // Validate required files
+    if (!selectedCoverImage) {
+      toast({
+        title: "Cover image required",
+        description: "Please select a cover image for your campaign.",
+        variant: "destructive"
+      });
+      return;
+    }
     
     try {
       setIsLoading(true);
-      
-      // Prepare campaign data - no FormData needed as files are already uploaded
+      setShowUploadProgress(true);
+      setUploadErrors([]);
+      setOverallProgress(0);
+
+      // Initialize upload stages
+      const stages = [];
+      stages.push({
+        id: 'cover',
+        name: 'Uploading cover image...',
+        status: 'pending',
+        progress: 0
+      });
+
+      if (selectedAdditionalImages.length > 0) {
+        stages.push({
+          id: 'additional',
+          name: `Uploading ${selectedAdditionalImages.length} additional images...`,
+          status: 'pending',
+          progress: 0
+        });
+      }
+
+      if (selectedVerificationDocs.length > 0) {
+        stages.push({
+          id: 'verification',
+          name: `Uploading ${selectedVerificationDocs.length} verification documents...`,
+          status: 'pending',
+          progress: 0
+        });
+      }
+
+      stages.push({
+        id: 'submit',
+        name: 'Creating campaign...',
+        status: 'pending',
+        progress: 0
+      });
+
+      setUploadStages(stages);
+
+      let uploadedCoverImage = null;
+      let uploadedAdditionalImages = [];
+      let uploadedVerificationDocs = [];
+
+      const totalStages = stages.length;
+      let completedStages = 0;
+
+      // Stage 1: Upload cover image
+      setCurrentUploadStage('Uploading cover image...');
+      setUploadStages(prev => prev.map(stage => 
+        stage.id === 'cover' ? { ...stage, status: 'uploading' } : stage
+      ));
+
+      try {
+        uploadedCoverImage = await uploadCampaignCover(selectedCoverImage, (progress) => {
+          setUploadStages(prev => prev.map(stage => 
+            stage.id === 'cover' ? { ...stage, progress } : stage
+          ));
+        });
+
+        setUploadStages(prev => prev.map(stage => 
+          stage.id === 'cover' ? { ...stage, status: 'completed', progress: 100 } : stage
+        ));
+        completedStages++;
+        setOverallProgress((completedStages / totalStages) * 100);
+      } catch (error) {
+        setUploadStages(prev => prev.map(stage => 
+          stage.id === 'cover' ? { ...stage, status: 'error', error: error.message } : stage
+        ));
+        throw new Error(`Cover image upload failed: ${error.message}`);
+      }
+
+      // Stage 2: Upload additional images (if any)
+      if (selectedAdditionalImages.length > 0) {
+        setCurrentUploadStage(`Uploading ${selectedAdditionalImages.length} additional images...`);
+        setUploadStages(prev => prev.map(stage => 
+          stage.id === 'additional' ? { ...stage, status: 'uploading' } : stage
+        ));
+
+        try {
+          const additionalResults = await uploadCampaignImages(selectedAdditionalImages, (overallProgress, fileIndex, fileProgress) => {
+            setUploadStages(prev => prev.map(stage => 
+              stage.id === 'additional' ? { ...stage, progress: overallProgress } : stage
+            ));
+          });
+
+          // Check for failed uploads
+          const failedUploads = additionalResults.filter(result => !result.success);
+          if (failedUploads.length > 0) {
+            throw new Error(`${failedUploads.length} images failed to upload`);
+          }
+
+          uploadedAdditionalImages = additionalResults.filter(result => result.success);
+          setUploadStages(prev => prev.map(stage => 
+            stage.id === 'additional' ? { ...stage, status: 'completed', progress: 100 } : stage
+          ));
+          completedStages++;
+          setOverallProgress((completedStages / totalStages) * 100);
+        } catch (error) {
+          setUploadStages(prev => prev.map(stage => 
+            stage.id === 'additional' ? { ...stage, status: 'error', error: error.message } : stage
+          ));
+          throw new Error(`Additional images upload failed: ${error.message}`);
+        }
+      }
+
+      // Stage 3: Upload verification documents (if any)
+      if (selectedVerificationDocs.length > 0) {
+        setCurrentUploadStage(`Uploading ${selectedVerificationDocs.length} verification documents...`);
+        setUploadStages(prev => prev.map(stage => 
+          stage.id === 'verification' ? { ...stage, status: 'uploading' } : stage
+        ));
+
+        try {
+          const verificationResults = await uploadCampaignVerification(selectedVerificationDocs, (overallProgress, fileIndex, fileProgress) => {
+            setUploadStages(prev => prev.map(stage => 
+              stage.id === 'verification' ? { ...stage, progress: overallProgress } : stage
+            ));
+          });
+
+          // Check for failed uploads
+          const failedUploads = verificationResults.filter(result => !result.success);
+          if (failedUploads.length > 0) {
+            throw new Error(`${failedUploads.length} verification documents failed to upload`);
+          }
+
+          uploadedVerificationDocs = verificationResults.filter(result => result.success);
+          setUploadStages(prev => prev.map(stage => 
+            stage.id === 'verification' ? { ...stage, status: 'completed', progress: 100 } : stage
+          ));
+          completedStages++;
+          setOverallProgress((completedStages / totalStages) * 100);
+        } catch (error) {
+          setUploadStages(prev => prev.map(stage => 
+            stage.id === 'verification' ? { ...stage, status: 'error', error: error.message } : stage
+          ));
+          throw new Error(`Verification documents upload failed: ${error.message}`);
+        }
+      }
+
+      // Stage 4: Submit campaign
+      setCurrentUploadStage('Creating campaign...');
+      setUploadStages(prev => prev.map(stage => 
+        stage.id === 'submit' ? { ...stage, status: 'uploading' } : stage
+      ));
+
+      // Prepare campaign data
       const campaignData = {
         title: data.title,
         category: data.category,
@@ -404,10 +590,9 @@ const StartCampaign = () => {
         shortDescription: data.shortDescription,
         story: data.story,
         turnstileToken: turnstileToken,
-        coverImageUrl: coverImageUpload?.publicUrl,
-        coverImage: coverImageUpload?.publicUrl, // Store full URL directly
-        additionalImages: additionalImageUploads.map(upload => upload.publicUrl), // Store full URLs
-        additionalImageUrls: additionalImageUploads.map(upload => upload.publicUrl)
+        coverImageUrl: uploadedCoverImage?.publicUrl,
+        additionalImageUrls: uploadedAdditionalImages.map(img => img.publicUrl),
+        verificationDocumentUrls: uploadedVerificationDocs.map(doc => doc.publicUrl)
       };
       
       // Get JWT token from localStorage
@@ -431,6 +616,11 @@ const StartCampaign = () => {
       
       // Check response status and data
       if (response.data && response.data.success) {
+        setUploadStages(prev => prev.map(stage => 
+          stage.id === 'submit' ? { ...stage, status: 'completed', progress: 100 } : stage
+        ));
+        setOverallProgress(100);
+        
         // Clear auto-save data on successful submission
         clearAutoSave();
         
@@ -439,37 +629,36 @@ const StartCampaign = () => {
           description: response.data.message || "Your campaign has been submitted for review.",
         });
         
-        // Redirect to dashboard with page refresh to ensure clean state
+        // Wait a moment for user to see completion, then redirect
         setTimeout(() => {
-          window.location.href = '/dashboard';
-        }, 1500);
+          setShowUploadProgress(false);
+          setLocation('/dashboard');
+        }, 2000);
       } else {
-        // Handle successful request but with error in response
-        toast({
-          title: "Something went wrong",
-          description: response.data.message || "Unable to create campaign. Please try again.",
-          variant: "destructive"
-        });
+        throw new Error(response.data.message || "Unable to create campaign. Please try again.");
       }
       
     } catch (error) {
       console.error('Campaign creation error:', error);
       
+      // Update the failed stage
+      setUploadStages(prev => prev.map(stage => 
+        stage.status === 'uploading' ? { ...stage, status: 'error', error: error.message } : stage
+      ));
+      
       // Extract error message from response if available
       let errorMessage = "An error occurred while creating your campaign.";
       
       if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
         errorMessage = error.response.data.message || error.response.data.error || errorMessage;
-        console.log('Server response:', error.response.data);
       } else if (error.request) {
-        // The request was made but no response was received
         errorMessage = "No response received from server. Please check your internet connection.";
       } else {
-        // Something happened in setting up the request
         errorMessage = error.message || errorMessage;
       }
+      
+      setUploadErrors([errorMessage]);
+      setCurrentUploadStage('Error occurred');
       
       toast({
         title: "Campaign creation failed",
@@ -500,7 +689,7 @@ const StartCampaign = () => {
             <div className="relative text-center mb-12 rounded-2xl overflow-hidden min-h-[250px] md:min-h-[300px]">
               {/* Background Image */}
               <img 
-                src="http://127.0.0.1:9000/mybucket/uploads/ChatGPT%20Image%20Jun%209,%202025,%2011_19_53%20AM.png"
+                src="https://kettocdn.gumlet.io/media/banner/0/99/image/aH9Y3P69FXMtBeGO47lzuNcDYGLLYeGOGKVTHucQ.png?w=1536&dpr=1.3"
                 alt="Campaign Background"
                 className="absolute inset-0 w-full h-full object-cover object-center"
               />
@@ -899,42 +1088,88 @@ const StartCampaign = () => {
                         <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                           Cover Image* (Required)
                         </label>
-                        <FileUpload
+                        <FileSelector
                           fileType="campaign-cover"
                           accept="image/*"
                           maxFiles={1}
-                          onUploadComplete={handleCoverImageUpload}
+                          onFilesSelected={handleCoverImageSelection}
+                          selectedFiles={selectedCoverImage}
                           className="w-full"
                         >
-                          <p className="text-sm font-medium">
-                            Click to upload cover image or drag and drop
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          <div className="text-sm font-medium">
+                            Click to select cover image or drag and drop
+                          </div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                             PNG, JPG, GIF up to 15MB (1200x630px recommended)
-                          </p>
-                        </FileUpload>
+                          </div>
+                        </FileSelector>
                       </div>
                       
                       <div className="group">
                         <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                           Additional Images (Optional - Up to 3)
                         </label>
-                        <FileUpload
+                        <FileSelector
                           fileType="campaign-image"
                           accept="image/*"
                           maxFiles={3}
-                          onUploadComplete={handleAdditionalImagesUpload}
+                          onFilesSelected={handleAdditionalImagesSelection}
+                          selectedFiles={selectedAdditionalImages}
                           className="w-full"
                         >
-                          <p className="text-sm font-medium">
-                            Click to upload additional images or drag and drop
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          <div className="text-sm font-medium">
+                            Click to select additional images or drag and drop
+                          </div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                             PNG, JPG, GIF up to 15MB each (max 3 images)
-                          </p>
-                        </FileUpload>
+                          </div>
+                        </FileSelector>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                           These images will appear in the campaign gallery
+                        </p>
+                      </div>
+
+                      <div className="group">
+                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                          Verification Documents (Optional - Up to 3)
+                        </label>
+                        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-3">
+                          <div className="flex items-start space-x-3">
+                            <div className="flex-shrink-0">
+                              <svg className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                            <div>
+                              <h4 className="text-sm font-semibold text-blue-800 dark:text-blue-200 mb-1">
+                                Professional Note
+                              </h4>
+                              <p className="text-sm text-blue-700 dark:text-blue-300">
+                                Upload supporting documents to increase campaign authenticity and trust. 
+                                For medical campaigns: medical reports, prescriptions, or hospital bills. 
+                                For education: school certificates or admission letters. 
+                                For emergencies: official documents or proof of situation.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        <FileSelector
+                          fileType="campaign-verification"
+                          accept="image/*,application/pdf"
+                          maxFiles={3}
+                          onFilesSelected={handleVerificationDocsSelection}
+                          selectedFiles={selectedVerificationDocs}
+                          className="w-full"
+                        >
+                          <div className="text-sm font-medium">
+                            Click to select verification documents or drag and drop
+                          </div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            Images or PDF files up to 15MB each (max 3 documents)
+                          </div>
+                        </FileSelector>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                          These documents will be reviewed by our team to verify campaign authenticity
                         </p>
                       </div>
                     </div>
@@ -1012,30 +1247,79 @@ const StartCampaign = () => {
                         </div>
                       </div>
                       
-                      {coverImageUpload && (
+                      {selectedCoverImage && (
                         <div className="bg-white dark:bg-gray-700 p-6 rounded-xl border border-gray-100 dark:border-gray-600 shadow-sm">
                           <h3 className="font-semibold text-lg mb-4 text-gray-800 dark:text-white">Cover Image</h3>
                           <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
                             <img 
-                              src={coverImageUpload.publicUrl} 
+                              src={selectedCoverImage.preview} 
                               alt="Cover Preview" 
                               className="w-full h-64 object-cover rounded-lg shadow-md"
                             />
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                              {selectedCoverImage.name} • {(selectedCoverImage.size / 1024 / 1024).toFixed(2)} MB
+                            </p>
                           </div>
                         </div>
                       )}
                       
-                      {additionalImageUploads.length > 0 && (
+                      {selectedAdditionalImages.length > 0 && (
                         <div className="bg-white dark:bg-gray-700 p-6 rounded-xl border border-gray-100 dark:border-gray-600 shadow-sm">
                           <h3 className="font-semibold text-lg mb-4 text-gray-800 dark:text-white">Additional Images</h3>
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                            {additionalImageUploads.map((upload, index) => (
-                              <div key={index} className="bg-gray-50 dark:bg-gray-800 p-2 rounded-lg">
+                            {selectedAdditionalImages.map((image, index) => (
+                              <div key={image.id} className="bg-gray-50 dark:bg-gray-800 p-2 rounded-lg">
                                 <img 
-                                  src={upload.publicUrl} 
+                                  src={image.preview} 
                                   alt={`Additional Preview ${index + 1}`} 
                                   className="w-full h-32 object-cover rounded-lg shadow-sm"
                                 />
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
+                                  {image.name}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {selectedVerificationDocs.length > 0 && (
+                        <div className="bg-white dark:bg-gray-700 p-6 rounded-xl border border-gray-100 dark:border-gray-600 shadow-sm">
+                          <h3 className="font-semibold text-lg mb-4 text-gray-800 dark:text-white">Verification Documents</h3>
+                          <div className="space-y-3">
+                            {selectedVerificationDocs.map((doc, index) => (
+                              <div key={doc.id} className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg flex items-center space-x-3">
+                                <div className="flex-shrink-0">
+                                  {doc.type.startsWith('image/') ? (
+                                    doc.preview ? (
+                                      <img 
+                                        src={doc.preview} 
+                                        alt={`Document Preview ${index + 1}`} 
+                                        className="w-12 h-12 object-cover rounded"
+                                      />
+                                    ) : (
+                                      <div className="w-12 h-12 bg-gray-200 dark:bg-gray-600 rounded flex items-center justify-center">
+                                        <svg className="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                          <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                                        </svg>
+                                      </div>
+                                    )
+                                  ) : (
+                                    <div className="w-12 h-12 bg-red-100 dark:bg-red-900/20 rounded flex items-center justify-center">
+                                      <svg className="w-6 h-6 text-red-600 dark:text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 0v12h8V6H8a2 2 0 01-2-2z" clipRule="evenodd" />
+                                      </svg>
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                    {doc.name}
+                                  </p>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    {(doc.size / 1024 / 1024).toFixed(2)} MB • {doc.type}
+                                  </p>
+                                </div>
                               </div>
                             ))}
                           </div>
@@ -1148,6 +1432,15 @@ const StartCampaign = () => {
           </motion.div>
         </div>
       </div>
+
+      {/* Upload Progress Modal */}
+      <UploadProgressModal
+        isOpen={showUploadProgress}
+        uploadStages={uploadStages}
+        currentStage={currentUploadStage}
+        overallProgress={overallProgress}
+        errors={uploadErrors}
+      />
     </>
   );
 };

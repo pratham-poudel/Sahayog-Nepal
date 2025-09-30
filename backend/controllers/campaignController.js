@@ -25,6 +25,8 @@ exports.createCampaign = async (req, res) => {
             coverImage,
             additionalImageUrls,
             additionalImages,
+            verificationDocumentUrls,
+            verificationDocuments,
             turnstileToken
         } = req.body;
 
@@ -71,6 +73,19 @@ exports.createCampaign = async (req, res) => {
             });
             imageUrls = campaignImages; // Set imageUrls for response
         }
+
+        // Process verification documents if any
+        let verificationDocs = [];
+        if (verificationDocumentUrls && Array.isArray(verificationDocumentUrls)) {
+            verificationDocs = verificationDocumentUrls;
+        } else if (verificationDocuments && Array.isArray(verificationDocuments)) {
+            verificationDocs = verificationDocuments.map(doc => {
+                if (typeof doc === 'string') {
+                    return doc;
+                }
+                return doc.publicUrl || doc.url || doc;
+            });
+        }
           
           // Create new campaign
         const campaign = await Campaign.create({
@@ -83,6 +98,7 @@ exports.createCampaign = async (req, res) => {
             endDate,
             coverImage: finalCoverImage,
             images: campaignImages,
+            verificationDocuments: verificationDocs,
             creator: req.user._id,
             featured: false // Always set to false now
         });
@@ -103,7 +119,8 @@ exports.createCampaign = async (req, res) => {
             campaignId: campaign._id,
             // Include URLs for the frontend
             coverImageUrl: finalCoverImage,
-            imageUrls
+            imageUrls,
+            verificationDocumentUrls: verificationDocs
         });
     } catch (error) {
         console.error('Error creating campaign:', error);

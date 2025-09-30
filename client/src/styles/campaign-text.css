@@ -1,0 +1,28 @@
+/* Campaign text formatting fixes */
+.campaign-story-text {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  white-space: pre-wrap;
+  line-height: 1.6;
+  max-width: 100%;
+}
+
+.campaign-story-text * {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* Ensure proper text flow in all containers */
+.prose.prose-gray {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.prose.prose-gray p,
+.prose.prose-gray div {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}

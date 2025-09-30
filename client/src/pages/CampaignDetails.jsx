@@ -114,7 +114,13 @@ const CampaignDetails = () => {
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5 }}
             >
-              <h1 className="text-3xl md:text-4xl font-poppins font-bold mb-6 text-center md:text-left">
+              <h1 className="text-3xl md:text-4xl font-poppins font-bold mb-6 text-center md:text-left" style={{
+                wordWrap: 'break-word',
+                overflowWrap: 'break-word',
+                wordBreak: 'break-word',
+                maxWidth: '100%',
+                lineHeight: '1.2'
+              }}>
                 {campaign.title}
               </h1>
               

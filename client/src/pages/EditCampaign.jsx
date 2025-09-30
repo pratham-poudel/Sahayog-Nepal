@@ -10,6 +10,11 @@ import { apiRequest } from '../lib/queryClient';
 import { getCoverImageUrl, getCampaignImageUrls } from '../utils/imageUtils';
 import { API_URL as CONFIG_API_URL } from '../config/index.js';
 import uploadService from '../services/uploadService';
+import FileSelector from '../components/common/FileSelector';
+import UploadProgressModal from '../components/common/UploadProgressModal';
+import { DocumentIcon } from '@heroicons/react/24/outline';
+import TurnstileWidget from '../components/common/TurnstileWidget';
+import { TURNSTILE_CONFIG } from '../config/index.js';
 
 const EditCampaign = ({ id }) => {
   const [, setLocation] = useLocation();
@@ -17,12 +22,34 @@ const EditCampaign = ({ id }) => {
   const { categories, loading: categoriesLoading } = useCategories();
   const [isLoading, setIsLoading] = useState(false);
   const [fetchLoading, setFetchLoading] = useState(true);
-  const [campaign, setCampaign] = useState(null);  const [coverImage, setCoverImage] = useState(null);
-  const [additionalImages, setAdditionalImages] = useState([]);
-  const [uploadedCoverPreview, setUploadedCoverPreview] = useState(null);
-  const [uploadedAdditionalPreviews, setUploadedAdditionalPreviews] = useState([]);
+  const [campaign, setCampaign] = useState(null);
+  
+  // Existing campaign data state
+  const [existingCoverImage, setExistingCoverImage] = useState(null);
+  const [existingAdditionalImages, setExistingAdditionalImages] = useState([]);
+  const [existingVerificationDocs, setExistingVerificationDocs] = useState([]);
+  
+  // New files selected for upload
+  const [selectedCoverImage, setSelectedCoverImage] = useState(null);
+  const [selectedAdditionalImages, setSelectedAdditionalImages] = useState([]);
+  const [selectedVerificationDocs, setSelectedVerificationDocs] = useState([]);
+  
+  // Combined display arrays (existing + new)
+  const [displayAdditionalImages, setDisplayAdditionalImages] = useState([]);
+  const [displayVerificationDocs, setDisplayVerificationDocs] = useState([]);
+  
+  // Upload progress state
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploadStages, setUploadStages] = useState([]);
+  const [currentUploadStage, setCurrentUploadStage] = useState('');
+  const [overallProgress, setOverallProgress] = useState(0);
+  
+  // Turnstile validation state
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const [turnstileError, setTurnstileError] = useState(null);
   const { toast } = useToast();
   const authCheckPerformed = useRef(false);
+  const turnstileRef = useRef();
   
   // Hierarchical categories state
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -88,15 +115,40 @@ const EditCampaign = ({ id }) => {
         setSelectedCategory(data.campaign.category);
         setSelectedSubcategory(data.campaign.subcategory || null);
         
-        // Set preview images
+        // Set existing cover image
         if (data.campaign.coverImage) {
-          setUploadedCoverPreview(getCoverImageUrl(data.campaign));
+          const coverImageUrl = getCoverImageUrl(data.campaign);
+          setExistingCoverImage(coverImageUrl);
         }
         
+        // Set existing additional images
         if (data.campaign.images && data.campaign.images.length > 0) {
-          // Use the utility function to get proper image URLs
           const imageUrls = getCampaignImageUrls(data.campaign);
-          setUploadedAdditionalPreviews(imageUrls);
+          setExistingAdditionalImages(imageUrls);
+          setDisplayAdditionalImages(imageUrls.map((url, index) => ({ 
+            url, 
+            type: 'existing', 
+            id: `existing-${index}`,
+            name: `Existing Image ${index + 1}`
+          })));
+        }
+        
+        // Set existing verification documents
+        if (data.campaign.verificationDocuments && data.campaign.verificationDocuments.length > 0) {
+          const verificationUrls = data.campaign.verificationDocuments.map(doc => {
+            if (doc.startsWith('http')) {
+              return doc;
+            }
+            return `${CONFIG_API_URL}/uploads/${doc}`;
+          });
+          setExistingVerificationDocs(verificationUrls);
+          setDisplayVerificationDocs(verificationUrls.map((url, index) => ({ 
+            url, 
+            type: 'existing', 
+            id: `existing-doc-${index}`,
+            name: `Existing Document ${index + 1}`,
+            preview: url
+          })));
         }
       } catch (error) {
         console.error('Error fetching campaign:', error);
@@ -141,101 +193,7 @@ const EditCampaign = ({ id }) => {
     }
   }, [campaign, setLocation, toast]);
 
-  const handleAdditionalImageUpload = async (e) => {
-    const files = Array.from(e.target.files);
-    if (files.length > 0) {
-      // Limit to 3 additional images
-      const newFiles = files.slice(0, 3 - uploadedAdditionalPreviews.length);
-      
-      if (newFiles.length > 0) {
-        try {
-          setIsLoading(true);
-          
-          // Upload multiple files using presigned URLs
-          const results = await uploadService.uploadFiles(newFiles, { fileType: 'campaign-image' });
-          
-          // Store uploaded URLs instead of file objects
-          const uploadedUrls = results.map(result => result.publicUrl);
-          setAdditionalImages(prev => [...prev, ...uploadedUrls]);
-          
-          // Create previews for display using the uploaded URLs
-          setUploadedAdditionalPreviews(prev => [...prev, ...uploadedUrls]);
-          
-          toast({
-            title: "Success",
-            description: `${newFiles.length} additional images uploaded successfully`,
-          });
-        } catch (error) {
-          console.error('Additional images upload failed:', error);
-          toast({
-            title: "Upload Failed",
-            description: "Failed to upload additional images. Please try again.",
-            variant: "destructive"
-          });
-        } finally {
-          setIsLoading(false);
-        }
-      }
-    }
-  };
-
-  const removeAdditionalImage = (index) => {
-    const imageToRemove = uploadedAdditionalPreviews[index];
-    
-    // Check if this is an existing image (from campaign.images) or a newly added one
-    const isNewImage = !isExistingImageUrl(imageToRemove);
-    
-    if (isNewImage) {
-      // Find the corresponding index in additionalImages (only new images are there)
-      const newImageIndex = additionalImages.findIndex((_, i) => {
-        // Calculate which preview corresponds to this file
-        const existingImagesCount = campaign?.images?.length || 0;
-        const newImagePreviewIndex = index - existingImagesCount;
-        return i === newImagePreviewIndex;
-      });
-      
-      if (newImageIndex !== -1) {
-        setAdditionalImages(prev => prev.filter((_, i) => i !== newImageIndex));
-      }
-    }
-    
-    // Remove from preview list
-    setUploadedAdditionalPreviews(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const handleImageUpload = async (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      try {
-        setIsLoading(true);
-        
-        // Upload file using presigned URL
-        const result = await uploadService.uploadFile(file, { fileType: 'campaign-cover' });
-        
-        // Store the uploaded URL instead of file object
-        setCoverImage(result.publicUrl);
-        
-        // Create a preview URL for display
-        setUploadedCoverPreview(result.publicUrl);
-        
-        toast({
-          title: "Success",
-          description: "Cover image uploaded successfully",
-        });
-      } catch (error) {
-        console.error('Cover image upload failed:', error);
-        toast({
-          title: "Upload Failed",
-          description: "Failed to upload cover image. Please try again.",
-          variant: "destructive"
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    }
-  };
-  
-  // For checking if an existing image should be kept
+  // For checking if an existing image should be kept (utility function)
   const isExistingImageUrl = (url) => {
     if (!campaign || !campaign.images) return false;
     
@@ -245,6 +203,117 @@ const EditCampaign = ({ id }) => {
       const imgFilename = img.split('/').pop();
       return imgFilename === urlFilename;
     });
+  };
+  
+  // New file selection handlers
+  const handleCoverImageSelect = (file) => {
+    setSelectedCoverImage(file);
+  };
+  
+  const handleAdditionalImagesSelect = (files) => {
+    const currentTotal = displayAdditionalImages.length;
+    const maxAllowed = 3;
+    const availableSlots = maxAllowed - currentTotal;
+    
+    if (files.length > availableSlots) {
+      toast({
+        title: "Too many images",
+        description: `You can only add ${availableSlots} more image(s). Currently have ${currentTotal}/3.`,
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setSelectedAdditionalImages(files || []);
+    
+    // Update display array
+    const newImages = (files || []).map((file, index) => ({
+      url: file.preview,
+      type: 'new',
+      id: `new-${index}`,
+      name: file.name,
+      file: file
+    }));
+    
+    setDisplayAdditionalImages(prev => {
+      const existingItems = prev.filter(item => item.type === 'existing');
+      return [...existingItems, ...newImages];
+    });
+  };
+  
+  const handleVerificationDocsSelect = (files) => {
+    const currentTotal = displayVerificationDocs.length;
+    const maxAllowed = 3;
+    const availableSlots = maxAllowed - currentTotal;
+    
+    if (files.length > availableSlots) {
+      toast({
+        title: "Too many documents",
+        description: `You can only add ${availableSlots} more document(s). Currently have ${currentTotal}/3.`,
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setSelectedVerificationDocs(files || []);
+    
+    // Update display array
+    const newDocs = (files || []).map((file, index) => ({
+      url: file.preview,
+      type: 'new',
+      id: `new-doc-${index}`,
+      name: file.name,
+      preview: file.preview,
+      file: file
+    }));
+    
+    setDisplayVerificationDocs(prev => {
+      const existingItems = prev.filter(item => item.type === 'existing');
+      return [...existingItems, ...newDocs];
+    });
+  };
+  
+  // Remove functions
+  const removeAdditionalImage = (itemId) => {
+    setDisplayAdditionalImages(prev => {
+      const filtered = prev.filter(item => item.id !== itemId);
+      // Update selected files array to only include new files
+      const newFiles = filtered.filter(item => item.type === 'new').map(item => item.file);
+      setSelectedAdditionalImages(newFiles);
+      return filtered;
+    });
+  };
+  
+  const removeVerificationDoc = (itemId) => {
+    setDisplayVerificationDocs(prev => {
+      const filtered = prev.filter(item => item.id !== itemId);
+      // Update selected files array to only include new files
+      const newFiles = filtered.filter(item => item.type === 'new').map(item => item.file);
+      setSelectedVerificationDocs(newFiles);
+      return filtered;
+    });
+  };
+  
+  // Turnstile handlers
+  const handleTurnstileVerify = (token) => {
+    console.log("Turnstile token received in EditCampaign");
+    setTurnstileToken(token);
+    setTurnstileError(null);
+  };
+  
+  const handleTurnstileError = (errorCode) => {
+    setTurnstileToken('');
+    setTurnstileError(errorCode);
+    toast({
+      title: "Security verification failed",
+      description: "Please try again.",
+      variant: "destructive"
+    });
+  };
+  
+  const handleTurnstileExpire = () => {
+    setTurnstileToken('');
+    setTurnstileError("Token expired");
   };
   
   const onSubmit = async (data) => {
@@ -260,8 +329,161 @@ const EditCampaign = ({ id }) => {
       return;
     }
     
+    // Validate Turnstile token
+    if (!turnstileToken) {
+      setTurnstileError("Please complete the security verification.");
+      toast({
+        title: "Security Verification Required",
+        description: "Please complete the CAPTCHA verification to continue.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     try {
       setIsLoading(true);
+      
+      // Initialize variables for uploaded files
+      let uploadedCoverImage = null;
+      let uploadedAdditionalImages = [];
+      let uploadedVerificationDocs = [];
+      
+      // If there are new files to upload, show progress modal
+      const hasNewUploads = selectedCoverImage || selectedAdditionalImages.length > 0 || selectedVerificationDocs.length > 0;
+      
+      if (hasNewUploads) {
+        setShowUploadModal(true);
+        setOverallProgress(0);
+        
+        // Prepare upload stages
+        const stages = [];
+        if (selectedCoverImage) {
+          stages.push({
+            id: 'cover',
+            name: 'Uploading cover image...',
+            status: 'pending',
+            progress: 0
+          });
+        }
+        if (selectedAdditionalImages.length > 0) {
+          stages.push({
+            id: 'additional',
+            name: `Uploading ${selectedAdditionalImages.length} additional images...`,
+            status: 'pending',
+            progress: 0
+          });
+        }
+        if (selectedVerificationDocs.length > 0) {
+          stages.push({
+            id: 'verification',
+            name: `Uploading ${selectedVerificationDocs.length} verification documents...`,
+            status: 'pending',
+            progress: 0
+          });
+        }
+        stages.push({
+          id: 'submit',
+          name: 'Updating campaign...',
+          status: 'pending',
+          progress: 0
+        });
+        
+        setUploadStages(stages);
+        
+        const totalStages = stages.length;
+        let completedStages = 0;
+        
+        // Upload cover image if selected
+        if (selectedCoverImage) {
+          setCurrentUploadStage('Uploading cover image...');
+          setUploadStages(prev => prev.map(stage => 
+            stage.id === 'cover' ? { ...stage, status: 'uploading' } : stage
+          ));
+          
+          try {
+            const result = await uploadService.uploadFile(selectedCoverImage, { fileType: 'campaign-cover' }, (progress) => {
+              setUploadStages(prev => prev.map(stage => 
+                stage.id === 'cover' ? { ...stage, progress } : stage
+              ));
+            });
+            
+            uploadedCoverImage = result.publicUrl;
+            setUploadStages(prev => prev.map(stage => 
+              stage.id === 'cover' ? { ...stage, status: 'completed', progress: 100 } : stage
+            ));
+            completedStages++;
+            setOverallProgress((completedStages / totalStages) * 100);
+          } catch (error) {
+            setUploadStages(prev => prev.map(stage => 
+              stage.id === 'cover' ? { ...stage, status: 'error', error: error.message } : stage
+            ));
+            throw new Error(`Cover image upload failed: ${error.message}`);
+          }
+        }
+        
+        // Upload additional images if selected
+        if (selectedAdditionalImages.length > 0) {
+          setCurrentUploadStage(`Uploading ${selectedAdditionalImages.length} additional images...`);
+          setUploadStages(prev => prev.map(stage => 
+            stage.id === 'additional' ? { ...stage, status: 'uploading' } : stage
+          ));
+          
+          try {
+            const results = await uploadService.uploadFiles(selectedAdditionalImages, { fileType: 'campaign-image' }, (progress) => {
+              setUploadStages(prev => prev.map(stage => 
+                stage.id === 'additional' ? { ...stage, progress } : stage
+              ));
+            });
+            
+            uploadedAdditionalImages = results.map(result => result.publicUrl);
+            setUploadStages(prev => prev.map(stage => 
+              stage.id === 'additional' ? { ...stage, status: 'completed', progress: 100 } : stage
+            ));
+            completedStages++;
+            setOverallProgress((completedStages / totalStages) * 100);
+          } catch (error) {
+            setUploadStages(prev => prev.map(stage => 
+              stage.id === 'additional' ? { ...stage, status: 'error', error: error.message } : stage
+            ));
+            throw new Error(`Additional images upload failed: ${error.message}`);
+          }
+        }
+        
+        // Upload verification documents if selected
+        if (selectedVerificationDocs.length > 0) {
+          setCurrentUploadStage(`Uploading ${selectedVerificationDocs.length} verification documents...`);
+          setUploadStages(prev => prev.map(stage => 
+            stage.id === 'verification' ? { ...stage, status: 'uploading' } : stage
+          ));
+          
+          try {
+            const results = await uploadService.uploadFiles(selectedVerificationDocs, { fileType: 'campaign-verification' }, (progress) => {
+              setUploadStages(prev => prev.map(stage => 
+                stage.id === 'verification' ? { ...stage, progress } : stage
+              ));
+            });
+            
+            uploadedVerificationDocs = results.map(result => result.publicUrl);
+            setUploadStages(prev => prev.map(stage => 
+              stage.id === 'verification' ? { ...stage, status: 'completed', progress: 100 } : stage
+            ));
+            completedStages++;
+            setOverallProgress((completedStages / totalStages) * 100);
+          } catch (error) {
+            setUploadStages(prev => prev.map(stage => 
+              stage.id === 'verification' ? { ...stage, status: 'error', error: error.message } : stage
+            ));
+            throw new Error(`Verification documents upload failed: ${error.message}`);
+          }
+        }
+        
+        // Update campaign data to include new uploads (we'll handle this in the payload creation)
+        
+        setCurrentUploadStage('Updating campaign...');
+        setUploadStages(prev => prev.map(stage => 
+          stage.id === 'submit' ? { ...stage, status: 'uploading' } : stage
+        ));
+      }
       
       // Create JSON payload instead of FormData
       const payload = {
@@ -270,37 +492,47 @@ const EditCampaign = ({ id }) => {
         targetAmount: data.targetAmount,
         endDate: data.endDate,
         shortDescription: data.shortDescription,
-        story: data.story
+        story: data.story,
+        turnstileToken: turnstileToken // Include Turnstile token for server validation
       };
 
       if (data.subcategory) {
         payload.subcategory = data.subcategory;
       }
       
-      // Add cover image URL if uploaded
-      if (coverImage) {
-        payload.coverImage = coverImage;
+      // Only update cover image if a new one was selected
+      if (selectedCoverImage && uploadedCoverImage) {
+        payload.coverImage = uploadedCoverImage;
       }
       
-      // Add additional image URLs if any new ones
-      if (additionalImages.length > 0) {
-        payload.additionalImages = additionalImages;
-      }
-      
-      // Also include a list of existing images to keep
-      if (campaign.images) {
-        // Keep track of which existing images should be preserved
-        const keepImages = [];
-        uploadedAdditionalPreviews.forEach(previewUrl => {
-          if (isExistingImageUrl(previewUrl)) {
-            // Extract just the filename from the URL
-            const filename = previewUrl.split('/').pop();
-            keepImages.push(filename);
-          }
-        });
-        if (keepImages.length > 0) {
-          payload.keepImages = keepImages;
+      // Handle additional images - preserve existing ones and add new ones
+      const finalAdditionalImages = [];
+      displayAdditionalImages.forEach(item => {
+        if (item.type === 'existing') {
+          finalAdditionalImages.push(item.url);
         }
+      });
+      // Add newly uploaded images
+      if (uploadedAdditionalImages.length > 0) {
+        finalAdditionalImages.push(...uploadedAdditionalImages);
+      }
+      if (finalAdditionalImages.length > 0) {
+        payload.additionalImages = finalAdditionalImages;
+      }
+      
+      // Handle verification documents - preserve existing ones and add new ones
+      const finalVerificationDocs = [];
+      displayVerificationDocs.forEach(item => {
+        if (item.type === 'existing') {
+          finalVerificationDocs.push(item.url);
+        }
+      });
+      // Add newly uploaded documents
+      if (uploadedVerificationDocs.length > 0) {
+        finalVerificationDocs.push(...uploadedVerificationDocs);
+      }
+      if (finalVerificationDocs.length > 0) {
+        payload.verificationDocuments = finalVerificationDocs;
       }
       
       // Use fetch with JSON payload
@@ -319,18 +551,47 @@ const EditCampaign = ({ id }) => {
         throw new Error(errorData.message || 'Failed to update campaign');
       }
       
+      // Mark final stage as completed
+      if (hasNewUploads) {
+        setUploadStages(prev => prev.map(stage => 
+          stage.id === 'submit' ? { ...stage, status: 'completed', progress: 100 } : stage
+        ));
+        setOverallProgress(100);
+        
+        // Close modal after a short delay
+        setTimeout(() => {
+          setShowUploadModal(false);
+        }, 2000);
+      }
+      
       // Show success message
       toast({
         title: "Campaign updated",
         description: "Your campaign has been updated successfully and is pending review.",
       });
       
+      // Reset Turnstile token after successful submission
+      setTurnstileToken('');
+      if (turnstileRef.current) {
+        turnstileRef.current.reset();
+      }
+      
       // Redirect to dashboard
       setTimeout(() => {
         setLocation('/dashboard');
-      }, 1500);
+      }, hasNewUploads ? 3000 : 1500);
     } catch (error) {
       console.error('Error updating campaign:', error);
+      
+      // Close upload modal on error
+      setShowUploadModal(false);
+      
+      // Reset Turnstile token on error
+      setTurnstileToken('');
+      if (turnstileRef.current) {
+        turnstileRef.current.reset();
+      }
+      
       toast({
         title: "Update failed",
         description: error.message || "An error occurred while updating your campaign.",
@@ -521,105 +782,295 @@ const EditCampaign = ({ id }) => {
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
                         Cover Image <span className="text-red-500">*</span>
                       </label>
-                      <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg">
-                        <div className="space-y-1 text-center">
-                          {uploadedCoverPreview ? (
-                            <div>
-                              <img src={uploadedCoverPreview} alt="Cover Preview" className="mx-auto h-48 w-auto object-cover rounded-lg" />
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setCoverImage(null);
-                                  setUploadedCoverPreview(null);
-                                }}
-                                className="mt-2 px-3 py-1 text-sm text-red-600 hover:text-red-800"
-                              >
-                                Remove
-                              </button>
-                            </div>
-                          ) : (
-                            <>
-                              <svg
-                                className="mx-auto h-12 w-12 text-gray-400"
-                                stroke="currentColor"
-                                fill="none"
-                                viewBox="0 0 48 48"
-                                aria-hidden="true"
-                              >
-                                <path
-                                  d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                                  strokeWidth={2}
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              </svg>
-                              <div className="flex text-sm text-gray-600">
-                                <label
-                                  htmlFor="cover-image-upload"
-                                  className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none"
-                                >
-                                  <span>Upload a file</span>
-                                  <input
-                                    id="cover-image-upload"
-                                    name="coverImage"
-                                    type="file"
-                                    className="sr-only"
-                                    accept="image/*"
-                                    onChange={handleImageUpload}
-                                  />
-                                </label>
-                                <p className="pl-1">or drag and drop</p>
-                              </div>
-                              <p className="text-xs text-gray-500">PNG, JPG, GIF up to 5MB</p>
-                            </>
-                          )}
+                      <p className="text-sm text-gray-600 mb-4">
+                        Choose a compelling cover image for your campaign. This will be the main image people see.
+                      </p>
+                      
+                      {/* Show existing cover image if available and no new image selected */}
+                      {existingCoverImage && !selectedCoverImage && (
+                        <div className="mb-4 relative">
+                          <img src={existingCoverImage} alt="Current Cover" className="h-48 w-auto object-cover rounded-lg border" />
+                          <div className="mt-2 flex justify-between items-center">
+                            <p className="text-sm text-gray-600">Current cover image</p>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setExistingCoverImage(null);
+                                setUploadedCoverPreview(null);
+                              }}
+                              className="text-sm text-red-600 hover:text-red-800"
+                            >
+                              Remove current image
+                            </button>
+                          </div>
                         </div>
-                      </div>
+                      )}
+                      
+                      <FileSelector
+                        fileType="campaign-cover"
+                        accept="image/*"
+                        maxFiles={1}
+                        onFilesSelected={handleCoverImageSelect}
+                        selectedFiles={selectedCoverImage ? [selectedCoverImage] : []}
+                        showPreview={true}
+                        dragDropArea={true}
+                        className="w-full"
+                      >
+                        <div className="text-center p-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-400 transition-colors">
+                          <svg
+                            className="mx-auto h-12 w-12 text-gray-400"
+                            stroke="currentColor"
+                            fill="none"
+                            viewBox="0 0 48 48"
+                            aria-hidden="true"
+                          >
+                            <path
+                              d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                              strokeWidth={2}
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                          <p className="mt-2 text-sm text-gray-600">
+                            <span className="font-medium text-primary-600">
+                              {existingCoverImage ? 'Replace cover image' : 'Click to upload'}
+                            </span> or drag and drop
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            PNG, JPG, GIF up to 15MB
+                          </p>
+                        </div>
+                      </FileSelector>
+                      
+                      {selectedCoverImage && (
+                        <div className="mt-3">
+                          <p className="text-sm text-green-600">
+                            ✓ New cover image selected: {selectedCoverImage.name}
+                          </p>
+                        </div>
+                      )}
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
                         Additional Images (Optional)
                       </label>
-                      <div className="mt-1 flex flex-wrap gap-4">
-                        {uploadedAdditionalPreviews.map((preview, index) => (
-                          <div key={index} className="relative">
-                            <img src={preview} alt={`Additional ${index + 1}`} className="h-32 w-32 object-cover rounded-lg" />
-                            <button
-                              type="button"
-                              onClick={() => removeAdditionalImage(index)}
-                              className="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full p-1 hover:bg-red-200"
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                              </svg>
-                            </button>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Add more images to showcase your campaign. You can have up to 3 additional images total.
+                      </p>
+                      
+                      {/* Show current images (existing + newly selected) */}
+                      {displayAdditionalImages.length > 0 && (
+                        <div className="mb-4">
+                          <div className="flex flex-wrap gap-4">
+                            {displayAdditionalImages.map((item) => (
+                              <div key={item.id} className="relative group">
+                                <img src={item.url} alt={item.name} className="h-32 w-32 object-cover rounded-lg border" />
+                                <button
+                                  type="button"
+                                  onClick={() => removeAdditionalImage(item.id)}
+                                  className="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full p-1 hover:bg-red-200 transition-colors"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                  </svg>
+                                </button>
+                                <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 rounded-b-lg">
+                                  {item.type === 'existing' ? 'Current' : 'New'}
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                        
-                        {uploadedAdditionalPreviews.length < 3 && (
-                          <div className="h-32 w-32 flex items-center justify-center border-2 border-gray-300 border-dashed rounded-lg">
-                            <label htmlFor="additional-images-upload" className="cursor-pointer">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <p className="text-sm text-gray-600 mt-2">
+                            {displayAdditionalImages.length}/3 images ({displayAdditionalImages.filter(i => i.type === 'existing').length} existing, {displayAdditionalImages.filter(i => i.type === 'new').length} new)
+                          </p>
+                        </div>
+                      )}
+                      
+                      {/* Only show file selector if under limit */}
+                      {displayAdditionalImages.length < 3 && (
+                        <>
+                          <FileSelector
+                            fileType="campaign-image"
+                            accept="image/*"
+                            maxFiles={3 - displayAdditionalImages.length}
+                            onFilesSelected={handleAdditionalImagesSelect}
+                            selectedFiles={selectedAdditionalImages}
+                            showPreview={true}
+                            dragDropArea={true}
+                            className="w-full"
+                          >
+                            <div className="text-center p-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-400 transition-colors">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                               </svg>
-                              <input
-                                id="additional-images-upload"
-                                name="additionalImages"
-                                type="file"
-                                className="sr-only"
-                                accept="image/*"
-                                multiple
-                                onChange={handleAdditionalImageUpload}
-                              />
-                            </label>
+                              <p className="mt-2 text-sm text-gray-600">
+                                <span className="font-medium text-primary-600">Add more images</span> or drag and drop
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                PNG, JPG up to 15MB each (max {3 - displayAdditionalImages.length} more)
+                              </p>
+                            </div>
+                          </FileSelector>
+                          
+                          {selectedAdditionalImages.length > 0 && (
+                            <div className="mt-3">
+                              <p className="text-sm text-green-600">
+                                ✓ {selectedAdditionalImages.length} new image{selectedAdditionalImages.length > 1 ? 's' : ''} selected
+                              </p>
+                            </div>
+                          )}
+                        </>
+                      )}
+                      
+                      {displayAdditionalImages.length >= 3 && (
+                        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                          <p className="text-sm text-yellow-800">
+                            Maximum of 3 additional images reached. Remove an existing image to add a new one.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Verification Documents Section */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Verification Documents (Optional)
+                      </label>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Upload documents to verify your campaign (citizenship, licenses, permits, etc.). This helps build trust with donors. Maximum 3 documents.
+                      </p>
+                      
+                      {/* Show current documents (existing + newly selected) */}
+                      {displayVerificationDocs.length > 0 && (
+                        <div className="mb-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {displayVerificationDocs.map((item) => (
+                              <div key={item.id} className="relative group border rounded-lg p-4 hover:shadow-md transition-shadow">
+                                {item.preview && item.preview.toLowerCase().includes('.pdf') ? (
+                                  <div className="flex items-center space-x-3">
+                                    <DocumentIcon className="h-8 w-8 text-red-500" />
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-medium text-gray-900 truncate">{item.name}</p>
+                                      <p className="text-xs text-gray-500">PDF Document</p>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div>
+                                    <img src={item.preview || item.url} alt={item.name} className="w-full h-24 object-cover rounded" />
+                                    <p className="text-xs text-gray-600 mt-2 truncate">{item.name}</p>
+                                  </div>
+                                )}
+                                
+                                <button
+                                  type="button"
+                                  onClick={() => removeVerificationDoc(item.id)}
+                                  className="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full p-1 hover:bg-red-200 transition-colors"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                  </svg>
+                                </button>
+                                
+                                <div className="absolute bottom-2 left-2">
+                                  <span className={`text-xs px-2 py-1 rounded ${
+                                    item.type === 'existing' 
+                                      ? 'bg-blue-100 text-blue-800' 
+                                      : 'bg-green-100 text-green-800'
+                                  }`}>
+                                    {item.type === 'existing' ? 'Current' : 'New'}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                        )}
+                          <p className="text-sm text-gray-600 mt-2">
+                            {displayVerificationDocs.length}/3 documents ({displayVerificationDocs.filter(i => i.type === 'existing').length} existing, {displayVerificationDocs.filter(i => i.type === 'new').length} new)
+                          </p>
+                        </div>
+                      )}
+                      
+                      {/* Only show file selector if under limit */}
+                      {displayVerificationDocs.length < 3 && (
+                        <>
+                          <FileSelector
+                            fileType="campaign-verification"
+                            accept="image/*,application/pdf"
+                            maxFiles={3 - displayVerificationDocs.length}
+                            onFilesSelected={handleVerificationDocsSelect}
+                            selectedFiles={selectedVerificationDocs}
+                            showPreview={true}
+                            dragDropArea={true}
+                            className="w-full"
+                          >
+                            <div className="text-center p-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-400 transition-colors">
+                              <DocumentIcon className="mx-auto h-12 w-12 text-gray-400" />
+                              <p className="mt-2 text-sm text-gray-600">
+                                <span className="font-medium text-primary-600">Add verification documents</span> or drag and drop
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                PNG, JPG, PDF up to 15MB each (max {3 - displayVerificationDocs.length} more)
+                              </p>
+                            </div>
+                          </FileSelector>
+                          
+                          {selectedVerificationDocs.length > 0 && (
+                            <div className="mt-3">
+                              <p className="text-sm text-green-600">
+                                ✓ {selectedVerificationDocs.length} new document{selectedVerificationDocs.length > 1 ? 's' : ''} selected
+                              </p>
+                            </div>
+                          )}
+                        </>
+                      )}
+                      
+                      {displayVerificationDocs.length >= 3 && (
+                        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                          <p className="text-sm text-yellow-800">
+                            Maximum of 3 verification documents reached. Remove an existing document to add a new one.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Turnstile Security Verification */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Security Verification <span className="text-red-500">*</span>
+                      </label>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Please complete the security verification to prevent abuse and ensure the safety of our platform.
+                      </p>
+                      
+                      <div className="flex justify-center">
+                        <TurnstileWidget
+                          ref={turnstileRef}
+                          siteKey={TURNSTILE_CONFIG.siteKey}
+                          onVerify={handleTurnstileVerify}
+                          onExpire={handleTurnstileExpire}
+                          onError={handleTurnstileError}
+                          theme="light"
+                          autoReset={true}
+                          resetDelay={3000}
+                        />
                       </div>
-                      <p className="mt-1 text-xs text-gray-500">You can upload up to 3 additional images</p>
+                      
+                      {!turnstileToken && (
+                        <p className="mt-2 text-sm text-amber-600 dark:text-amber-400">
+                          Please complete the security verification before continuing
+                        </p>
+                      )}
+                      {turnstileToken && (
+                        <p className="mt-2 text-sm text-green-600 dark:text-green-400 flex items-center">
+                          <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                          Security verification completed
+                        </p>
+                      )}
                     </div>
                   </div>
                   
@@ -633,7 +1084,7 @@ const EditCampaign = ({ id }) => {
                     </button>
                     <button
                       type="submit"
-                      disabled={isLoading}
+                      disabled={isLoading || !turnstileToken}
                       className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:bg-primary-400 disabled:cursor-not-allowed"
                     >
                       {isLoading ? 'Updating...' : 'Save Changes'}
@@ -645,6 +1096,15 @@ const EditCampaign = ({ id }) => {
           </div>
         </div>
       </div>
+      
+      {/* Upload Progress Modal */}
+      <UploadProgressModal
+        isOpen={showUploadModal}
+        onClose={() => setShowUploadModal(false)}
+        stages={uploadStages}
+        currentStage={currentUploadStage}
+        overallProgress={overallProgress}
+      />
     </>
   );
 };

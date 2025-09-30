@@ -89,6 +89,11 @@ const campaignSchema = new Schema({
     required: [true, 'Cover image is required']
   },
   images: [String],
+  verificationDocuments: {
+    type: [String],
+    default: [],
+    description: 'Optional verification documents (medical reports, certificates, etc.) that support campaign authenticity'
+  },
   donations: [{
     type: Schema.Types.ObjectId,
     ref: 'Donation'
@@ -163,8 +168,22 @@ campaignSchema.virtual('availableForWithdrawal').get(function() {
   return Math.max(0, this.amountRaised - this.amountWithdrawn - this.pendingWithdrawals);
 });
 
-// Virtual property to check if withdrawal is eligible (>= 10,000)
+// Virtual property to check if campaign is ended (completed or past endDate)
+campaignSchema.virtual('isCampaignEnded').get(function() {
+  if (this.status === 'completed') return true;
+  
+  const today = new Date();
+  const endDate = new Date(this.endDate);
+  return endDate < today;
+});
+
+// Virtual property to check if withdrawal is eligible
+// For ended campaigns: any amount > 0 is eligible
+// For active campaigns: >= 10,000 is required
 campaignSchema.virtual('isWithdrawalEligible').get(function() {
+  if (this.isCampaignEnded) {
+    return this.availableForWithdrawal > 0;
+  }
   return this.availableForWithdrawal >= 10000;
 });
 

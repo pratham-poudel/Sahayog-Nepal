@@ -125,6 +125,17 @@ const generateObjectKey = (originalName, fileType, userId = null) => {
  */
 const generatePresignedUploadUrl = async (key, contentType, expiresIn = 900) => {
   try {
+    console.log('Generating presigned URL for:', {
+      key,
+      contentType,
+      expiresIn,
+      isCloudflareR2,
+      isAWSS3,
+      isMinIO,
+      bucketName: BUCKET_NAME,
+      endpoint: STORAGE_ENDPOINT
+    });
+
     // For Cloudflare R2, use PutObject presigned URL instead of presigned POST
     if (isCloudflareR2) {
       const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
@@ -137,6 +148,12 @@ const generatePresignedUploadUrl = async (key, contentType, expiresIn = 900) => 
       });
 
       const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn });
+      
+      console.log('Generated Cloudflare R2 presigned URL:', {
+        uploadUrl: uploadUrl,
+        method: 'PUT',
+        publicUrl: getPublicUrl(key)
+      });
       
       return {
         url: uploadUrl,
@@ -162,6 +179,13 @@ const generatePresignedUploadUrl = async (key, contentType, expiresIn = 900) => 
         'Content-Type': contentType,
       },
       Expires: expiresIn,
+    });
+
+    console.log('Generated S3/MinIO presigned POST:', {
+      url: presignedPost.url,
+      fields: presignedPost.fields,
+      method: 'POST',
+      publicUrl: getPublicUrl(key)
     });
 
     return {

@@ -379,11 +379,31 @@ const UserDashboard = () => {
     return JSON.stringify(notificationSettings) !== JSON.stringify(originalNotificationSettings);
   };
 
+  // Helper function to check if campaign is ended
+  const isCampaignEnded = (campaign) => {
+    if (campaign.status === 'completed') return true;
+    if (!campaign.endDate) return false;
+    
+    const today = new Date();
+    const endDate = new Date(campaign.endDate);
+    return endDate < today;
+  };
+
+  // Helper function to check if withdrawal is available
+  const isWithdrawalAvailable = (campaign) => {
+    const availableAmount = (campaign.amountRaised || 0) - (campaign.amountWithdrawn || 0) - (campaign.pendingWithdrawals || 0);
+    
+    if (isCampaignEnded(campaign)) {
+      return availableAmount > 0; // Any amount is withdrawable for ended campaigns
+    }
+    return availableAmount >= 10000; // Minimum 10,000 for active campaigns
+  };
+
   // Add this computed value after all useEffect hooks
   // Filter campaigns based on active filter
   const filteredCampaigns = activeFilter
-    ? userCampaigns.filter(campaign => campaign.status === activeFilter)
-    : userCampaigns;
+    ? (userCampaigns || []).filter(campaign => campaign && campaign.status === activeFilter)
+    : (userCampaigns || []);
   
   // Listen for hash changes (for browser back/forward buttons)
   useEffect(() => {
@@ -513,7 +533,9 @@ const UserDashboard = () => {
             // Always ensure donations is an array
             if (data.success && Array.isArray(data.donations)) {
               console.log('Setting donations with data:', data.donations);
-              console.log('Sample donation structure:', data.donations[0]);
+              if (data.donations.length > 0) {
+                console.log('Sample donation structure:', data.donations[0]);
+              }
               setDonations(data.donations);
             } else if (data.success && data.donations === null) {
               console.log('No donations returned from API');
@@ -571,8 +593,8 @@ const UserDashboard = () => {
 
                 return {
                   id: donation._id,
-                  campaignId: donation.campaignId._id,
-                  campaignTitle: donation.campaignId.title,
+                  campaignId: donation.campaignId?._id,
+                  campaignTitle: donation.campaignId?.title,
                   amount: donation.amount,
                   date: new Date(donation.date).toLocaleDateString(),
                   status: 'Completed',
@@ -620,7 +642,13 @@ const UserDashboard = () => {
       const data = await response.json();
       
       if (data.success) {
-        setWithdrawals(data.data || []);
+        const withdrawalsData = data.data || [];
+        // Log any withdrawals with null campaigns for debugging (this is normal when campaigns are deleted)
+        const withdrawalsWithNullCampaigns = withdrawalsData.filter(w => w && !w.campaign);
+        if (withdrawalsWithNullCampaigns.length > 0) {
+          console.info(`Found ${withdrawalsWithNullCampaigns.length} withdrawal(s) with deleted campaigns`);
+        }
+        setWithdrawals(withdrawalsData);
       } else {
         console.error('Failed to fetch withdrawals:', data.message);
         setWithdrawals([]);
@@ -654,10 +682,13 @@ const UserDashboard = () => {
 
   const initiateWithdrawal = (campaign) => {
     // Check if there's already a pending withdrawal request for this campaign
-    const hasPendingRequest = withdrawals.some(withdrawal => 
-      withdrawal.campaign._id === campaign._id && 
-      (withdrawal.status === 'pending' || withdrawal.status === 'processing')
-    );
+    const safeWithdrawals = Array.isArray(withdrawals) ? withdrawals : [];
+    const hasPendingRequest = safeWithdrawals
+      .filter(withdrawal => withdrawal) // Only filter out null withdrawals, allow null campaigns
+      .some(withdrawal => 
+        withdrawal.campaign?._id === campaign._id && 
+        (withdrawal.status === 'pending' || withdrawal.status === 'processing')
+      );
 
     if (hasPendingRequest) {
       toast({
@@ -1099,7 +1130,7 @@ const UserDashboard = () => {
                             Rs. {(campaign.amountWithdrawn || 0).toLocaleString()} withdrawn
                           </span>
                           <span className="text-blue-500 dark:text-blue-300">
-                            Rs. {((campaign.amountRaised || 0) - (campaign.amountWithdrawn || 0)).toLocaleString()} available
+                            Rs. {((campaign.amountRaised || 0) - (campaign.amountWithdrawn || 0) - (campaign.pendingWithdrawals || 0)).toLocaleString()} available
                           </span>
                         </div>
                       )}
@@ -1318,7 +1349,7 @@ const UserDashboard = () => {
                   </div>
                   
                   {/* Status Badge Overlay */}
-                  <div className="absolute top-4 left-4 flex gap-2">
+                  <div className="absolute top-4 left-4 flex gap-2 flex-wrap">
                     <span className={`px-3 py-1.5 rounded-full text-xs font-semibold shadow-md ${
                       campaign.status === 'active' ? 'bg-green-500 text-white' :
                       campaign.status === 'pending' ? 'bg-yellow-500 text-white' :
@@ -1331,6 +1362,11 @@ const UserDashboard = () => {
                     <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-white/90 text-gray-800 shadow-md">
                       {campaign.category}
                     </span>
+                    {isCampaignEnded(campaign) && isWithdrawalAvailable(campaign) && (
+                      <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 shadow-md">
+                        Any Amount Withdrawable
+                      </span>
+                    )}
                   </div>
 
                   {/* Days Left Badge */}
@@ -1398,7 +1434,7 @@ const UserDashboard = () => {
                             Rs. {(campaign.amountWithdrawn || 0).toLocaleString()} withdrawn
                           </span>
                           <span className="text-blue-600 dark:text-blue-400 font-semibold">
-                            Rs. {((campaign.amountRaised || 0) - (campaign.amountWithdrawn || 0)).toLocaleString()} available
+                            Rs. {((campaign.amountRaised || 0) - (campaign.amountWithdrawn || 0) - (campaign.pendingWithdrawals || 0)).toLocaleString()} available
                           </span>
                         </div>
                       </div>
@@ -1451,12 +1487,15 @@ const UserDashboard = () => {
 
                   {/* Special Actions Row */}
                   <div className="flex flex-wrap gap-2 mt-3">
-                    {((campaign.amountRaised - (campaign.amountWithdrawn || 0)) >= 10000) && (
+                    {isWithdrawalAvailable(campaign) && (
                       (() => {
-                        const hasPendingRequest = withdrawals.some(withdrawal => 
-                          withdrawal.campaign._id === campaign._id && 
-                          (withdrawal.status === 'pending' || withdrawal.status === 'processing')
-                        );
+                        const safeWithdrawals = Array.isArray(withdrawals) ? withdrawals : [];
+                        const hasPendingRequest = safeWithdrawals
+                          .filter(withdrawal => withdrawal) // Only filter out null withdrawals, allow null campaigns
+                          .some(withdrawal => 
+                            withdrawal.campaign?._id === campaign._id && 
+                            (withdrawal.status === 'pending' || withdrawal.status === 'processing')
+                          );
 
                         if (hasPendingRequest) {
                           return (
@@ -1607,7 +1646,9 @@ const UserDashboard = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {donations.map((donation) => (
+                  {(Array.isArray(donations) ? donations : [])
+                    .filter(donation => donation && donation.campaignId) // Only show valid donations with valid campaigns
+                    .map((donation) => (
                     <tr key={donation._id}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
@@ -1615,7 +1656,7 @@ const UserDashboard = () => {
                             <div className="flex-shrink-0 h-10 w-10">
                               <img
   className="h-10 w-10 rounded-md object-cover"
-  src={`${donation.campaignId.coverImage}`}
+  src={`${donation.campaignId?.coverImage}`}
   alt=""
 />
 
@@ -1648,7 +1689,7 @@ const UserDashboard = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         {donation.campaignId?._id ? (
                           <Link 
-                            to={`/campaign/${donation.campaignId._id}`} 
+                            to={`/campaign/${donation.campaignId?._id}`} 
                             className="text-primary hover:text-primary-dark dark:text-primary-light"
                           >
                             View Campaign
@@ -1933,7 +1974,10 @@ const UserDashboard = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Withdrawn</p>
                 <h3 className="text-2xl font-bold mt-1 text-gray-900 dark:text-white">
-                  NPR {withdrawals.filter(w => w.status === 'completed').reduce((sum, w) => sum + w.requestedAmount, 0).toLocaleString()}
+                  NPR {(Array.isArray(withdrawals) ? withdrawals : [])
+                    .filter(w => w && w.status === 'completed') // Include all completed withdrawals, even with null campaigns
+                    .reduce((sum, w) => sum + (w.requestedAmount || 0), 0)
+                    .toLocaleString()}
                 </h3>
               </div>
               <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
@@ -1947,7 +1991,9 @@ const UserDashboard = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Pending Requests</p>
                 <h3 className="text-2xl font-bold mt-1 text-gray-900 dark:text-white">
-                  {withdrawals.filter(w => w.status === 'pending').length}
+                  {(Array.isArray(withdrawals) ? withdrawals : [])
+                    .filter(w => w && w.status === 'pending') // Include all pending withdrawals, even with null campaigns
+                    .length}
                 </h3>
               </div>
               <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
@@ -1961,9 +2007,9 @@ const UserDashboard = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Available to Withdraw</p>
                 <h3 className="text-2xl font-bold mt-1 text-gray-900 dark:text-white">
-                  NPR {userCampaigns
-                    .filter(c => (c.amountRaised - (c.amountWithdrawn || 0)) >= 10000)
-                    .reduce((sum, c) => sum + (c.amountRaised - (c.amountWithdrawn || 0)), 0)
+                  NPR {(Array.isArray(userCampaigns) ? userCampaigns : [])
+                    .filter(c => c && isWithdrawalAvailable(c))
+                    .reduce((sum, c) => sum + ((c.amountRaised || 0) - (c.amountWithdrawn || 0) - (c.pendingWithdrawals || 0)), 0)
                     .toLocaleString()}
                 </h3>
               </div>
@@ -2022,7 +2068,9 @@ const UserDashboard = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {withdrawals.map((withdrawal) => (
+                  {(Array.isArray(withdrawals) ? withdrawals : [])
+                    .filter(withdrawal => withdrawal) // Only filter out null withdrawals, show all valid ones
+                    .map((withdrawal) => (
                     <tr key={withdrawal._id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
@@ -2030,7 +2078,7 @@ const UserDashboard = () => {
                               <div className="flex-shrink-0 h-10 w-10">
                                 <img
                                   className="h-10 w-10 rounded-md object-cover"
-                                  src={`${withdrawal.campaign.coverImage}`}
+                                  src={`${withdrawal.campaign?.coverImage}`}
                                   alt=""
                                 />
                               </div>
@@ -2044,14 +2092,14 @@ const UserDashboard = () => {
                               {withdrawal.campaign?.title || 'Campaign Deleted'}
                             </div>
                             <div className="text-sm text-gray-500 dark:text-gray-400">
-                              ID: {withdrawal.campaign?._id || 'N/A'}
+                              {withdrawal.campaign ? `ID: ${withdrawal.campaign._id}` : 'Campaign no longer available'}
                             </div>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          NPR {withdrawal.requestedAmount.toLocaleString()}
+                          NPR {(withdrawal.requestedAmount || 0).toLocaleString()}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -2120,18 +2168,18 @@ const UserDashboard = () => {
         </div>
 
         {/* Eligible Campaigns for Withdrawal */}
-        {userCampaigns.filter(c => (c.amountRaised - (c.amountWithdrawn || 0)) >= 10000).length > 0 && (
+        {userCampaigns.filter(c => isWithdrawalAvailable(c)).length > 0 && (
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow border border-gray-100 dark:border-gray-700">
             <div className="p-6 border-b border-gray-100 dark:border-gray-700">
               <h3 className="text-lg font-semibold dark:text-white">Campaigns Eligible for Withdrawal</h3>
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                Campaigns with more than NPR 10,000 available for withdrawal
+                Active campaigns: min NPR 10,000 | Ended campaigns: any amount available
               </p>
             </div>
             <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {userCampaigns
-                  .filter(campaign => (campaign.amountRaised - (campaign.amountWithdrawn || 0)) >= 10000)
+                  .filter(campaign => isWithdrawalAvailable(campaign))
                   .map(campaign => (
                     <div key={campaign._id} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
                       <div className="flex items-start space-x-4">
@@ -2145,7 +2193,7 @@ const UserDashboard = () => {
                             {campaign.title}
                           </h4>
                           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                            Available: NPR {((campaign.amountRaised || 0) - (campaign.amountWithdrawn || 0)).toLocaleString()}
+                            Available: NPR {((campaign.amountRaised || 0) - (campaign.amountWithdrawn || 0) - (campaign.pendingWithdrawals || 0)).toLocaleString()}
                           </p>
                           <button
                             onClick={() => initiateWithdrawal(campaign)}
@@ -2448,8 +2496,11 @@ const UserDashboard = () => {
                   <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
                     <p>Total Raised: NPR {withdrawalModal.campaign.amountRaised?.toLocaleString()}</p>
                     <p>Already Withdrawn: NPR {(withdrawalModal.campaign.amountWithdrawn || 0).toLocaleString()}</p>
+                    {(withdrawalModal.campaign.pendingWithdrawals || 0) > 0 && (
+                      <p>Pending Withdrawals: NPR {(withdrawalModal.campaign.pendingWithdrawals || 0).toLocaleString()}</p>
+                    )}
                     <p className="font-medium text-green-600 dark:text-green-400">
-                      Available: NPR {((withdrawalModal.campaign.amountRaised || 0) - (withdrawalModal.campaign.amountWithdrawn || 0)).toLocaleString()}
+                      Available: NPR {((withdrawalModal.campaign.amountRaised || 0) - (withdrawalModal.campaign.amountWithdrawn || 0) - (withdrawalModal.campaign.pendingWithdrawals || 0)).toLocaleString()}
                     </p>
                   </div>
                 </div>
@@ -2507,13 +2558,15 @@ const UserDashboard = () => {
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md 
                                focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700"
                     placeholder="Enter amount"
-                    min="10000"
+                    min={withdrawalModal.campaign && isCampaignEnded(withdrawalModal.campaign) ? "1" : "10000"}
                     max={withdrawalModal.campaign ? 
-                      (withdrawalModal.campaign.amountRaised || 0) - (withdrawalModal.campaign.amountWithdrawn || 0) : 0}
+                      (withdrawalModal.campaign.amountRaised || 0) - (withdrawalModal.campaign.amountWithdrawn || 0) - (withdrawalModal.campaign.pendingWithdrawals || 0) : 0}
                     required
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Minimum withdrawal: NPR 10,000
+                    {withdrawalModal.campaign && isCampaignEnded(withdrawalModal.campaign) 
+                      ? "Campaign ended - any amount available for withdrawal" 
+                      : "Minimum withdrawal for active campaigns: NPR 10,000"}
                   </p>
                 </div>
 

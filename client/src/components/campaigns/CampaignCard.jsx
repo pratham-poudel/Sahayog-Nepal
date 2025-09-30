@@ -244,7 +244,12 @@ const CampaignCard = ({ campaign = {} }) => {
           {/* Card Body - Content Area */}
           <div className="p-4 flex-grow flex flex-col">
             {/* Title */}
-            <h3 className="font-bold text-gray-900 dark:text-white text-lg mb-1.5 line-clamp-1">
+            <h3 className="font-bold text-gray-900 dark:text-white text-lg mb-1.5 line-clamp-1" style={{
+              wordWrap: 'break-word',
+              overflowWrap: 'break-word',
+              wordBreak: 'break-word',
+              maxWidth: '100%'
+            }}>
               {safeData.title}
             </h3>
             
