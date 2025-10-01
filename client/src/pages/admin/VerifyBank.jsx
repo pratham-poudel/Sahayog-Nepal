@@ -27,7 +27,7 @@ const VerifyBank = () => {
   const [rejectionReason, setRejectionReason] = useState('');
 
   // Fetch bank accounts
-  const fetchBankAccounts = useCallback(async (currentFilters = filters) => {
+  const fetchBankAccounts = useCallback(async (currentFilters = filters, shouldAppend = false) => {
     try {
       setSearchLoading(true);
       const queryParams = new URLSearchParams();
@@ -50,7 +50,8 @@ const VerifyBank = () => {
       console.log('API Response:', data); // Debug log
       
       if (data.success) {
-        setBankAccounts(data.data || []);
+        // Append or replace based on shouldAppend flag
+        setBankAccounts(prev => shouldAppend ? [...prev, ...(data.data || [])] : (data.data || []));
         setTotalPages(data.totalPages || 1);
         setTotalAccounts(data.total || 0);
         console.log('Bank accounts set:', data.data || []); // Debug log
@@ -63,30 +64,20 @@ const VerifyBank = () => {
     }
   }, []);
 
-  // Initial load
-  useEffect(() => {
-    fetchBankAccounts();
-  }, []);
-
-  // Debounced search
+  // Combined effect for all filters with debouncing
   useEffect(() => {
     if (searchDebounceTimer) {
       clearTimeout(searchDebounceTimer);
     }
 
+    // Debounce only search, immediate for other filters
     const timer = setTimeout(() => {
-      if (filters.search !== undefined) {
-        fetchBankAccounts();
-      }
-    }, 300);
+      fetchBankAccounts();
+    }, filters.search !== undefined && filters.search !== '' ? 300 : 0);
 
     setSearchDebounceTimer(timer);
-    return () => clearTimeout(timer);  }, [filters.search]); // Remove fetchBankAccounts dependency
-
-  // Handle filter changes (non-search filters)
-  useEffect(() => {
-    fetchBankAccounts();
-  }, [filters.status, filters.page, filters.limit]);
+    return () => clearTimeout(timer);
+  }, [filters.search, filters.status, filters.limit]);
   // Handle filter changes
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value, page: 1 }));
@@ -97,10 +88,46 @@ const VerifyBank = () => {
     setFilters(prev => ({ ...prev, search: value, page: 1 }));
   };
 
-  // Handle pagination
-  const handlePageChange = (page) => {
+  // Handle pagination - Load More
+  const handlePageChange = async (page) => {
+    const shouldAppend = page > filters.page; // Append if loading next page
     setFilters(prev => ({ ...prev, page }));
-    fetchBankAccounts({ ...filters, page });
+    
+    // Directly call API with new page
+    try {
+      setSearchLoading(true);
+      const queryParams = new URLSearchParams();
+      
+      queryParams.append('page', page.toString());
+      queryParams.append('limit', filters.limit.toString());
+      
+      if (filters.status) {
+        queryParams.append('status', filters.status);
+      }
+      
+      if (filters.search && filters.search.trim()) {
+        queryParams.append('search', filters.search.trim());
+      }
+
+      const response = await fetch(`${API_URL}/api/bank/admin/accounts?${queryParams}`, {
+        credentials: 'include'
+      });
+      
+      const data = await response.json();
+      console.log('Load More API Response:', data); // Debug log
+      
+      if (data.success) {
+        // Append data if loading next page
+        setBankAccounts(prev => shouldAppend ? [...prev, ...(data.data || [])] : (data.data || []));
+        setTotalPages(data.totalPages || 1);
+        setTotalAccounts(data.total || 0);
+        console.log('Bank accounts appended:', data.data || []); // Debug log
+      }
+    } catch (error) {
+      console.error('Error loading more bank accounts:', error);
+    } finally {
+      setSearchLoading(false);
+    }
   };
 
   // Verify bank account
@@ -536,28 +563,23 @@ const VerifyBank = () => {
         )}
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-gray-600 dark:text-gray-400">
-            Page {filters.page} of {totalPages}
-          </div>
-          <div className="flex space-x-2">
-            <button
-              onClick={() => handlePageChange(filters.page - 1)}
-              disabled={filters.page === 1 || searchLoading}
-              className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50"
-            >
-              Previous
-            </button>
-            <button
-              onClick={() => handlePageChange(filters.page + 1)}
-              disabled={filters.page === totalPages || searchLoading}
-              className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50"
-            >
-              Next
-            </button>
-          </div>
+      {/* Load More Button */}
+      {bankAccounts.length < totalAccounts && (
+        <div className="flex justify-center py-4">
+          <button
+            onClick={() => handlePageChange(filters.page + 1)}
+            disabled={searchLoading}
+            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {searchLoading ? (
+              <div className="flex items-center space-x-2">
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span>Loading...</span>
+              </div>
+            ) : (
+              <span>Load More ({totalAccounts - bankAccounts.length} remaining)</span>
+            )}
+          </button>
         </div>
       )}
 

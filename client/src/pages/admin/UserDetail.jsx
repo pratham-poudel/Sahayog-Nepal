@@ -111,7 +111,7 @@ const UserDetail = ({ id }) => {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">User Not Found</h2>          <button
-            onClick={() => setLocation('/admin')}
+            onClick={() => setLocation('/admin/dashboard')}
             className="text-blue-600 hover:text-blue-500"
           >
             ← Back to Dashboard
@@ -142,7 +142,7 @@ const UserDetail = ({ id }) => {
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-6">
           <div className="p-6">
             <div className="flex items-center justify-between mb-6">              <button
-                onClick={() => setLocation('/admin')}
+                onClick={() => setLocation('/admin/dashboard')}
                 className="flex items-center text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
               >
                 <ArrowLeft className="w-5 h-5 mr-2" />

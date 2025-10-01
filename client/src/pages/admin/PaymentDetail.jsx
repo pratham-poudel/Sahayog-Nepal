@@ -76,7 +76,7 @@ const PaymentDetail = ({ id }) => {
             <p className="text-red-600 dark:text-red-400 mb-4">{error}</p>
           )}
           <button
-            onClick={() => setLocation('/admin')}
+            onClick={() => setLocation('/admin/dashboard')}
             className="text-blue-600 hover:text-blue-500"
           >
             ← Back to Dashboard
@@ -94,7 +94,7 @@ const PaymentDetail = ({ id }) => {
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-6">
           <div className="p-6">
             <div className="flex items-center justify-between mb-6">              <button
-                onClick={() => setLocation('/admin')}
+                onClick={() => setLocation('/admin/dashboard')}
                 className="flex items-center text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
               >
                 <ArrowLeft className="w-5 h-5 mr-2" />

@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import VerifyBank from './admin/VerifyBank';
 import WithdrawalManagement from './admin/WithdrawalManagement';
+import AdminAnalytics from './admin/AdminAnalytics';
 
 const AdminDashboard = () => {
   const [location, setLocation] = useLocation();
@@ -67,6 +68,25 @@ const AdminDashboard = () => {
     search: '',
     page: 1,
     limit: 20
+  });
+
+  // Pagination metadata
+  const [campaignPagination, setCampaignPagination] = useState({
+    total: 0,
+    totalPages: 0,
+    hasMore: false
+  });
+  
+  const [userPagination, setUserPagination] = useState({
+    total: 0,
+    totalPages: 0,
+    hasMore: false
+  });
+  
+  const [paymentPagination, setPaymentPagination] = useState({
+    total: 0,
+    totalPages: 0,
+    hasMore: false
   });
 
   const [selectedCampaigns, setSelectedCampaigns] = useState([]);
@@ -143,7 +163,7 @@ const AdminDashboard = () => {
         setTabLoading(prev => ({ ...prev, campaigns: false }));
       });
     }
-  }, [loadedTabs.campaigns, campaignFilters.search, campaignFilters.status, campaignFilters.category, campaignFilters.page]);  // Combined effect for users with proper debouncing
+  }, [loadedTabs.campaigns, campaignFilters.search, campaignFilters.status, campaignFilters.category]);  // Combined effect for users with proper debouncing
   useEffect(() => {
     if (!loadedTabs.users) return; // Don't run until users tab has been loaded
     
@@ -167,7 +187,7 @@ const AdminDashboard = () => {
         setTabLoading(prev => ({ ...prev, users: false }));
       });
     }
-  }, [loadedTabs.users, userFilters.search, userFilters.page]);  // Combined effect for payments with proper debouncing
+  }, [loadedTabs.users, userFilters.search]);  // Combined effect for payments with proper debouncing
   useEffect(() => {
     if (!loadedTabs.payments) return; // Don't run until payments tab has been loaded
     
@@ -191,7 +211,7 @@ const AdminDashboard = () => {
         setTabLoading(prev => ({ ...prev, payments: false }));
       });
     }
-  }, [loadedTabs.payments, paymentFilters.search, paymentFilters.status, paymentFilters.paymentMethod, paymentFilters.page]);
+  }, [loadedTabs.payments, paymentFilters.search, paymentFilters.status, paymentFilters.paymentMethod]);
 
   // Effect for analytics
   useEffect(() => {
@@ -234,7 +254,7 @@ const AdminDashboard = () => {
       setStats(data.data);
     }
   }, []);  // Fetch campaigns
-  const fetchCampaigns = useCallback(async () => {
+  const fetchCampaigns = useCallback(async (shouldAppend = false) => {
     const params = new URLSearchParams();
     
     // Only add non-empty parameters
@@ -248,7 +268,19 @@ const AdminDashboard = () => {
       setSearchLoading(prev => ({ ...prev, campaigns: true }));
       const data = await apiCall(`/campaigns?${params.toString()}`);
       if (data?.success) {
-        setCampaigns(data.data);
+        // Append or replace based on shouldAppend flag
+        setCampaigns(prev => shouldAppend ? [...prev, ...(data.data || [])] : (data.data || []));
+        
+        // Update pagination metadata - backend returns data.pagination object
+        const pagination = data.pagination || {};
+        const totalPages = pagination.pages || pagination.totalPages || 0;
+        const total = pagination.total || 0;
+        
+        setCampaignPagination({
+          total: total,
+          totalPages: totalPages,
+          hasMore: campaignFilters.page < totalPages
+        });
       }
     } catch (error) {
       console.error('Error fetching campaigns:', error);
@@ -256,7 +288,7 @@ const AdminDashboard = () => {
       setSearchLoading(prev => ({ ...prev, campaigns: false }));
     }
   }, [campaignFilters.status, campaignFilters.category, campaignFilters.search, campaignFilters.page, campaignFilters.limit]);  // Fetch users
-  const fetchUsers = useCallback(async () => {
+  const fetchUsers = useCallback(async (shouldAppend = false) => {
     const params = new URLSearchParams();
     
     if (userFilters.search?.trim()) params.append('search', userFilters.search.trim());
@@ -267,7 +299,19 @@ const AdminDashboard = () => {
       setSearchLoading(prev => ({ ...prev, users: true }));
       const data = await apiCall(`/users?${params.toString()}`);
       if (data?.success) {
-        setUsers(data.data);
+        // Append or replace based on shouldAppend flag
+        setUsers(prev => shouldAppend ? [...prev, ...(data.data || [])] : (data.data || []));
+        
+        // Update pagination metadata - backend returns data.pagination object
+        const pagination = data.pagination || {};
+        const totalPages = pagination.pages || pagination.totalPages || 0;
+        const total = pagination.total || 0;
+        
+        setUserPagination({
+          total: total,
+          totalPages: totalPages,
+          hasMore: userFilters.page < totalPages
+        });
       }
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -276,7 +320,7 @@ const AdminDashboard = () => {
     }
   }, [userFilters.search, userFilters.page, userFilters.limit]);
   // Fetch payments
-  const fetchPayments = useCallback(async () => {
+  const fetchPayments = useCallback(async (shouldAppend = false) => {
     const params = new URLSearchParams();
     
     if (paymentFilters.status) params.append('status', paymentFilters.status);
@@ -289,7 +333,19 @@ const AdminDashboard = () => {
       setSearchLoading(prev => ({ ...prev, payments: true }));
       const data = await apiCall(`/payments?${params.toString()}`);
       if (data?.success) {
-        setPayments(data.data);
+        // Append or replace based on shouldAppend flag
+        setPayments(prev => shouldAppend ? [...prev, ...(data.data || [])] : (data.data || []));
+        
+        // Update pagination metadata - backend returns data.pagination object
+        const pagination = data.pagination || {};
+        const totalPages = pagination.pages || pagination.totalPages || 0;
+        const total = pagination.total || 0;
+        
+        setPaymentPagination({
+          total: total,
+          totalPages: totalPages,
+          hasMore: paymentFilters.page < totalPages
+        });
       }
     } catch (error) {
       console.error('Error fetching payments:', error);
@@ -303,7 +359,129 @@ const AdminDashboard = () => {
     if (data?.success) {
       setAnalytics(data.data);
     }
-  }, []);  // Initial data fetch (only dashboard stats on mount)
+  }, []);
+
+  // Load More handlers
+  const handleLoadMoreCampaigns = async () => {
+    const nextPage = campaignFilters.page + 1;
+    setCampaignFilters(prev => ({ ...prev, page: nextPage }));
+    
+    // Manually fetch with updated page for appending
+    const params = new URLSearchParams();
+    if (campaignFilters.status) params.append('status', campaignFilters.status);
+    if (campaignFilters.category) params.append('category', campaignFilters.category);
+    if (campaignFilters.search?.trim()) params.append('search', campaignFilters.search.trim());
+    params.append('page', nextPage.toString());
+    params.append('limit', campaignFilters.limit.toString());
+
+    try {
+      setSearchLoading(prev => ({ ...prev, campaigns: true }));
+      const data = await apiCall(`/campaigns?${params.toString()}`);
+      if (data?.success) {
+        setCampaigns(prev => [...prev, ...(data.data || [])]);
+        
+        const pagination = data.pagination || {};
+        const totalPages = pagination.pages || pagination.totalPages || 0;
+        const total = pagination.total || 0;
+        
+        setCampaignPagination({
+          total: total,
+          totalPages: totalPages,
+          hasMore: nextPage < totalPages
+        });
+      }
+    } catch (error) {
+      console.error('Error loading more campaigns:', error);
+    } finally {
+      setSearchLoading(prev => ({ ...prev, campaigns: false }));
+    }
+  };
+
+  const handleLoadMoreUsers = async () => {
+    const nextPage = userFilters.page + 1;
+    setUserFilters(prev => ({ ...prev, page: nextPage }));
+    
+    // Manually fetch with updated page for appending
+    const params = new URLSearchParams();
+    if (userFilters.search?.trim()) params.append('search', userFilters.search.trim());
+    params.append('page', nextPage.toString());
+    params.append('limit', userFilters.limit.toString());
+
+    try {
+      setSearchLoading(prev => ({ ...prev, users: true }));
+      const data = await apiCall(`/users?${params.toString()}`);
+      if (data?.success) {
+        setUsers(prev => [...prev, ...(data.data || [])]);
+        
+        const pagination = data.pagination || {};
+        const totalPages = pagination.pages || pagination.totalPages || 0;
+        const total = pagination.total || 0;
+        
+        setUserPagination({
+          total: total,
+          totalPages: totalPages,
+          hasMore: nextPage < totalPages
+        });
+      }
+    } catch (error) {
+      console.error('Error loading more users:', error);
+    } finally {
+      setSearchLoading(prev => ({ ...prev, users: false }));
+    }
+  };
+
+  const handleLoadMorePayments = async () => {
+    const nextPage = paymentFilters.page + 1;
+    setPaymentFilters(prev => ({ ...prev, page: nextPage }));
+    
+    // Manually fetch with updated page for appending
+    const params = new URLSearchParams();
+    if (paymentFilters.status) params.append('status', paymentFilters.status);
+    if (paymentFilters.paymentMethod) params.append('paymentMethod', paymentFilters.paymentMethod);
+    if (paymentFilters.search?.trim()) params.append('search', paymentFilters.search.trim());
+    params.append('page', nextPage.toString());
+    params.append('limit', paymentFilters.limit.toString());
+
+    try {
+      setSearchLoading(prev => ({ ...prev, payments: true }));
+      const data = await apiCall(`/payments?${params.toString()}`);
+      if (data?.success) {
+        setPayments(prev => [...prev, ...(data.data || [])]);
+        
+        const pagination = data.pagination || {};
+        const totalPages = pagination.pages || pagination.totalPages || 0;
+        const total = pagination.total || 0;
+        
+        setPaymentPagination({
+          total: total,
+          totalPages: totalPages,
+          hasMore: nextPage < totalPages
+        });
+      }
+    } catch (error) {
+      console.error('Error loading more payments:', error);
+    } finally {
+      setSearchLoading(prev => ({ ...prev, payments: false }));
+    }
+  };
+
+  // Reset handlers when filters change (except page)
+  const handleCampaignFilterChange = (key, value) => {
+    setCampaignFilters(prev => ({ ...prev, [key]: value, page: 1 }));
+    // Will trigger fetchCampaigns via useEffect
+  };
+
+  const handleUserFilterChange = (key, value) => {
+    setUserFilters(prev => ({ ...prev, [key]: value, page: 1 }));
+    // Will trigger fetchUsers via useEffect
+  };
+
+  const handlePaymentFilterChange = (key, value) => {
+    setPaymentFilters(prev => ({ ...prev, [key]: value, page: 1 }));
+    // Will trigger fetchPayments via useEffect
+  };
+
+  // Initial data fetch (only dashboard stats on mount)
   useEffect(() => {
     const loadInitialData = async () => {
       setLoading(true);
@@ -1049,6 +1227,29 @@ const AdminDashboard = () => {
                   </tbody>
                 </table>
               </div>
+              
+              {/* Load More Button for Campaigns */}
+              {campaignPagination.hasMore && !searchLoading.campaigns && (
+                <div className="px-6 py-4 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600">
+                  <button
+                    onClick={handleLoadMoreCampaigns}
+                    disabled={searchLoading.campaigns}
+                    className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
+                  >
+                    {searchLoading.campaigns ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>Loading...</span>
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="w-5 h-5" />
+                        <span>Load More ({campaignPagination.total - campaigns.length} remaining)</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1195,6 +1396,29 @@ const AdminDashboard = () => {
                   </tbody>
                 </table>
               </div>
+              
+              {/* Load More Button for Users */}
+              {userPagination.hasMore && !searchLoading.users && (
+                <div className="px-6 py-4 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600">
+                  <button
+                    onClick={handleLoadMoreUsers}
+                    disabled={searchLoading.users}
+                    className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
+                  >
+                    {searchLoading.users ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>Loading...</span>
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="w-5 h-5" />
+                        <span>Load More ({userPagination.total - users.length} remaining)</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1344,120 +1568,40 @@ const AdminDashboard = () => {
                   </tbody>
                 </table>
               </div>
+              
+              {/* Load More Button for Payments */}
+              {paymentPagination.hasMore && !searchLoading.payments && (
+                <div className="px-6 py-4 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600">
+                  <button
+                    onClick={handleLoadMorePayments}
+                    disabled={searchLoading.payments}
+                    className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
+                  >
+                    {searchLoading.payments ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>Loading...</span>
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="w-5 h-5" />
+                        <span>Load More ({paymentPagination.total - payments.length} remaining)</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
 
         {/* Analytics Tab */}
         {activeTab === 'analytics' && (
-          <div className="space-y-6">
-            {/* Analytics Charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Campaign Trends */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Campaign Creation Trends</h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={analytics?.campaignTrends || []}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#E5E7EB'} />
-                    <XAxis 
-                      dataKey="_id" 
-                      stroke={darkMode ? '#9CA3AF' : '#6B7280'}
-                    />
-                    <YAxis stroke={darkMode ? '#9CA3AF' : '#6B7280'} />
-                    <Tooltip 
-                      contentStyle={{
-                        backgroundColor: darkMode ? '#1F2937' : '#FFFFFF',
-                        border: `1px solid ${darkMode ? '#374151' : '#E5E7EB'}`,
-                        borderRadius: '8px'
-                      }}
-                    />
-                    <Legend />
-                    <Line 
-                      type="monotone" 
-                      dataKey="count" 
-                      stroke={chartColors.primary}
-                      strokeWidth={2}
-                      name="Campaigns Created"
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-
-              {/* Payment Trends */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Payment Trends</h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={analytics?.paymentTrends || []}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#E5E7EB'} />
-                    <XAxis 
-                      dataKey="_id" 
-                      stroke={darkMode ? '#9CA3AF' : '#6B7280'}
-                    />
-                    <YAxis stroke={darkMode ? '#9CA3AF' : '#6B7280'} />
-                    <Tooltip 
-                      contentStyle={{
-                        backgroundColor: darkMode ? '#1F2937' : '#FFFFFF',
-                        border: `1px solid ${darkMode ? '#374151' : '#E5E7EB'}`,
-                        borderRadius: '8px'
-                      }}
-                    />
-                    <Legend />
-                    <Bar dataKey="amount" fill={chartColors.primary} name="Payment Amount" />
-                    <Bar dataKey="platformFees" fill={chartColors.secondary} name="Platform Fees" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-
-              {/* User Growth */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">User Growth</h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <AreaChart data={analytics?.userGrowth || []}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#E5E7EB'} />
-                    <XAxis 
-                      dataKey="_id" 
-                      stroke={darkMode ? '#9CA3AF' : '#6B7280'}
-                    />
-                    <YAxis stroke={darkMode ? '#9CA3AF' : '#6B7280'} />
-                    <Tooltip 
-                      contentStyle={{
-                        backgroundColor: darkMode ? '#1F2937' : '#FFFFFF',
-                        border: `1px solid ${darkMode ? '#374151' : '#E5E7EB'}`,
-                        borderRadius: '8px'
-                      }}
-                    />
-                    <Area 
-                      type="monotone" 
-                      dataKey="count" 
-                      stroke={chartColors.success} 
-                      fill={chartColors.success}
-                      fillOpacity={0.6}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-
-              {/* Category Statistics */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Campaign Categories</h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={analytics?.categoryStats || []} layout="horizontal">
-                    <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#E5E7EB'} />
-                    <XAxis type="number" stroke={darkMode ? '#9CA3AF' : '#6B7280'} />
-                    <YAxis dataKey="_id" type="category" stroke={darkMode ? '#9CA3AF' : '#6B7280'} />
-                    <Tooltip 
-                      contentStyle={{
-                        backgroundColor: darkMode ? '#1F2937' : '#FFFFFF',
-                        border: `1px solid ${darkMode ? '#374151' : '#E5E7EB'}`,
-                        borderRadius: '8px'
-                      }}
-                    />
-                    <Bar dataKey="count" fill={chartColors.warning} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </div>        )}        {/* Verify Bank Tab */}
+          <AdminAnalytics 
+            darkMode={darkMode} 
+            chartColors={chartColors} 
+          />
+        )}        {/* Verify Bank Tab */}
         {activeTab === 'verifybank' && (
           <VerifyBank />
         )}

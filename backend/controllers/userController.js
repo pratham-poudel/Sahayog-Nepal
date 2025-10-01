@@ -859,6 +859,11 @@ module.exports.getMydonation = async (req, res) => {
     try {
         const userId = req.params.id;
         console.log('getMydonation called with userId:', userId);
+        
+        // Get pagination parameters from query
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
 
         // Use aggregation pipeline for better performance and data enrichment
         const pipeline = [
@@ -917,12 +922,36 @@ module.exports.getMydonation = async (req, res) => {
             },
             {
                 $sort: { createdAt: -1 }
+            },
+            {
+                $skip: skip
+            },
+            {
+                $limit: limit
+            }
+        ];
+        
+        // Count pipeline for total
+        const countPipeline = [
+            {
+                $match: { 
+                    userId: new mongoose.Types.ObjectId(userId), 
+                    status: 'Completed' 
+                }
+            },
+            {
+                $count: 'total'
             }
         ];
 
-        const donations = await Payment.aggregate(pipeline);
+        const [donations, countResult] = await Promise.all([
+            Payment.aggregate(pipeline),
+            Payment.aggregate(countPipeline)
+        ]);
+        
+        const total = countResult.length > 0 ? countResult[0].total : 0;
 
-        console.log(`Found ${donations.length} completed donations for user ${userId}`);
+        console.log(`Found ${donations.length} completed donations for user ${userId} (page ${page} of ${Math.ceil(total / limit)})`);
         console.log('Sample donation data structure:', donations.length > 0 ? donations[0] : 'No donations');
 
         if (!donations || donations.length === 0) {
@@ -930,13 +959,21 @@ module.exports.getMydonation = async (req, res) => {
             return res.status(200).json({
                 success: true,
                 message: 'No completed donations found for this user',
-                donations: []
+                donations: [],
+                total: 0,
+                page: page,
+                limit: limit,
+                totalPages: 0
             });
         }
 
         res.status(200).json({
             success: true,
-            donations
+            donations,
+            total: total,
+            page: page,
+            limit: limit,
+            totalPages: Math.ceil(total / limit)
         });
         
     } catch (error) {

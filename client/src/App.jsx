@@ -80,9 +80,13 @@ function AppContent() {
     window.scrollTo(0, 0);
   }, [location]);
 
+  // Check if current route is an admin route
+  const isAdminRoute = location.startsWith('/admin') || location.startsWith('/helloadmin');
+
   return (
     <div className="flex flex-col min-h-screen">
-      <Header />
+      {/* Hide header and footer for admin routes */}
+      {!isAdminRoute && <Header />}
       <main className="flex-grow">
       <div className="w-full">
             <Switch>
@@ -201,7 +205,8 @@ function AppContent() {
             </Switch>
           </div>
       </main>
-      <Footer />
+      {/* Hide footer for admin routes */}
+      {!isAdminRoute && <Footer />}
       
       {/* Real-time donation notifications */}
       <DonationNotification />

@@ -112,7 +112,7 @@ exports.createBankAccount = async (req, res) => {
 // @access  Private (User)
 exports.getUserBankAccounts = async (req, res) => {
     try {
-        const { status, primary } = req.query;
+        const { status, primary, page = 1, limit = 10 } = req.query;
         
         // Build query
         let query = { userId: req.user.id, isActive: true };
@@ -123,15 +123,30 @@ exports.getUserBankAccounts = async (req, res) => {
         
         if (primary === 'true') {
             query.isPrimary = true;
-        }        const bankAccounts = await BankAccount.find(query)
+        }
+        
+        // Convert to numbers
+        const pageNum = parseInt(page);
+        const limitNum = parseInt(limit);
+        const skip = (pageNum - 1) * limitNum;
+        
+        // Get total count
+        const total = await BankAccount.countDocuments(query);
+        
+        const bankAccounts = await BankAccount.find(query)
             .populate('userId', 'name email')
             .populate('verifiedBy', 'username')
             .sort({ isPrimary: -1, createdAt: -1 })
-            .limit(20);
+            .skip(skip)
+            .limit(limitNum);
 
         res.status(200).json({
             success: true,
             count: bankAccounts.length,
+            total: total,
+            page: pageNum,
+            limit: limitNum,
+            totalPages: Math.ceil(total / limitNum),
             data: bankAccounts
         });
 

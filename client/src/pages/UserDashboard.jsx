@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useLocation } from 'wouter';
 import { motion } from 'framer-motion';
 import SEO from '../utils/seo.jsx';
@@ -10,6 +10,8 @@ import { useToast } from '@/hooks/use-toast';
 import { getProfilePictureUrl ,getCoverImageUrl} from '../utils/imageUtils';
 import { API_URL as CONFIG_API_URL, MINIO_URL, TURNSTILE_CONFIG } from '../config/index.js';
 import uploadService from '../services/uploadService';
+import { useInfiniteScroll, useScrollListener } from '../hooks/useInfiniteScroll';
+import Pagination from '../components/ui/Pagination';
 
 // Import icons
 import { 
@@ -73,6 +75,27 @@ const UserDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
+  
+  // Pagination states for each tab
+  const [campaignsPage, setCampaignsPage] = useState(1);
+  const [campaignsTotal, setCampaignsTotal] = useState(0);
+  const [campaignsTotalPages, setCampaignsTotalPages] = useState(0);
+  const [campaignsLoading, setCampaignsLoading] = useState(false);
+  const [campaignsHasMore, setCampaignsHasMore] = useState(true);
+  
+  const [donationsPage, setDonationsPage] = useState(1);
+  const [donationsTotal, setDonationsTotal] = useState(0);
+  const [donationsTotalPages, setDonationsTotalPages] = useState(0);
+  
+  const [bankAccountsPage, setBankAccountsPage] = useState(1);
+  const [bankAccountsTotal, setBankAccountsTotal] = useState(0);
+  const [bankAccountsTotalPages, setBankAccountsTotalPages] = useState(0);
+  
+  const [withdrawalsPage, setWithdrawalsPage] = useState(1);
+  const [withdrawalsTotal, setWithdrawalsTotal] = useState(0);
+  const [withdrawalsTotalPages, setWithdrawalsTotalPages] = useState(0);
+  
+  const ITEMS_PER_PAGE = 10;
   
   // Campaign status counts
   const [statusCounts, setStatusCounts] = useState({
@@ -454,111 +477,156 @@ const UserDashboard = () => {
     }
   }, [user, activeTab]);
   
-  // Fetch user campaigns from real backend
-  useEffect(() => {
-    const fetchUserCampaigns = async () => {
-      if (!isAuthenticated) return;
+  // Fetch user campaigns with pagination
+  const fetchUserCampaigns = useCallback(async (page = 1, resetData = false) => {
+    if (!isAuthenticated) return;
+    
+    setCampaignsLoading(true);
+    try {
+      const response = await apiRequest('GET', `/api/campaigns/user/campaigns?page=${page}&limit=${ITEMS_PER_PAGE}`);
+      const data = await response.json();
       
-      setIsLoading(true);
-      try {
-        // Call the real backend API
-        const response = await apiRequest('GET', '/api/campaigns/user/campaigns');
-        const data = await response.json();
+      if (data.success) {
+        const newCampaigns = data.campaigns || [];
         
-        if (data.success) {
-          setUserCampaigns(data.campaigns);
-          
-          // Calculate status counts
-          const counts = {
-            active: 0,
-            pending: 0,
-            completed: 0,
-            cancelled: 0,
-            rejected: 0
-          };
-          
-          let totalRaised = 0;
-          let totalDonors = 0;
-          let totalProgress = 0;
-          
-          data.campaigns.forEach(campaign => {
-            // Count campaigns by status
+        if (resetData || page === 1) {
+          setUserCampaigns(newCampaigns);
+        } else {
+          // Append new campaigns, avoiding duplicates
+          setUserCampaigns(prev => {
+            const existingIds = new Set(prev.map(c => c._id));
+            const uniqueNew = newCampaigns.filter(c => !existingIds.has(c._id));
+            return [...prev, ...uniqueNew];
+          });
+        }
+        
+        setCampaignsTotal(data.total || 0);
+        setCampaignsTotalPages(data.totalPages || 0);
+        setCampaignsPage(page);
+        setCampaignsHasMore(page < (data.totalPages || 0));
+        
+        // Calculate status counts
+        const counts = {
+          active: 0,
+          pending: 0,
+          completed: 0,
+          cancelled: 0,
+          rejected: 0
+        };
+        
+        let totalRaised = 0;
+        let totalDonors = 0;
+        let totalProgress = 0;
+        
+        // If on first page, calculate from all campaigns we'll eventually have
+        // Otherwise just update incrementally
+        const campaignsToCount = resetData || page === 1 ? newCampaigns : [...userCampaigns, ...newCampaigns];
+        
+        campaignsToCount.forEach(campaign => {
+          if (campaign) {
             counts[campaign.status]++;
-            
-            // Calculate analytics
             totalRaised += campaign.amountRaised || 0;
             totalDonors += campaign.donors || 0;
             totalProgress += campaign.percentageRaised || 0;
-          });
-          
-          setStatusCounts(counts);
-          
-          // Set analytics
-          setAnalytics({
-            totalRaised:totalRaised,
-            totalDonors,
-            averageProgress: data.campaigns.length 
-              ? Math.round(totalProgress / data.campaigns.length) 
-              : 0
-          });
-        }
-      } catch (error) {
-        console.error("Failed to fetch user campaigns:", error);
-      } finally {
-        setIsLoading(false);
+          }
+        });
+        
+        setStatusCounts(counts);
+        
+        setAnalytics({
+          totalRaised: totalRaised,
+          totalDonors,
+          averageProgress: campaignsToCount.length 
+            ? Math.round(totalProgress / campaignsToCount.length) 
+            : 0
+        });
       }
-    };
-    
-    fetchUserCampaigns();
+    } catch (error) {
+      console.error("Failed to fetch user campaigns:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load campaigns. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setCampaignsLoading(false);
+      setIsLoading(false);
+    }
+  }, [isAuthenticated, ITEMS_PER_PAGE, userCampaigns, toast]);
+
+  // Load more campaigns
+  const loadMoreCampaigns = useCallback(() => {
+    if (!campaignsLoading && campaignsHasMore && isAuthenticated) {
+      fetchUserCampaigns(campaignsPage + 1, false);
+    }
+  }, [campaignsLoading, campaignsHasMore, campaignsPage, fetchUserCampaigns, isAuthenticated]);
+
+  // Initial campaigns load
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchUserCampaigns(1, true);
+    }
   }, [isAuthenticated]);
 
   // Add these useEffects for fetching different types of donations
   
-  // For donations tab - fetch donations made BY the user
+  // For donations tab - fetch donations made BY the user with pagination
+  const fetchDonations = useCallback(async (page = 1, resetData = false) => {
+    if (!user?._id) return;
+    
+    setDonationsLoading(true);
+    console.log(`Fetching donations page ${page} for user:`, user._id);
+    
+    try {
+      const response = await apiRequest('GET', `/api/users/mydonation/${user._id}?page=${page}&limit=${ITEMS_PER_PAGE}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Donations response data:', data);
+        
+        if (data.success && Array.isArray(data.donations)) {
+          if (resetData || page === 1) {
+            setDonations(data.donations);
+          } else {
+            // Append new donations, avoiding duplicates
+            setDonations(prev => {
+              const existingIds = new Set(prev.map(d => d._id));
+              const uniqueNew = data.donations.filter(d => !existingIds.has(d._id));
+              return [...prev, ...uniqueNew];
+            });
+          }
+          
+          setDonationsTotal(data.total || 0);
+          setDonationsTotalPages(data.totalPages || 0);
+          setDonationsPage(page);
+        } else {
+          if (resetData) {
+            setDonations([]);
+            setDonationsTotal(0);
+            setDonationsTotalPages(0);
+          }
+        }
+      } else {
+        console.error('Error response from donations API:', response.status);
+        if (resetData) {
+          setDonations([]);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching donations:', error);
+      if (resetData) {
+        setDonations([]);
+      }
+    } finally {
+      setDonationsLoading(false);
+    }
+  }, [user?._id, ITEMS_PER_PAGE]);
+  
   useEffect(() => {
     if (activeTab === 'donations' && user?._id) {
-      const fetchDonations = async () => {
-        setDonationsLoading(true);
-        console.log('Attempting to fetch donations for user:', user._id);
-        
-        try {
-          console.log('Making API request to:', `/api/users/mydonation/${user._id}`);
-          const response = await apiRequest('GET', `/api/users/mydonation/${user._id}`);
-          console.log('Response status:', response.status, response.ok);
-          
-          if (response.ok) {
-            const data = await response.json();
-            console.log('Response data:', data);
-            
-            // Always ensure donations is an array
-            if (data.success && Array.isArray(data.donations)) {
-              console.log('Setting donations with data:', data.donations);
-              if (data.donations.length > 0) {
-                console.log('Sample donation structure:', data.donations[0]);
-              }
-              setDonations(data.donations);
-            } else if (data.success && data.donations === null) {
-              console.log('No donations returned from API');
-              setDonations([]);
-            } else {
-              console.log('Unexpected response structure:', data);
-              setDonations([]);
-            }
-          } else {
-            console.error('Error response from donations API:', response.status);
-            setDonations([]);
-          }
-        } catch (error) {
-          console.error('Error fetching donations:', error);
-          setDonations([]);
-        } finally {
-          setDonationsLoading(false);
-        }
-      };
-      
-      fetchDonations();
+      fetchDonations(1, true);
     }
-  }, [activeTab, user]);
+  }, [activeTab, user?._id, fetchDonations]);
 
   // For overview section - fetch donations made TO the user's campaigns
   useEffect(() => {
@@ -633,29 +701,35 @@ const UserDashboard = () => {
   };
 
   // Withdrawal-related functions
-  const fetchWithdrawals = async () => {
+  const fetchWithdrawals = async (page = 1) => {
     if (!isAuthenticated) return;
     
     setWithdrawalsLoading(true);
     try {
-      const response = await apiRequest('GET', '/api/withdrawals/my-requests');
+      const response = await apiRequest('GET', `/api/withdrawals/my-requests?page=${page}&limit=${ITEMS_PER_PAGE}`);
       const data = await response.json();
       
       if (data.success) {
         const withdrawalsData = data.data || [];
-        // Log any withdrawals with null campaigns for debugging (this is normal when campaigns are deleted)
         const withdrawalsWithNullCampaigns = withdrawalsData.filter(w => w && !w.campaign);
         if (withdrawalsWithNullCampaigns.length > 0) {
           console.info(`Found ${withdrawalsWithNullCampaigns.length} withdrawal(s) with deleted campaigns`);
         }
         setWithdrawals(withdrawalsData);
+        setWithdrawalsTotal(data.pagination?.total || 0);
+        setWithdrawalsTotalPages(data.pagination?.pages || 0);
+        setWithdrawalsPage(page);
       } else {
         console.error('Failed to fetch withdrawals:', data.message);
         setWithdrawals([]);
+        setWithdrawalsTotal(0);
+        setWithdrawalsTotalPages(0);
       }
     } catch (error) {
       console.error('Error fetching withdrawals:', error);
       setWithdrawals([]);
+      setWithdrawalsTotal(0);
+      setWithdrawalsTotalPages(0);
     } finally {
       setWithdrawalsLoading(false);
     }
@@ -813,7 +887,7 @@ const UserDashboard = () => {
   // Fetch withdrawals when tab becomes active
   useEffect(() => {
     if (activeTab === 'withdrawals' && isAuthenticated) {
-      fetchWithdrawals();
+      fetchWithdrawals(1);
     }
   }, [activeTab, isAuthenticated]);
 
@@ -1609,6 +1683,32 @@ const UserDashboard = () => {
             </div>
           )}
         </div>
+        
+        {/* Load More / Pagination for Campaigns */}
+        {filteredCampaigns.length > 0 && (
+          <div className="flex justify-center items-center mt-6">
+            {campaignsLoading ? (
+              <div className="inline-flex items-center px-6 py-3 text-gray-600 dark:text-gray-400">
+                <ArrowPathIcon className="w-5 h-5 mr-2 animate-spin" />
+                Loading more campaigns...
+              </div>
+            ) : campaignsHasMore ? (
+              <button
+                onClick={loadMoreCampaigns}
+                className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-[#8B2325] to-[#a52729] hover:from-[#7a1f21] hover:to-[#8B2325] text-white rounded-lg font-semibold transition-all duration-200 shadow-md hover:shadow-lg"
+              >
+                Load More Campaigns
+                <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            ) : campaignsTotal > ITEMS_PER_PAGE && (
+              <p className="text-gray-500 dark:text-gray-400 text-sm">
+                All {campaignsTotal} campaigns loaded
+              </p>
+            )}
+          </div>
+        )}
       </div>
     ),
     donations: (
@@ -1703,6 +1803,20 @@ const UserDashboard = () => {
                 </tbody>
               </table>
             </div>
+            
+            {/* Pagination for Donations */}
+            {donationsTotalPages > 1 && (
+              <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+                <Pagination
+                  currentPage={donationsPage}
+                  totalPages={donationsTotalPages}
+                  onPageChange={(page) => fetchDonations(page, true)}
+                />
+                <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-3">
+                  Showing {donations.length} of {donationsTotal} donations
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -2146,6 +2260,20 @@ const UserDashboard = () => {
                   ))}
                 </tbody>
               </table>
+              
+              {/* Pagination for Withdrawals */}
+              {withdrawalsTotalPages > 1 && (
+                <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+                  <Pagination
+                    currentPage={withdrawalsPage}
+                    totalPages={withdrawalsTotalPages}
+                    onPageChange={(page) => fetchWithdrawals(page)}
+                  />
+                  <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-3">
+                    Showing {withdrawals.length} of {withdrawalsTotal} withdrawal requests
+                  </p>
+                </div>
+              )}
             </div>
           ) : (
             <div className="p-6 text-center">

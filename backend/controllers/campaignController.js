@@ -371,6 +371,11 @@ exports.getCampaignById = async (req, res) => {
 // @access  Private
 exports.getUserCampaigns = async (req, res) => {
     try {
+        // Get pagination parameters from query
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+        
         // Use aggregation pipeline for better performance and computed fields
         const pipeline = [
             {
@@ -411,6 +416,9 @@ exports.getUserCampaigns = async (req, res) => {
                 }
             },
             {
+                $sort: { createdAt: -1 }
+            },
+            {
                 $project: {
                     title: 1,
                     shortDescription: 1,
@@ -431,15 +439,28 @@ exports.getUserCampaigns = async (req, res) => {
                     updatedAt: 1,
                     coverImage: 1,
                     images: 1,
-                    featured: 1
+                    featured: 1,
+                    updates: 1
                 }
+            }
+        ];
+        
+        // Add facet for both data and total count
+        const countPipeline = [
+            {
+                $match: { creator: new mongoose.Types.ObjectId(req.user._id) }
             },
             {
-                $sort: { createdAt: -1 }
+                $count: 'total'
             }
         ];
 
-        const campaigns = await Campaign.aggregate(pipeline);
+        const [campaigns, countResult] = await Promise.all([
+            Campaign.aggregate(pipeline),
+            Campaign.aggregate(countPipeline)
+        ]);
+        
+        const total = countResult.length > 0 ? countResult[0].total : 0;
 
         // Format campaigns with image URLs using fileService
         const campaignsWithUrls = campaigns.map(campaign => formatCampaignWithUrls(campaign));
@@ -447,6 +468,10 @@ exports.getUserCampaigns = async (req, res) => {
         res.status(200).json({
             success: true,
             count: campaignsWithUrls.length,
+            total: total,
+            page: page,
+            limit: limit,
+            totalPages: Math.ceil(total / limit),
             campaigns: campaignsWithUrls
         });
     } catch (error) {

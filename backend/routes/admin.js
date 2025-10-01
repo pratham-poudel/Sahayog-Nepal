@@ -769,7 +769,7 @@ router.get('/campaigns', adminAuth, async (req, res) => {
             endDate
         } = req.query;
 
-        console.log('Admin campaigns query:', req.query); // Debug log
+        console.log('Admin campaigns query:', req.query);
 
         const filter = {};
         
@@ -795,141 +795,79 @@ router.get('/campaigns', adminAuth, async (req, res) => {
                 }
             }
         }
-          // Search filter - AstraDB compatible
+        
+        // MongoDB Text Search - more robust search
         if (search && search.trim()) {
             const searchTerm = search.trim();
-            // Since AstraDB doesn't support $regex, we'll need to use a different approach
-            // For now, we'll get all campaigns and filter them in memory
-            // This is a temporary solution - ideally you'd use AstraDB's text search capabilities
-            console.log('Search term detected, will filter in memory:', searchTerm);
-            // We'll handle search filtering after the database query
+            console.log('Using MongoDB text search for:', searchTerm);
+            filter.$text = { $search: searchTerm };
         }
 
-        console.log('MongoDB filter:', JSON.stringify(filter)); // Debug log
+        console.log('MongoDB filter:', JSON.stringify(filter));
 
         // Build sort options
         const sortOptions = {};
+        
+        // If using text search, sort by text score first for relevance
+        if (search && search.trim()) {
+            sortOptions.score = { $meta: 'textScore' };
+        }
+        
+        // Add secondary sort
         if (sortBy && ['createdAt', 'title', 'status', 'amountRaised', 'targetAmount'].includes(sortBy)) {
             sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
         } else {
             sortOptions.createdAt = -1; // Default sort
         }
 
-        console.log('Sort options:', sortOptions); // Debug log
+        console.log('Sort options:', sortOptions);
 
         // Parse pagination parameters
         const pageNum = Math.max(1, parseInt(page));
-        const limitNum = Math.min(Math.max(1, parseInt(limit)), 100); // Cap limit to 100
+        const limitNum = Math.min(Math.max(1, parseInt(limit)), 100);
         const skip = (pageNum - 1) * limitNum;
 
-        console.log('Pagination:', { pageNum, limitNum, skip }); // Debug log        // Execute queries
-        if (search && search.trim()) {
-            // Handle search with in-memory filtering for AstraDB compatibility
-            const searchTerm = search.trim().toLowerCase();
-            
-            // For AstraDB, we need to fetch campaigns in batches WITHOUT sort to avoid the 20-document limit
-            let allCampaigns = [];
-            let hasMore = true;
-            let batchCount = 0;
-            const maxBatches = 50; // Prevent infinite loop, max 1000 campaigns (50 * 20)
-            
-            console.log('Fetching campaigns in batches for search (no sort to avoid AstraDB limit)...');
-            
-            while (hasMore && batchCount < maxBatches) {
-                try {
-                    // Fetch batch WITHOUT sort to avoid AstraDB 20-document sort limitation
-                    const batch = await Campaign.find(filter)
-                        .populate('creator', 'name email phone')
-                        .limit(20)
-                        .skip(batchCount * 20)
-                        .lean(); // No .sort() here to avoid AstraDB limitation
-                    
-                    console.log(`Batch ${batchCount + 1}: fetched ${batch.length} campaigns`);
-                    
-                    if (batch.length === 0) {
-                        hasMore = false;
-                    } else {
-                        allCampaigns = allCampaigns.concat(batch);
-                        batchCount++;
-                        
-                        // If we got less than 20, we've reached the end
-                        if (batch.length < 20) {
-                            hasMore = false;
-                        }
-                    }
-                } catch (error) {
-                    console.error(`Error fetching batch ${batchCount + 1}:`, error);
-                    hasMore = false;
-                }
-            }
-            
-            console.log(`Fetched ${allCampaigns.length} campaigns in ${batchCount} batches`);
-            
-            // Filter campaigns in memory based on search term
-            const filteredCampaigns = allCampaigns.filter(campaign => {
-                const title = (campaign.title || '').toLowerCase();
-                const shortDescription = (campaign.shortDescription || '').toLowerCase();
-                const category = (campaign.category || '').toLowerCase();
-                const creatorName = (campaign.creator?.name || '').toLowerCase();
-                
-                return title.includes(searchTerm) || 
-                       shortDescription.includes(searchTerm) || 
-                       category.includes(searchTerm) ||
-                       creatorName.includes(searchTerm);
-            });
-            
-            console.log(`Filtered to ${filteredCampaigns.length} campaigns matching search term`);
-            
-            // Sort in memory (now that we have all the data)
-            filteredCampaigns.sort((a, b) => {
-                let aValue = a[sortBy];
-                let bValue = b[sortBy];
-                
-                // Handle date fields
-                if (sortBy === 'createdAt' && aValue && bValue) {
-                    aValue = new Date(aValue);
-                    bValue = new Date(bValue);
-                }
-                
-                // Handle undefined/null values
-                if (aValue == null && bValue == null) return 0;
-                if (aValue == null) return sortOrder === 'desc' ? 1 : -1;
-                if (bValue == null) return sortOrder === 'desc' ? -1 : 1;
-                
-                if (sortOrder === 'desc') {
-                    if (aValue < bValue) return 1;
-                    if (aValue > bValue) return -1;
-                    return 0;
-                } else {
-                    if (aValue < bValue) return -1;
-                    if (aValue > bValue) return 1;
-                    return 0;
-                }
-            });
-            
-            // Apply pagination to filtered results
-            const total = filteredCampaigns.length;
-            const campaigns = filteredCampaigns.slice(skip, skip + limitNum);
-            
-            console.log('Search results:', { campaignsCount: campaigns.length, total, searchTerm }); // Debug log
+        console.log('Pagination:', { pageNum, limitNum, skip });
 
-            res.json({
-                success: true,
-                data: campaigns,
-                pagination: {
-                    current: pageNum,
-                    pages: Math.ceil(total / limitNum),
-                    total,
-                    limit: limitNum
-                }
-            });        } else {
-            // Normal query without search - handle AstraDB sort limitation
-            if (limitNum > 20) {
-                // For large queries, use batch fetching to avoid AstraDB sort limitation
+        // Execute query with text search
+        try {
+            let query = Campaign.find(filter)
+                .populate('creator', 'name email phone');
+
+            // Add text score projection if using text search
+            if (search && search.trim()) {
+                query = query.select({ score: { $meta: 'textScore' } });
+            }
+
+            // For queries with text search or small limits, execute directly
+            if (search?.trim() || limitNum <= 20) {
+                const [campaigns, total] = await Promise.all([
+                    query
+                        .sort(sortOptions)
+                        .limit(limitNum)
+                        .skip(skip)
+                        .lean(),
+                    Campaign.countDocuments(filter)
+                ]);
+
+                console.log('Query results:', { campaignsCount: campaigns.length, total });
+
+                res.json({
+                    success: true,
+                    data: campaigns,
+                    pagination: {
+                        current: pageNum,
+                        pages: Math.ceil(total / limitNum),
+                        total,
+                        limit: limitNum
+                    }
+                });
+            } else {
+                // For large queries without search, use batch fetching to avoid AstraDB limitations
                 let allCampaigns = [];
                 let hasMore = true;
                 let batchCount = 0;
-                const maxBatches = Math.ceil(limitNum / 20) + 5; // Get a bit more than needed
+                const maxBatches = Math.ceil(limitNum / 20) + 5;
                 
                 console.log('Fetching campaigns in batches for large query...');
                 
@@ -994,8 +932,20 @@ router.get('/campaigns', adminAuth, async (req, res) => {
                         limit: limitNum
                     }
                 });
-            } else {
-                // For small queries (≤20), use direct query with sort
+            }
+        } catch (queryError) {
+            // If text search fails (e.g., index not available), fall back to regex search
+            if (search && search.trim() && queryError.message.includes('text')) {
+                console.log('Text search failed, falling back to regex search');
+                delete filter.$text;
+                
+                const searchTerm = search.trim();
+                filter.$or = [
+                    { title: { $regex: searchTerm, $options: 'i' } },
+                    { shortDescription: { $regex: searchTerm, $options: 'i' } },
+                    { category: { $regex: searchTerm, $options: 'i' } }
+                ];
+                
                 const [campaigns, total] = await Promise.all([
                     Campaign.find(filter)
                         .populate('creator', 'name email phone')
@@ -1006,8 +956,6 @@ router.get('/campaigns', adminAuth, async (req, res) => {
                     Campaign.countDocuments(filter)
                 ]);
 
-                console.log('Direct query results:', { campaignsCount: campaigns.length, total });
-
                 res.json({
                     success: true,
                     data: campaigns,
@@ -1015,13 +963,16 @@ router.get('/campaigns', adminAuth, async (req, res) => {
                         current: pageNum,
                         pages: Math.ceil(total / limitNum),
                         total,
-                        limit: limitNum                    }
+                        limit: limitNum
+                    }
                 });
+            } else {
+                throw queryError;
             }
         }
     } catch (error) {
         console.error('Error fetching campaigns:', error);
-        console.error('Error stack:', error.stack); // Full error stack
+        console.error('Error stack:', error.stack);
         res.status(500).json({
             success: false,
             message: 'Server error',
@@ -1390,37 +1341,66 @@ router.put('/campaigns/:id/featured', adminAuth, async (req, res) => {
 router.get('/analytics/overview', adminAuth, async (req, res) => {
     try {
         const { timeframe = 'month' } = req.query;
+        const WithdrawalRequest = require('../models/WithdrawalRequest');
         
         let dateFilter = {};
+        let groupByFormat = '';
         const now = new Date();
         
+        // Determine date filter and grouping format based on timeframe
         switch (timeframe) {
-            case 'week':
-                dateFilter = { $gte: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) };
+            case 'day':
+                // Last 30 days, group by day
+                dateFilter = { $gte: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) };
+                groupByFormat = 'day';
                 break;
             case 'month':
-                dateFilter = { $gte: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) };
-                break;
-            case 'quarter':
-                dateFilter = { $gte: new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000) };
+                // Last 12 months, group by month
+                dateFilter = { $gte: new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000) };
+                groupByFormat = 'month';
                 break;
             case 'year':
-                dateFilter = { $gte: new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000) };
+                // Last 5 years, group by year
+                dateFilter = { $gte: new Date(now.getTime() - 5 * 365 * 24 * 60 * 60 * 1000) };
+                groupByFormat = 'year';
                 break;
-        }        const [
+            default:
+                // Default to month
+                dateFilter = { $gte: new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000) };
+                groupByFormat = 'month';
+        }
+
+        const [
             allCampaigns,
             allPayments,
-            allUsers
+            allUsers,
+            allWithdrawals
         ] = await Promise.all([
             Campaign.find({ createdAt: dateFilter }),
             Payment.find({ createdAt: dateFilter, status: 'Completed' }),
-            User.find({ createdAt: dateFilter })
+            User.find({ createdAt: dateFilter }),
+            WithdrawalRequest.find({ 
+                createdAt: dateFilter, 
+                status: { $in: ['completed', 'approved', 'processing'] }
+            })
         ]);
+
+        // Helper function to format date based on grouping
+        const formatDateKey = (date) => {
+            const d = new Date(date);
+            if (groupByFormat === 'day') {
+                return d.toISOString().split('T')[0]; // YYYY-MM-DD
+            } else if (groupByFormat === 'month') {
+                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; // YYYY-MM
+            } else {
+                return `${d.getFullYear()}`; // YYYY
+            }
+        };
 
         // Calculate campaign trends manually
         const campaignTrendsMap = {};
         allCampaigns.forEach(campaign => {
-            const dateKey = campaign.createdAt.toISOString().split('T')[0];
+            const dateKey = formatDateKey(campaign.createdAt);
             if (!campaignTrendsMap[dateKey]) {
                 campaignTrendsMap[dateKey] = { count: 0, totalTarget: 0, totalRaised: 0 };
             }
@@ -1439,7 +1419,7 @@ router.get('/analytics/overview', adminAuth, async (req, res) => {
         // Calculate payment trends manually
         const paymentTrendsMap = {};
         allPayments.forEach(payment => {
-            const dateKey = payment.createdAt.toISOString().split('T')[0];
+            const dateKey = formatDateKey(payment.createdAt);
             if (!paymentTrendsMap[dateKey]) {
                 paymentTrendsMap[dateKey] = { count: 0, amount: 0, platformFees: 0 };
             }
@@ -1458,7 +1438,7 @@ router.get('/analytics/overview', adminAuth, async (req, res) => {
         // Calculate user growth manually
         const userGrowthMap = {};
         allUsers.forEach(user => {
-            const dateKey = user.createdAt.toISOString().split('T')[0];
+            const dateKey = formatDateKey(user.createdAt);
             if (!userGrowthMap[dateKey]) {
                 userGrowthMap[dateKey] = { count: 0 };
             }
@@ -1472,33 +1452,28 @@ router.get('/analytics/overview', adminAuth, async (req, res) => {
                 ...userGrowthMap[date]
             }));
 
-        // Calculate category statistics manually
-        const categoryStatsMap = {};
-        allCampaigns.forEach(campaign => {
-            const category = campaign.category || 'Other';
-            if (!categoryStatsMap[category]) {
-                categoryStatsMap[category] = { count: 0, totalRaised: 0, amounts: [] };
+        // Calculate withdrawal trends manually
+        const withdrawalTrendsMap = {};
+        allWithdrawals.forEach(withdrawal => {
+            // Use processingDetails.processedAt if completed, otherwise createdAt
+            const dateToUse = withdrawal.status === 'completed' && withdrawal.processingDetails?.processedAt
+                ? withdrawal.processingDetails.processedAt
+                : withdrawal.createdAt;
+            
+            const dateKey = formatDateKey(dateToUse);
+            if (!withdrawalTrendsMap[dateKey]) {
+                withdrawalTrendsMap[dateKey] = { count: 0, amount: 0 };
             }
-            categoryStatsMap[category].count++;
-            categoryStatsMap[category].totalRaised += campaign.amountRaised || 0;
-            categoryStatsMap[category].amounts.push(campaign.amountRaised || 0);
+            withdrawalTrendsMap[dateKey].count++;
+            withdrawalTrendsMap[dateKey].amount += withdrawal.requestedAmount || 0;
         });
 
-        const categoryStats = Object.keys(categoryStatsMap)
-            .map(category => {
-                const stats = categoryStatsMap[category];
-                const avgRaised = stats.amounts.length > 0 
-                    ? stats.amounts.reduce((sum, amount) => sum + amount, 0) / stats.amounts.length 
-                    : 0;
-                
-                return {
-                    _id: category,
-                    count: stats.count,
-                    totalRaised: stats.totalRaised,
-                    avgRaised: avgRaised
-                };
-            })
-            .sort((a, b) => b.count - a.count);
+        const withdrawalTrends = Object.keys(withdrawalTrendsMap)
+            .sort()
+            .map(date => ({
+                _id: date,
+                ...withdrawalTrendsMap[date]
+            }));
 
         res.json({
             success: true,
@@ -1506,14 +1481,16 @@ router.get('/analytics/overview', adminAuth, async (req, res) => {
                 campaignTrends,
                 paymentTrends,
                 userGrowth,
-                categoryStats
+                withdrawalTrends,
+                timeframe: groupByFormat
             }
         });
     } catch (error) {
         console.error('Error fetching analytics:', error);
         res.status(500).json({
             success: false,
-            message: 'Server error'
+            message: 'Server error',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
 });
