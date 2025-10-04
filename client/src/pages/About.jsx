@@ -33,7 +33,7 @@ const About = () => {
     {
       step: 4,
       title: 'Withdraw Funds',
-      description: 'Get your funds transferred directly to your bank account.',
+      description: 'Get your funds transferred directly to your bank accounts.',
       icon: Heart,
     }
   ];
