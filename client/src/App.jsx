@@ -44,6 +44,9 @@ import BlogDetail from "./pages/BlogDetail";
 import WriteBlog from "./pages/WriteBlog";
 import DetailedStatistics from "./pages/DetailedStatistics";
 import UserProfile from "./pages/UserProfile";
+import TermsOfUse from "./pages/TermsOfUse";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import CookiePolicy from "./pages/CookiePolicy";
 
 // App wrapper to use auth context
 function AppContent() {
@@ -156,6 +159,9 @@ function AppContent() {
               <Route path="/profile/:id">
                 {(params) => <UserProfile id={params.id} />}
               </Route>
+              <Route path="/terms-of-use" component={TermsOfUse} />
+              <Route path="/privacy-policy" component={PrivacyPolicy} />
+              <Route path="/cookie-policy" component={CookiePolicy} />
               <Route path="/login" component={Login} />
               <Route path="/signup" component={Signup} />
               <Route path="/helloadmin" component={AdminLogin} />

@@ -96,9 +96,9 @@ const Footer = () => {
               &copy; {currentYear} Sahayog Nepal. All rights reserved.
             </p>
             <div className="flex space-x-4 text-gray-500">
-              <Link href="/privacy-policy" className="hover:text-gray-300 transition-colors">Privacy</Link>
-              <Link href="/terms" className="hover:text-gray-300 transition-colors">Terms</Link>
-              <Link href="/cookies" className="hover:text-gray-300 transition-colors">Cookies</Link>
+              <Link href="/privacy-policy" className="hover:text-[#8B2325] dark:hover:text-white transition-colors">Privacy Policy</Link>
+              <Link href="/terms-of-use" className="hover:text-[#8B2325] dark:hover:text-white transition-colors">Terms of Use</Link>
+              <Link href="/cookie-policy" className="hover:text-[#8B2325] dark:hover:text-white transition-colors">Cookie Policy</Link>
             </div>
           </div>
         </div>

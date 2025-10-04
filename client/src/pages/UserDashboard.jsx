@@ -1328,7 +1328,7 @@ const UserDashboard = () => {
             <p className="text-gray-600 dark:text-gray-400">Manage and track all your fundraising campaigns</p>
           </div>
           <Link href="/start-campaign">
-            <a className="inline-flex items-center px-4 py-2 bg-primary-600 dark:bg-primary-500 text-white font-medium rounded-lg hover:bg-primary-700 dark:hover:bg-primary-600 transition-colors">
+            <a className="inline-flex items-center px-4 py-2 bg-[#800000] text-white font-medium rounded-lg hover:bg-[#660000] transition-colors">
               <PlusIcon className="w-5 h-5 mr-2" />
               New Campaign
             </a>
