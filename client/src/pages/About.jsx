@@ -1,40 +1,40 @@
 import { motion } from 'framer-motion';
+import { ChevronRight, Heart, Target, Eye, Shield, Users, ArrowRight } from 'lucide-react';
 import SEO from '../utils/seo.jsx';
 import { aboutContent, faqItems } from '../data/stats';
-import Team from './Team.jsx';
 
 const About = () => {
   const stats = [
-    { value: '120,000+', label: 'Donors' },
-    { value: '3,500+', label: 'Campaigns' },
-    { value: 'Rs. 185M+', label: 'Raised' },
-    { value: '28', label: 'Districts Reached' },
+    { value: 'Growing', label: 'Donor Community', icon: Users },
+    { value: 'Active', label: 'Campaign Platform', icon: Target },
+    { value: 'Secure', label: 'Payment System', icon: Shield },
+    { value: 'All Nepal', label: 'Coverage', icon: Heart },
   ];
 
   const howItWorks = [
     {
       step: 1,
-      title: 'Start a Campaign',
-      description: 'Create your fundraiser in minutes with our easy-to-use platform. Share your story and set your fundraising goal.',
-      icon: 'ri-flag-line',
+      title: 'Create Your Campaign',
+      description: 'Set up your fundraiser with basic details about your cause and funding goal.',
+      icon: Target,
     },
     {
       step: 2,
-      title: 'Share with Friends',
-      description: 'Spread the word through social media, email, and messaging to reach potential donors across Nepal and worldwide.',
-      icon: 'ri-share-line',
+      title: 'Share Your Story',
+      description: 'Spread the word through social media and reach potential supporters.',
+      icon: Users,
     },
     {
       step: 3, 
-      title: 'Collect Donations',
-      description: 'Receive donations quickly with our secure payment system. Track your progress in real-time on your dashboard.',
-      icon: 'ri-money-rupee-circle-line',
+      title: 'Receive Donations',
+      description: 'Accept contributions through our secure payment system.',
+      icon: Shield,
     },
     {
       step: 4,
-      title: 'Create Impact',
-      description: 'Withdraw funds efficiently to your bank account and start making a difference in your community.',
-      icon: 'ri-heart-pulse-line',
+      title: 'Withdraw Funds',
+      description: 'Get your funds transferred directly to your bank account.',
+      icon: Heart,
     }
   ];
 
@@ -46,349 +46,405 @@ const About = () => {
         keywords="about Sahayog Nepal, crowdfunding mission, Nepal donation platform"
       />
       
-      <div className="bg-gray-50 py-12 md:py-16">
-        <div className="container mx-auto px-4 md:px-6 lg:px-8">
-          <motion.div 
-            className="text-center mb-12"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <div className="inline-block bg-primary-100 text-primary-800 rounded-full px-4 py-1 mb-4 text-sm font-medium">
-              Nepal's First Crowdfunding Platform
-            </div>
-            <h1 className="text-3xl md:text-5xl font-poppins font-bold mb-6">About Sahayog Nepal</h1>
-            <p className="text-gray-600 max-w-3xl mx-auto text-lg">
-              Building a platform where generosity and community unite to empower Nepal's future, one campaign at a time.
-            </p>
-          </motion.div>
-          
-          {/* Hero Image with Overlay */}
-          <div className="relative rounded-xl overflow-hidden mb-20 h-96">
-            <img 
-              src="https://images.unsplash.com/photo-1605745341112-85968b19335b" 
-              alt="Nepal landscape" 
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-primary-900/70 to-transparent flex items-center">
-              <div className="max-w-xl p-8 text-white">
-                <h2 className="text-3xl font-bold mb-4">Empowering Communities Across Nepal</h2>
-                <p className="mb-6">Founded in 2020, Sahayog Nepal has helped thousands of individuals and communities raise funds for causes that matter.</p>
-                <button className="bg-white text-primary-700 font-medium py-2 px-6 rounded-lg hover:bg-gray-100 transition-colors">
-                  Our Story
-                </button>
-              </div>
-            </div>
+      <div className="min-h-screen bg-white dark:bg-gray-900">
+        {/* Hero Section with Gradient and Image */}
+        <div className="relative bg-gradient-to-br from-[#8B2325] via-[#a32729] to-[#b12a2c] text-white overflow-hidden">
+          <div className="absolute inset-0 bg-black/20"></div>
+          <div className="absolute inset-0">
+            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-black/50 to-transparent"></div>
+            <div className="absolute -top-40 -right-40 w-80 h-80 bg-white/10 rounded-full blur-3xl"></div>
+            <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-white/10 rounded-full blur-3xl"></div>
           </div>
           
-          {/* Stats Section */}
-          <motion.div 
-            className="mb-20"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            transition={{ duration: 0.7 }}
-            viewport={{ once: true }}
-          >
-            <div className="grid md:grid-cols-4 gap-6 text-center">
+          <div className="container mx-auto px-4 py-16 relative z-10">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center min-h-[60vh]">
+              {/* Left Side - Text Content */}
+              <motion.div
+                initial={{ opacity: 0, x: -30 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.8 }}
+                className="text-white"
+              >
+                {/* Breadcrumb */}
+                <nav className="flex items-center gap-2 text-sm text-white/80 mb-8">
+                  <a href="/" className="hover:text-white transition-colors">Home</a>
+                  <ChevronRight className="w-4 h-4" />
+                  <span className="text-white font-medium">About Us</span>
+                </nav>
+
+                <div className="inline-block bg-white/20 backdrop-blur-sm text-white rounded-full px-4 py-2 mb-6 text-sm font-medium">
+                  Bringing Transparency to Crowdfunding in Nepal
+                </div>
+                <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
+                  About Sahayog Nepal
+                </h1>
+                <p className="text-xl md:text-2xl text-white/90 leading-relaxed mb-8">
+                  A transparent crowdfunding platform where every donation is tracked, every campaign is accountable, and donors can see exactly how their contributions make a difference.
+                </p>
+                
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <a 
+                    href="/start-campaign" 
+                    className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-[#8B2325] rounded-xl hover:bg-gray-100 transition-colors font-semibold shadow-lg"
+                  >
+                    Start a Campaign
+                    <ArrowRight className="w-5 h-5" />
+                  </a>
+                  <a 
+                    href="/explore" 
+                    className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/10 backdrop-blur-sm text-white border-2 border-white/30 rounded-xl hover:bg-white/20 transition-colors font-semibold"
+                  >
+                    Browse Campaigns
+                  </a>
+                </div>
+              </motion.div>
+
+              {/* Right Side - Image */}
+              <motion.div
+                initial={{ opacity: 0, x: 30 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.8 }}
+                className="relative hidden lg:block"
+              >
+                <div className="relative w-full max-w-md mx-auto">
+                  <div className="relative aspect-[3/4] bg-white rounded-2xl p-4 shadow-2xl">
+                    <img 
+                      src="https://images.unsplash.com/photo-1531482615713-2afd69097998" 
+                      alt="Nepal community" 
+                      className="w-full h-full object-cover rounded-xl"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/20 rounded-xl pointer-events-none"></div>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </div>
+
+        {/* Stats Section */}
+        <div className="py-20 bg-gray-50 dark:bg-gray-800/30">
+          <div className="container mx-auto px-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-5xl mx-auto">
               {stats.map((stat, index) => (
                 <motion.div 
                   key={index}
-                  className="bg-white p-8 rounded-xl shadow-md"
+                  className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-sm hover:shadow-md transition-shadow"
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                   viewport={{ once: true }}
                 >
-                  <div className="text-4xl font-bold text-primary-600 mb-2">{stat.value}</div>
-                  <div className="text-gray-600 font-medium">{stat.label}</div>
+                  <stat.icon className="w-8 h-8 text-[#8B2325] mb-4" />
+                  <div className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{stat.value}</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">{stat.label}</div>
                 </motion.div>
               ))}
             </div>
-          </motion.div>
-          
-          {/* Mission & Vision */}
-          <div className="grid md:grid-cols-2 gap-8 mb-20">
-            <motion.div 
-              className="bg-white p-8 rounded-xl shadow-md"
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5 }}
+          </div>
+        </div>
+
+        {/* Mission & Vision Section */}
+        <div className="py-20 bg-white dark:bg-gray-900">
+          <div className="container mx-auto px-4 max-w-6xl">
+            <div className="grid md:grid-cols-2 gap-12">
+              <motion.div 
+                className="space-y-6"
+                initial={{ opacity: 0, x: -30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6 }}
+                viewport={{ once: true }}
+              >
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-[#8B2325]/10 rounded-2xl">
+                  <Target className="w-8 h-8 text-[#8B2325]" />
+                </div>
+                <h2 className="text-4xl font-bold text-gray-900 dark:text-white">Our Mission</h2>
+                <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed">
+                  {aboutContent.mission}
+                </p>
+              </motion.div>
+              
+              <motion.div 
+                className="space-y-6"
+                initial={{ opacity: 0, x: 30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                viewport={{ once: true }}
+              >
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-[#8B2325]/10 rounded-2xl">
+                  <Eye className="w-8 h-8 text-[#8B2325]" />
+                </div>
+                <h2 className="text-4xl font-bold text-gray-900 dark:text-white">Our Vision</h2>
+                <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed">
+                  {aboutContent.vision}
+                </p>
+              </motion.div>
+            </div>
+          </div>
+        </div>
+
+        {/* The Story Section */}
+        <div className="py-20 bg-gray-50 dark:bg-gray-800/30">
+          <div className="container mx-auto px-4 max-w-6xl">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
               viewport={{ once: true }}
+              className="text-center mb-16"
             >
-              <div className="h-14 w-14 bg-primary-100 text-primary-600 flex items-center justify-center rounded-full mb-6">
-                <i className="ri-focus-3-line text-2xl"></i>
-              </div>
-              <h2 className="text-2xl font-poppins font-semibold mb-4">Our Mission</h2>
-              <p className="text-gray-700 leading-relaxed">{aboutContent.mission}</p>
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
+                How It Started
+              </h2>
+              <p className="text-lg text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
+                From Facebook scams to transparent crowdfunding - building accountability into fundraising
+              </p>
             </motion.div>
-            
+
+            <div className="grid md:grid-cols-3 gap-8">
+              {[
+                {
+                  step: '01',
+                  title: 'The Problem',
+                  description: 'While browsing Facebook and other social platforms, I noticed people collecting funds without proper verification or transparency. Many turned out to be scams, leaving donors with no way to track where their money went or if the cause was even legitimate.'
+                },
+                {
+                  step: '02',
+                  title: 'The Solution',
+                  description: 'As an international student from Chandrauta, Kapilvastu studying BTech in India, I realized Nepal needed a transparent platform where donors could see exactly who donated, how much was collected, and how funds were being used - bringing accountability to crowdfunding.'
+                },
+                {
+                  step: '03',
+                  title: 'Today',
+                  description: 'Sahayog Nepal is live, providing a transparent medium for fundraising in Nepal. Every donation is tracked, every rupee is accounted for, and campaign updates keep donors informed about how their contributions are making a difference.'
+                }
+              ].map((item, index) => (
+                <motion.div 
+                  key={index}
+                  className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-sm hover:shadow-md transition-shadow"
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  viewport={{ once: true }}
+                >
+                  <div className="text-6xl font-bold text-[#8B2325]/20 mb-4">{item.step}</div>
+                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">{item.title}</h3>
+                  <p className="text-gray-600 dark:text-gray-300 leading-relaxed">{item.description}</p>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Founder Section */}
+        <div className="py-20 bg-white dark:bg-gray-900">
+          <div className="container mx-auto px-4 max-w-4xl">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              viewport={{ once: true }}
+              className="text-center mb-12"
+            >
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
+                Built & Managed By
+              </h2>
+            </motion.div>
+
             <motion.div 
-              className="bg-white p-8 rounded-xl shadow-md"
-              initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
+              className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-8 md:p-12"
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
               viewport={{ once: true }}
             >
-              <div className="h-14 w-14 bg-primary-100 text-primary-600 flex items-center justify-center rounded-full mb-6">
-                <i className="ri-eye-line text-2xl"></i>
+              <div className="flex flex-col md:flex-row gap-8 items-center">
+                <div className="flex-shrink-0">
+                  <div className="w-32 h-32 bg-[#8B2325]/10 rounded-2xl flex items-center justify-center">
+                    <Users className="w-16 h-16 text-[#8B2325]" />
+                  </div>
+                </div>
+                <div className="flex-1 text-center md:text-left">
+                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Pratham Poudel</h3>
+                  <p className="text-lg text-[#8B2325] font-medium mb-4">Founder & Developer</p>
+                  <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-4">
+                    2nd year BTech student from Chandrauta, Kapilvastu, currently studying in India as an international student. 
+                    Built and manages Sahayog Nepal - handling everything from development to operations.
+                  </p>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                    Database • Backend • Frontend • DevOps • Business
+                  </div>
+                </div>
               </div>
-              <h2 className="text-2xl font-poppins font-semibold mb-4">Our Vision</h2>
-              <p className="text-gray-700 leading-relaxed">{aboutContent.vision}</p>
             </motion.div>
           </div>
-          
-          {/* How It Works */}
-          <motion.div 
-            className="mb-20"
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            viewport={{ once: true }}
-          >
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-poppins font-bold mb-4">How Our Platform Works</h2>
-              <p className="text-gray-600 max-w-2xl mx-auto">
-                We've made crowdfunding simple and accessible for everyone in Nepal. Here's how our platform empowers communities:
+        </div>
+
+        {/* How It Works Section */}
+        <div className="py-20 bg-gray-50 dark:bg-gray-800/30">
+          <div className="container mx-auto px-4 max-w-6xl">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              viewport={{ once: true }}
+              className="text-center mb-16"
+            >
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
+                How It Works
+              </h2>
+              <p className="text-lg text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
+                Four simple steps to start your fundraising campaign
               </p>
-            </div>
+            </motion.div>
             
-            <div className="grid md:grid-cols-4 gap-6">
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
               {howItWorks.map((item, index) => (
                 <motion.div 
                   key={index}
-                  className="bg-white p-6 rounded-xl shadow-md relative"
-                  initial={{ opacity: 0, y: 20 }}
+                  className="relative bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-sm hover:shadow-md transition-all group"
+                  initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                   viewport={{ once: true }}
                 >
-                  <div className="absolute -top-4 -left-4 h-12 w-12 bg-primary-600 text-white rounded-full flex items-center justify-center font-bold text-xl">
+                  <div className="absolute -top-4 -left-4 w-12 h-12 bg-[#8B2325] text-white rounded-xl flex items-center justify-center font-bold text-lg shadow-lg">
                     {item.step}
                   </div>
-                  <div className="h-12 w-12 bg-primary-100 text-primary-600 flex items-center justify-center rounded-full mb-4">
-                    <i className={`${item.icon} text-2xl`}></i>
-                  </div>
-                  <h3 className="text-xl font-semibold mb-2">{item.title}</h3>
-                  <p className="text-gray-600">{item.description}</p>
+                  <item.icon className="w-10 h-10 text-[#8B2325] mb-6 group-hover:scale-110 transition-transform" />
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">{item.title}</h3>
+                  <p className="text-gray-600 dark:text-gray-300 leading-relaxed">{item.description}</p>
                 </motion.div>
               ))}
             </div>
-          </motion.div>
-          
-          {/* Our History */}
-          <motion.div 
-            className="mb-20"
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            viewport={{ once: true }}
-          >
-            <h2 className="text-3xl font-poppins font-bold mb-8 text-center">Our Journey</h2>
-            <div className="bg-white p-8 rounded-xl shadow-md">
-              <div className="grid md:grid-cols-12 gap-8 items-center">
-                <div className="md:col-span-5">
-                  <img 
-                    src="https://images.unsplash.com/photo-1595427648952-c59163b40315" 
-                    alt="Community rebuilding efforts" 
-                    className="rounded-lg w-full h-auto shadow-lg"
-                  />
-                </div>
-                <div className="md:col-span-7">
-                  <div className="space-y-6">
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <div className="flex items-center mb-2">
-                        <div className="h-6 w-6 bg-primary-600 text-white rounded-full flex items-center justify-center text-xs font-bold mr-3">1</div>
-                        <h3 className="font-semibold">The Beginning (2020)</h3>
-                      </div>
-                      <p className="text-gray-700 pl-9">Started with a team of three passionate individuals after witnessing the need for organized fundraising following the 2015 earthquake recovery efforts.</p>
-                    </div>
-                    
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <div className="flex items-center mb-2">
-                        <div className="h-6 w-6 bg-primary-600 text-white rounded-full flex items-center justify-center text-xs font-bold mr-3">2</div>
-                        <h3 className="font-semibold">Growth Phase (2021-2022)</h3>
-                      </div>
-                      <p className="text-gray-700 pl-9">Expanded to support diverse causes across all regions of Nepal, developed partnerships with local NGOs, and implemented secure payment infrastructure.</p>
-                    </div>
-                    
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <div className="flex items-center mb-2">
-                        <div className="h-6 w-6 bg-primary-600 text-white rounded-full flex items-center justify-center text-xs font-bold mr-3">3</div>
-                        <h3 className="font-semibold">Today</h3>
-                      </div>
-                      <p className="text-gray-700 pl-9">Nepal's leading crowdfunding platform with over 120,000 donors, supporting thousands of campaigns and making real impact in communities throughout the country.</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-          <Team />
-          
-          {/* Our Values */}
-          <motion.div 
-            className="mb-20"
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            viewport={{ once: true }}
-          >
-            <h2 className="text-3xl font-poppins font-bold mb-8 text-center">Our Core Values</h2>
-            <div className="grid md:grid-cols-3 gap-6">
+          </div>
+        </div>
+
+        {/* Core Values Section */}
+        <div className="py-20 bg-white dark:bg-gray-900">
+          <div className="container mx-auto px-4 max-w-6xl">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              viewport={{ once: true }}
+              className="text-center mb-16"
+            >
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
+                What We Stand For
+              </h2>
+              <p className="text-lg text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
+                Simple principles that guide how we build and run this platform
+              </p>
+            </motion.div>
+            
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {aboutContent.values.map((value, index) => (
                 <motion.div 
                   key={index} 
-                  className="bg-white p-8 rounded-xl shadow-md border-t-4 border-primary-600"
-                  initial={{ opacity: 0, y: 20 }}
+                  className="bg-gray-50 dark:bg-gray-800 p-8 rounded-2xl hover:shadow-lg transition-all group"
+                  initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                   viewport={{ once: true }}
                 >
-                  <div className="h-14 w-14 bg-primary-100 text-primary-600 flex items-center justify-center rounded-full mb-4">
-                    <i className={`ri-heart-line text-2xl`}></i>
+                  <div className="w-14 h-14 bg-[#8B2325]/10 rounded-xl flex items-center justify-center mb-6 group-hover:bg-[#8B2325] transition-colors">
+                    <Heart className="w-7 h-7 text-[#8B2325] group-hover:text-white transition-colors" />
                   </div>
-                  <h3 className="text-xl font-semibold mb-3">{value.title}</h3>
-                  <p className="text-gray-700">{value.description}</p>
+                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">{value.title}</h3>
+                  <p className="text-gray-600 dark:text-gray-300 leading-relaxed">{value.description}</p>
                 </motion.div>
               ))}
             </div>
-          </motion.div>
-          
-          {/* Platform Fee Section */}
-          <motion.div 
-            className="mb-20 bg-gradient-to-r from-primary-600 to-primary-800 rounded-xl overflow-hidden text-white"
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            viewport={{ once: true }}
-          >
-            <div className="grid md:grid-cols-2 gap-8">
-              <div className="p-8 md:p-12">
-                <h2 className="text-3xl font-poppins font-bold mb-4">How We Sustain Our Platform</h2>
-                <p className="mb-6 text-primary-100">
-                  Sahayog Nepal operates with a flexible fee model that allows us to maintain our platform while ensuring maximum impact for campaigns.
-                </p>
-                <div className="space-y-4 mb-8">
-                  <div className="flex">
-                    <div className="flex-shrink-0 h-10 w-10 bg-white/20 rounded-full flex items-center justify-center mr-3">
-                      <i className="ri-check-line text-xl"></i>
-                    </div>
-                    <div>
-                      <h3 className="font-semibold mb-1">Optional Platform Fee</h3>
-                      <p className="text-primary-100">Donors can choose to add a tip (2.5% to 100%) to support our operations</p>
-                    </div>
-                  </div>
-                  <div className="flex">
-                    <div className="flex-shrink-0 h-10 w-10 bg-white/20 rounded-full flex items-center justify-center mr-3">
-                      <i className="ri-check-line text-xl"></i>
-                    </div>
-                    <div>
-                      <h3 className="font-semibold mb-1">Transparent Pricing</h3>
-                      <p className="text-primary-100">No hidden costs or charges for campaign creators</p>
-                    </div>
-                  </div>
-                  <div className="flex">
-                    <div className="flex-shrink-0 h-10 w-10 bg-white/20 rounded-full flex items-center justify-center mr-3">
-                      <i className="ri-check-line text-xl"></i>
-                    </div>
-                    <div>
-                      <h3 className="font-semibold mb-1">Secure Payment Processing</h3>
-                      <p className="text-primary-100">Industry-standard security to protect all transactions</p>
-                    </div>
-                  </div>
-                </div>
-                <a href="/start-campaign" className="inline-block bg-white text-primary-800 py-3 px-6 rounded-lg font-medium hover:bg-primary-50 transition-colors">
-                  Start Fundraising
-                </a>
-              </div>
-              <div className="hidden md:flex items-center justify-center bg-white/10 p-10">
-                <img 
-                  src="https://images.unsplash.com/photo-1633158829585-23ba8f7c8caf" 
-                  alt="Digital payment illustration" 
-                  className="max-h-80 rounded-lg shadow-xl"
-                />
-              </div>
-            </div>
-          </motion.div>
-          
-          {/* FAQ Section */}
-          <motion.div 
-            className="mb-20"
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            viewport={{ once: true }}
-          >
-            <h2 className="text-3xl font-poppins font-bold mb-8 text-center">Frequently Asked Questions</h2>
+          </div>
+        </div>
+
+        {/* FAQ Section */}
+        <div className="py-20 bg-gray-50 dark:bg-gray-800/30">
+          <div className="container mx-auto px-4 max-w-4xl">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              viewport={{ once: true }}
+              className="text-center mb-16"
+            >
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
+                Common Questions
+              </h2>
+              <p className="text-lg text-gray-600 dark:text-gray-400">
+                Everything you need to know about the platform
+              </p>
+            </motion.div>
             
-            <div className="bg-white rounded-xl shadow-md overflow-hidden">
+            <div className="space-y-4">
               {faqItems.map((item, index) => (
                 <motion.div 
                   key={index}
-                  className={`border-b border-gray-200 ${index === faqItems.length - 1 ? 'border-b-0' : ''}`}
-                  initial={{ opacity: 0 }}
-                  whileInView={{ opacity: 1 }}
+                  className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: index * 0.05 }}
                   viewport={{ once: true }}
                 >
                   <details className="group">
-                    <summary className="flex justify-between items-center px-6 py-4 cursor-pointer list-none hover:bg-gray-50 transition-colors">
-                      <span className="font-medium">{item.question}</span>
-                      <span className="transition group-open:rotate-180">
-                        <svg fill="none" height="24" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="24">
-                          <path d="M6 9l6 6 6-6"></path>
-                        </svg>
+                    <summary className="flex justify-between items-center px-8 py-6 cursor-pointer list-none hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                      <span className="font-semibold text-gray-900 dark:text-white">{item.question}</span>
+                      <span className="transition group-open:rotate-180 flex-shrink-0 ml-4">
+                        <ChevronRight className="w-5 h-5 text-gray-500 rotate-90" />
                       </span>
                     </summary>
-                    <p className="px-6 py-4 text-gray-700">{item.answer}</p>
+                    <div className="px-8 py-6 text-gray-600 dark:text-gray-300 leading-relaxed border-t border-gray-100 dark:border-gray-700">
+                      {item.answer}
+                    </div>
                   </details>
                 </motion.div>
               ))}
             </div>
-          </motion.div>
-          
-          {/* Call to Action */}
-          <motion.div 
-            className="bg-primary-50 rounded-xl overflow-hidden"
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            viewport={{ once: true }}
-          >
-            <div className="grid md:grid-cols-2 gap-8">
-              <div className="p-8 md:p-12">
-                <h2 className="text-3xl font-poppins font-bold mb-4">Ready to Make a Difference?</h2>
-                <p className="text-gray-700 mb-8">
-                  Whether you need support for your cause or want to help others, Sahayog Nepal gives you the tools to create meaningful change. Join our growing community today.
-                </p>
-                <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-                  <motion.a 
-                    href="/start-campaign" 
-                    className="py-3 px-8 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors shadow-lg hover:shadow-xl"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    Start a Campaign
-                  </motion.a>
-                  <motion.a 
-                    href="/explore" 
-                    className="py-3 px-8 border border-gray-300 bg-white text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    Explore Campaigns
-                  </motion.a>
+          </div>
+        </div>
+
+        {/* CTA Section */}
+        <div className="py-20 bg-white dark:bg-gray-900">
+          <div className="container mx-auto px-4 max-w-5xl">
+            <motion.div 
+              className="bg-gradient-to-br from-[#8B2325] to-[#b12a2c] rounded-3xl overflow-hidden shadow-2xl"
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              viewport={{ once: true }}
+            >
+              <div className="grid md:grid-cols-2 gap-8 items-center">
+                <div className="p-12">
+                  <h2 className="text-4xl font-bold text-white mb-6">Ready to Start?</h2>
+                  <p className="text-xl text-white/90 mb-8 leading-relaxed">
+                    Create your campaign or support existing ones. Whether you need help or want to give it, start here.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <a 
+                      href="/start-campaign" 
+                      className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-[#8B2325] rounded-xl hover:bg-gray-100 transition-colors font-semibold shadow-lg"
+                    >
+                      Create Campaign
+                      <ArrowRight className="w-5 h-5" />
+                    </a>
+                    <a 
+                      href="/explore" 
+                      className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/10 backdrop-blur-sm text-white border-2 border-white/30 rounded-xl hover:bg-white/20 transition-colors font-semibold"
+                    >
+                      Browse Campaigns
+                    </a>
+                  </div>
+                </div>
+                <div className="hidden md:block h-full">
+                  <img 
+                    src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3" 
+                    alt="Community support" 
+                    className="h-full w-full object-cover"
+                  />
                 </div>
               </div>
-              <div className="hidden md:block">
-                <img 
-                  src="https://images.unsplash.com/photo-1469571486292-b53601021a68" 
-                  alt="People collaborating" 
-                  className="h-full w-full object-cover"
-                />
-              </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </div>
         </div>
       </div>
     </>

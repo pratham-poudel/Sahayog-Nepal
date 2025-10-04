@@ -36,72 +36,15 @@ export const stats = [
 export const teamMembers = [
   {
     id: 1,
-    name: "Anisha Poudel",
-    role: "Founder & CEO",
-    bio: "With over 10 years of experience in social enterprise, Anisha founded Sahayog Nepal to bridge the gap between those who need help and those who can provide it.",
-    image: "https://randomuser.me/api/portraits/women/23.jpg",
+    name: "Pratham Poudel",
+    role: "Founder & Chief Everything Officer",
+    bio: "A 2nd year BTech student from Chandrauta, Kapilvastu, currently based in Kathmandu. Pratham single-handedly built and manages Sahayog Nepal, handling everything from database administration, frontend and backend development, DevOps, to business operations. Driven by a vision to make crowdfunding accessible to every Nepali in need.",
+    image: "https://randomuser.me/api/portraits/men/32.jpg",
+    location: "Chandrauta, Kapilvastu | Kathmandu",
     social: {
       linkedin: "#",
-      twitter: "#",
-      facebook: "#"
-    }
-  },
-  {
-    id: 2,
-    name: "Suraj Thapa",
-    role: "Chief Technology Officer",
-    bio: "Suraj brings his technical expertise from Silicon Valley to help build a world-class donation platform for Nepal.",
-    image: "https://randomuser.me/api/portraits/men/76.jpg",
-    social: {
-      linkedin: "#",
-      twitter: "#",
-      github: "#"
-    }
-  },
-  {
-    id: 3,
-    name: "Priya Maharjan",
-    role: "Community Relations",
-    bio: "With deep roots in various Nepali communities, Priya ensures Sahayog Nepal stays connected to the real needs on the ground.",
-    image: "https://randomuser.me/api/portraits/women/54.jpg",
-    social: {
-      linkedin: "#",
-      instagram: "#",
-      facebook: "#"
-    }
-  },
-  {
-    id: 4,
-    name: "Binod KC",
-    role: "Finance Director",
-    bio: "Binod oversees the financial transparency and accountability that keeps Sahayog Nepal trusted by donors and campaign creators alike.",
-    image: "https://randomuser.me/api/portraits/men/45.jpg",
-    social: {
-      linkedin: "#",
+      github: "#",
       twitter: "#"
-    }
-  },
-  {
-    id: 5,
-    name: "Kabita Rai",
-    role: "Marketing Manager",
-    bio: "Kabita uses her creative talent to ensure worthy campaigns get the visibility they deserve.",
-    image: "https://randomuser.me/api/portraits/women/38.jpg",
-    social: {
-      linkedin: "#",
-      instagram: "#",
-      twitter: "#"
-    }
-  },
-  {
-    id: 6,
-    name: "Dipesh Sharma",
-    role: "Verification Specialist",
-    bio: "Dipesh leads our team that verifies campaign legitimacy, maintaining the trust that's essential to our platform.",
-    image: "https://randomuser.me/api/portraits/men/22.jpg",
-    social: {
-      linkedin: "#",
-      facebook: "#"
     }
   }
 ];
@@ -142,29 +85,29 @@ export const faqItems = [
 ];
 
 export const aboutContent = {
-  mission: "Our mission is to democratize philanthropy in Nepal by connecting those in need with those who can help, creating a transparent, efficient, and impactful platform for social change.",
-  vision: "We envision a Nepal where every community has the resources to thrive, where generosity flows freely across geographic and social boundaries, and where every citizen can participate in building a stronger nation.",
-  history: "Sahayog Nepal was founded in 2021 following the devastating impacts of the COVID-19 pandemic. Seeing how communities came together to help each other despite their own challenges, our founders realized the power of organized giving and created the platform to facilitate this natural generosity in a more structured way.",
+  mission: "To empower every Nepali with a platform to raise funds for causes that matter. Sahayog Nepal bridges the gap between those who need help and those willing to give, creating a transparent and accessible crowdfunding ecosystem built specifically for Nepal.",
+  vision: "A Nepal where financial barriers don't stop worthy causes from getting support. Where a student from a remote village can access the same fundraising tools as someone in Kathmandu. Where community support flows freely through technology.",
+  history: "Sahayog Nepal is a one-person project born from the vision of making crowdfunding accessible to all Nepalis. Built from the ground up by Pratham Poudel, a BTech student who saw the gap in Nepal's fundraising landscape and decided to fill it. Every line of code, every feature, and every design decision comes from a deep understanding of what Nepal needs.",
   values: [
     {
+      title: "Accessibility First",
+      description: "Built with Nepal in mind - from local payment methods to Nepali language support, making crowdfunding accessible to everyone."
+    },
+    {
       title: "Transparency",
-      description: "We believe in complete openness about how funds are raised and used."
+      description: "Complete openness in how the platform works, how funds flow, and how campaigns are managed."
     },
     {
-      title: "Accountability",
-      description: "We hold ourselves and campaign creators to high standards of responsibility."
+      title: "Simplicity",
+      description: "No complex processes or confusing interfaces. Just a straightforward way to raise or donate funds."
     },
     {
-      title: "Inclusivity",
-      description: "We strive to make our platform accessible to all Nepalis regardless of background."
+      title: "Security",
+      description: "Every donation, every rupee, and every data point is protected with industry-standard security measures."
     },
     {
-      title: "Impact",
-      description: "We focus on creating meaningful, measurable change in communities."
-    },
-    {
-      title: "Innovation",
-      description: "We continuously improve our platform to better serve the unique needs of Nepal."
+      title: "Continuous Improvement",
+      description: "Constantly learning from users and evolving to meet the real needs of the Nepali crowdfunding community."
     }
   ]
 };
