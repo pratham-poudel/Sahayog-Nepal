@@ -27,8 +27,8 @@ const bannerSlides = [
       show: true,
       text: "Explore Now",
       link: "/explore?tab=regular", // Can be external URL or internal path
-      bgColor: "bg-white", // Button background color
-      textColor: "text-gray-900", // Button text color
+      bgColor: "bg-black", // Button background color
+      textColor: "text-red-900", // Button text color
       hoverBgColor: "hover:bg-gray-100", // Button hover background
       openInNewTab: false, // Set to true for external links
     },
