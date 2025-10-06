@@ -17,7 +17,7 @@ const KHALTI_API_URL = 'https://a.khalti.com/api/v2';
 const KHALTI_SECRET_KEY = process.env.KHALTI_SECRET_KEY;
 const ESEWA_SECRET_KEY = process.env.ESEWA_SECRET_KEY || '8gBm/:&EnhH.1/q';
 const ESEWA_PRODUCT_CODE = process.env.ESEWA_PRODUCT_CODE || 'EPAYTEST';
-const WEBSITE_URL = process.env.WEBSITE_URL || 'http://localhost:5173';
+const WEBSITE_URL = process.env.WEBSITE_URL || 'http://sahayognepal.org';
 const API_URL = process.env.API_URL || 'http://localhost:5000';
 
 // Fonepay config variables
