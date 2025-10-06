@@ -18,7 +18,7 @@ const KHALTI_SECRET_KEY = process.env.KHALTI_SECRET_KEY;
 const ESEWA_SECRET_KEY = process.env.ESEWA_SECRET_KEY || '8gBm/:&EnhH.1/q';
 const ESEWA_PRODUCT_CODE = process.env.ESEWA_PRODUCT_CODE || 'EPAYTEST';
 const WEBSITE_URL = process.env.WEBSITE_URL || 'http://sahayognepal.org';
-const API_URL = process.env.API_URL || 'http://localhost:5000';
+const API_URL = process.env.API_URL || 'https://sahayog-nepal.onrender.com';
 
 // Fonepay config variables
 const FONEPAY_API_URL = process.env.NODE_ENV === 'production' 
