@@ -1170,8 +1170,17 @@ exports.getRotatingFeaturedCampaigns = async (req, res) => {
         const page = parseInt(req.query.page) || 1;
         const strategy = req.query.strategy || null; // Optional specific strategy selection
         
+        // Calculate the date 10 days ago
+        const tenDaysAgo = new Date();
+        tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
+        
         // Build query object for active and featured campaigns only
-        const query = { status: 'active', featured: true };
+        // Only show campaigns that haven't been expired for more than 10 days
+        const query = { 
+            status: 'active', 
+            featured: true,
+            endDate: { $gte: tenDaysAgo }
+        };
         
         // Add category filter if specified
         if (category && category !== 'All Campaigns') {
@@ -1187,7 +1196,10 @@ exports.getRotatingFeaturedCampaigns = async (req, res) => {
         // If no featured campaigns found, fallback to regular active campaigns
         if (total === 0) {
             console.log('No featured campaigns found, falling back to regular active campaigns');
-            const fallbackQuery = { status: 'active' };
+            const fallbackQuery = { 
+                status: 'active',
+                endDate: { $gte: tenDaysAgo }
+            };
             
             // Add category filter if specified
             if (category && category !== 'All Campaigns') {
@@ -1198,7 +1210,7 @@ exports.getRotatingFeaturedCampaigns = async (req, res) => {
             const skip = (page - 1) * count;
             
             const campaigns = await Campaign.find(fallbackQuery)
-                .populate('creator', 'name email profilePicture isPremiumAndVerified')
+                .populate('creator', 'name email profilePicture profilePictureUrl isPremiumAndVerified')
                 .sort({ createdAt: -1 }) // Sort by newest first as fallback
                 .skip(skip)
                 .limit(count)
@@ -1286,8 +1298,9 @@ exports.getRotatingFeaturedCampaigns = async (req, res) => {
                             $project: {
                                 name: 1,
                                 email: 1,
-                                isPremiumAndVerified: 1,
-                                profilePicture: 1
+                                profilePicture: 1,
+                                profilePictureUrl: 1,
+                                isPremiumAndVerified: 1
                             }
                         }
                     ]

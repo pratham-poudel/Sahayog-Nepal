@@ -40,6 +40,7 @@ const withdrawalRoutes = require('./routes/withdrawalRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 const statsRoutes = require('./routes/statsRoutes');
 const imageProxy = require('./routes/imageProxy');
+const exploreRoutes = require('./routes/exploreRoutes');
 
 
 app.use('/api/users', userRoutes);
@@ -54,6 +55,7 @@ app.use('/api/withdrawals', withdrawalRoutes);
 app.use('/api/uploads', uploadRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/proxy', imageProxy);
+app.use('/api/explore', exploreRoutes);
 
 // Basic route for testing
 app.get('/', (req, res) => {

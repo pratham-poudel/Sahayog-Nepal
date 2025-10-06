@@ -20,7 +20,7 @@ import ProtectedRoute from "./components/ui/ProtectedRoute";
 
 // Pages
 import Home from "./pages/Home";
-import Explore from "./pages/Explore";
+import Explore from "./pages/ExploreNew";
 import CategoryExplore from "./pages/CategoryExplore";
 import CampaignDetails from "./pages/CampaignDetails";
 import StartCampaign from "./pages/StartCampaign";

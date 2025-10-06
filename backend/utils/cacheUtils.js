@@ -16,7 +16,9 @@ const clearCampaignCaches = async () => {
             'categoryCampaigns:*', 
             'campaignById:*',
             'featuredRotation:*',
-            'hierarchical_category:*'
+            'hierarchical_category:*',
+            'explore:regular:*',
+            'explore:urgent:*'
         ];
 
         for (const pattern of patterns) {
