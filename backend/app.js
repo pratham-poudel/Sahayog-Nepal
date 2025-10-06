@@ -15,7 +15,7 @@ const mongoose = require('mongoose');
 
 // Configure CORS with more explicit options
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://127.0.0.1:9000','https://s9wvbqkq-5173.inc1.devtunnels.ms/','https://s9wvbqkq-5173.inc1.devtunnels.ms', 'http://192.168.1.77:5173'],
+  origin: ['http://localhost:5173','sahayognepal.org','https://sahayognepal.org','https://www.sahayognepal.org'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   exposedHeaders: ['Content-Disposition'],
