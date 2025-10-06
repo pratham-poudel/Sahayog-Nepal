@@ -1747,7 +1747,7 @@ const UserDashboard = () => {
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                   {(Array.isArray(donations) ? donations : [])
-                    .filter(donation => donation && donation.campaignId) // Only show valid donations with valid campaigns
+                    .filter(donation => donation) // Only filter out null donations, allow donations with null campaignId
                     .map((donation) => (
                     <tr key={donation._id}>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -1768,7 +1768,7 @@ const UserDashboard = () => {
                           )}
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900 dark:text-white">
-                              {donation.campaignId?.title || "Unknown Campaign"}
+                              {donation.campaignId?.title || "Deleted Campaign"}
                             </div>
                           </div>
                         </div>
