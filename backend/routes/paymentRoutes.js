@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { protect, isAdmin } = require('../middlewares/authMiddleware');
 const cacheMiddleware = require('../middlewares/cacheMiddleware');
+const { donationLimiter, publicReadLimiter } = require('../middlewares/advancedRateLimiter');
 const { 
   initiateKhaltiPayment,
   verifyKhaltiPayment,
@@ -18,18 +19,23 @@ const {
 
 } = require('../controllers/paymentController');
 
-// Public routes - Allow guest donations
-router.post('/khalti/initiate', initiateKhaltiPayment);
+// Public routes - Allow guest donations with rate limiting
+router.post('/khalti/initiate', donationLimiter, initiateKhaltiPayment);
 router.post('/khalti/verify', verifyKhaltiPayment);
 router.get('/khalti/callback', handleKhaltiCallback);
 
-// eSewa routes - Allow guest donations
-router.post('/esewa/initiate', initiateEsewaPayment);
+// eSewa routes - Allow guest donations with rate limiting
+router.post('/esewa/initiate', donationLimiter, initiateEsewaPayment);
 router.post('/esewa/verify', verifyEsewaPayment);
 router.get('/esewa/callback', handleEsewaCallback);
 
+// Fonepay routes - Allow guest donations with rate limiting
+router.post('/fonepay/initiate', donationLimiter, initiateFonepayPayment);
+router.post('/fonepay/status', checkFonepayStatus);
+router.get('/fonepay/callback', handleFonepayCallback);
+
 // Allow payment verification for both authenticated and guest users
-router.get('/:id', getPaymentById);
+router.get('/:id', publicReadLimiter, getPaymentById);
 
 // Protected routes (require login)
 router.get('/user/payments', protect, getUserPayments);

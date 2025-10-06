@@ -20,6 +20,11 @@ const {
 } = require('../controllers/campaignController');
 const { protect, admin } = require('../middlewares/authMiddleware');
 const { turnstileMiddleware } = require('../middlewares/turnstileMiddleware');
+const { 
+    campaignCreationLimiter, 
+    searchLimiter, 
+    publicReadLimiter 
+} = require('../middlewares/advancedRateLimiter');
 
 // Public routes
 const generateCampaignsCacheKey = (req) => {
@@ -55,11 +60,11 @@ router.get('/featured/rotation', cacheMiddleware((req) => {
 }, 60), getRotatingFeaturedCampaigns); // Cache for 60 seconds
 
 router.get('/category/:category',cacheMiddleware((req) => `categoryCampaigns:${req.params.category}`), getCampaignsByCategory);
-router.get('/search/:searchTerm', searchCampaigns);
-router.get('/:id',cacheMiddleware((req) => `campaignById:${req.params.id}`) ,getCampaignById);
+router.get('/search/:searchTerm', searchLimiter, searchCampaigns);
+router.get('/:id', publicReadLimiter, cacheMiddleware((req) => `campaignById:${req.params.id}`) ,getCampaignById);
 
 // Protected routes for campaign creators
-router.post('/', protect, turnstileMiddleware, createCampaign);
+router.post('/', protect, campaignCreationLimiter, turnstileMiddleware, createCampaign);
 router.put('/:id', protect, turnstileMiddleware, updateCampaign);
 
 router.get('/user/campaigns', protect,getUserCampaigns);

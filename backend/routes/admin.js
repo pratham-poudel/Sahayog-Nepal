@@ -13,6 +13,11 @@ const { sendVerificationEmail } = require('../utils/SendVerificationEmail');
 const { clearCampaignCaches } = require('../utils/cacheUtils');
 const { sendAdminOtpEmail } = require('../utils/sendAdminOtpEmail');
 const redis = require('../utils/RedisClient');
+const { 
+    adminLimiter, 
+    strictAuthLimiter, 
+    exportLimiter 
+} = require('../middlewares/advancedRateLimiter');
 
 // Import email abuse monitoring routes
 const emailAbuseMonitoring = require('./emailAbuseMonitoring');
@@ -35,7 +40,7 @@ router.get('/check-auth', adminAuth, (req, res) => {
 });
 
 // Step 1: Validate Access Code
-router.post('/validate-access-code', async (req, res) => {
+router.post('/validate-access-code', strictAuthLimiter, async (req, res) => {
     try {
         const { accessCode } = req.body;
         const VALID_ACCESS_CODE = '250529';
@@ -68,7 +73,7 @@ router.post('/validate-access-code', async (req, res) => {
 });
 
 // Step 2: Verify Admin Credentials and Send OTP
-router.post('/verify-credentials', async (req, res) => {
+router.post('/verify-credentials', strictAuthLimiter, async (req, res) => {
     try {
         const { username, password } = req.body;
         
@@ -128,7 +133,7 @@ router.post('/verify-credentials', async (req, res) => {
 });
 
 // Step 3: Verify OTP and Complete Login
-router.post('/verify-otp-login', async (req, res) => {
+router.post('/verify-otp-login', strictAuthLimiter, async (req, res) => {
     try {
         const { adminId, otp } = req.body;
         
@@ -1560,7 +1565,7 @@ router.post('/campaigns/bulk-action', adminAuth, async (req, res) => {
 });
 
 // Export data endpoints
-router.get('/export/campaigns', adminAuth, async (req, res) => {
+router.get('/export/campaigns', adminAuth, exportLimiter, async (req, res) => {
     try {
         const { format = 'json', status } = req.query;
         

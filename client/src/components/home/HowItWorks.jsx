@@ -226,7 +226,7 @@ const HowItWorks = () => {
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-green-500 text-lg">✓</span>
-                <span>5% platform fee</span>
+                <span>0% platform fee</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-green-500 text-lg">✓</span>

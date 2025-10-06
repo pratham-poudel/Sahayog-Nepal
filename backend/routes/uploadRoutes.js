@@ -4,6 +4,7 @@
 const express = require('express');
 const router = express.Router();
 const { protect } = require('../middlewares/authMiddleware');
+const { uploadLimiter } = require('../middlewares/advancedRateLimiter');
 const { 
   generatePresignedUploadUrl, 
   generateObjectKey,
@@ -14,7 +15,7 @@ const {
  * Generate presigned URL for file upload
  * POST /api/upload/presigned-url
  */
-router.post('/presigned-url', protect, async (req, res) => {
+router.post('/presigned-url', protect, uploadLimiter, async (req, res) => {
   try {
     const { fileType, contentType, originalName, metadata = {} } = req.body;
     const userId = req.user?.id;

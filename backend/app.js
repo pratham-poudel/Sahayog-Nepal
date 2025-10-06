@@ -27,6 +27,10 @@ app.use(logger('dev'));
 app.use(express.urlencoded({extended:true}));
 app.use(cookieParser());
 
+// Apply global rate limiting to all API routes
+const { globalApiLimiter } = require('./middlewares/advancedRateLimiter');
+app.use('/api/', globalApiLimiter);
+
 // Import routes
 const userRoutes = require('./routes/userRoutes');
 const campaignRoutes = require('./routes/campaignRoutes');
@@ -59,7 +63,7 @@ app.use('/api/explore', exploreRoutes);
 
 // Basic route for testing
 app.get('/', (req, res) => {
-    res.json({ message: 'Welcome to NepalCrowdRise API' });
+    res.json({ message: 'Welcome to Sahayog Nepal API System' });
 });
 
 // Error handling middleware

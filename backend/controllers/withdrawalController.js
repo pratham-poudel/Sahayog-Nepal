@@ -3,6 +3,7 @@ const Campaign = require('../models/Campaign');
 const BankAccount = require('../models/BankAccount');
 const mongoose = require('mongoose');
 const { sendWithdrawalRequestEmail,sendWithdrawStatusEmail } = require('../utils/SendWithDrawEmail');
+const { clearSpecificCampaignCache } = require('../utils/cacheUtils');
 
 
 // Get withdrawal summary for a campaign
@@ -438,7 +439,23 @@ const processWithdrawalRequest = async (req, res) => {
       const campaign = request.campaign;
       campaign.amountWithdrawn += request.requestedAmount;
       campaign.pendingWithdrawals -= request.requestedAmount;
+      
+      // Auto-create campaign update for transparency
+      const finalAmount = request.requestedAmount - (processingFee || 0);
+      const updateContent = `A withdrawal of NPR ${request.requestedAmount.toLocaleString()} has been successfully processed and transferred to the campaign creator's bank account.`
+        + (processingFee && processingFee > 0 ? ` Processing fee: NPR ${processingFee.toLocaleString()}, Final amount transferred: NPR ${finalAmount.toLocaleString()}.` : '')
+        + ` This ensures transparency in how the funds raised are being utilized for the campaign's stated purpose.`;
+      
+      campaign.updates.push({
+        date: new Date(),
+        title: 'Withdrawal Completed',
+        content: updateContent
+      });
+      
       await campaign.save();
+      
+      // Clear campaign cache to ensure updates are visible immediately
+      await clearSpecificCampaignCache(campaign._id);
       
     } else if (action === 'failed') {
       request.adminResponse = {
