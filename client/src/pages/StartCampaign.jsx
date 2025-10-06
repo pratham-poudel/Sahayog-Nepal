@@ -1142,7 +1142,7 @@ const StartCampaign = () => {
                             </div>
                             <div>
                               <h4 className="text-sm font-semibold text-blue-800 dark:text-blue-200 mb-1">
-                                Professional Note
+                               Important Note
                               </h4>
                               <p className="text-sm text-blue-700 dark:text-blue-300">
                                 Upload supporting documents to increase campaign authenticity and trust. 

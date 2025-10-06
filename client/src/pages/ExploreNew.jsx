@@ -3,8 +3,85 @@ import { useLocation } from 'wouter';
 import useExplore from '../hooks/useExplore';
 import useCategories from '../hooks/useCategories';
 import CampaignCard from '../components/campaigns/CampaignCard';
-import { Search, Filter, X, ArrowUpDown, Loader2, ChevronDown } from 'lucide-react';
+import { Search, Filter, X, ArrowUpDown, Loader2, ChevronDown, Heart, TrendingUp, Users, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+// Banner data - can be fetched from API in the future
+// Full control over all banner elements
+const bannerSlides = [
+  {
+    id: 1,
+    title: "Make a Difference Today",
+    titleColor: "text-white", // Tailwind color class
+    subtitle: "Every contribution counts towards changing lives",
+    subtitleColor: "text-white/90", // Tailwind color class
+    gradient: "from-emerald-600 to-teal-600",
+    icon: Heart,
+    iconColor: "text-white", // Icon color
+    badgeText: "Featured", // Badge text
+    badgeColor: "bg-white/20 text-white", // Badge background and text color
+    illustration: "❤️",
+    illustrationOpacity: "opacity-20 md:opacity-30", // Control illustration visibility
+    bgImage: null, // Add your image URL here, e.g., "https://example.com/image.jpg"
+    button: {
+      show: true,
+      text: "Explore Now",
+      link: "/explore?tab=regular", // Can be external URL or internal path
+      bgColor: "bg-white", // Button background color
+      textColor: "text-gray-900", // Button text color
+      hoverBgColor: "hover:bg-gray-100", // Button hover background
+      openInNewTab: false, // Set to true for external links
+    },
+  },
+  {
+    id: 2,
+    title: "Trending Campaigns",
+    titleColor: "text-white",
+    subtitle: "Discover the most impactful campaigns right now",
+    subtitleColor: "text-blue-100",
+    gradient: "from-blue-600 to-indigo-600",
+    icon: TrendingUp,
+    iconColor: "text-yellow-300",
+    badgeText: "Hot 🔥",
+    badgeColor: "bg-yellow-400/30 text-yellow-100",
+    illustration: "🚀",
+    illustrationOpacity: "opacity-25",
+    bgImage: null,
+    button: {
+      show: true,
+      text: "View Trending",
+      link: "/explore?sortBy=mostFunded",
+      bgColor: "bg-yellow-400",
+      textColor: "text-blue-900",
+      hoverBgColor: "hover:bg-yellow-300",
+      openInNewTab: false,
+    },
+  },
+  {
+    id: 3,
+    title: "Join Our Community",
+    titleColor: "text-white",
+    subtitle: "Thousands of donors making the world better together",
+    subtitleColor: "text-pink-100",
+    gradient: "from-purple-600 to-pink-600",
+    icon: Users,
+    iconColor: "text-white",
+    badgeText: "Community",
+    badgeColor: "bg-white/20 text-white",
+    illustration: "🤝",
+    illustrationOpacity: "opacity-30",
+    bgImage: "https://kettocdn.gumlet.io/media/banner/0/99/image/aH9Y3P69FXMtBeGO47lzuNcDYGLLYeGOGKVTHucQ.png?w=1536&dpr=1.3",
+    button: {
+      show: true,
+      text: "Learn More",
+      link: "https://example.com/about", // External link example
+      bgColor: "bg-pink-500",
+      textColor: "text-white",
+      hoverBgColor: "hover:bg-pink-400",
+      openInNewTab: true, // Opens in new tab
+    },
+  },
+];
 
 // Skeleton loader for campaigns
 const CampaignCardSkeleton = () => (
@@ -21,6 +98,160 @@ const CampaignCardSkeleton = () => (
     </div>
   </div>
 );
+
+// Banner Component
+const ExploreBanner = () => {
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+
+  useEffect(() => {
+    if (isPaused) return;
+    
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % bannerSlides.length);
+    }, 5000);
+
+    return () => clearInterval(timer);
+  }, [isPaused]);
+
+  const goToSlide = (index) => {
+    setCurrentSlide(index);
+  };
+
+  const nextSlide = () => {
+    setCurrentSlide((prev) => (prev + 1) % bannerSlides.length);
+  };
+
+  const prevSlide = () => {
+    setCurrentSlide((prev) => (prev - 1 + bannerSlides.length) % bannerSlides.length);
+  };
+
+  return (
+    <div 
+      className="relative w-full h-64 rounded-2xl overflow-hidden shadow-xl mb-8"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+    >
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={currentSlide}
+          initial={{ opacity: 0, x: 100 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -100 }}
+          transition={{ duration: 0.5 }}
+          className="absolute inset-0"
+        >
+          {/* Background Image Layer */}
+          {bannerSlides[currentSlide].bgImage && (
+            <div 
+              className="absolute inset-0 bg-cover bg-center"
+              style={{ backgroundImage: `url(${bannerSlides[currentSlide].bgImage})` }}
+            />
+          )}
+          
+          {/* Gradient Overlay Layer */}
+          <div 
+            className={`absolute inset-0 ${
+              bannerSlides[currentSlide].bgImage 
+                ? `bg-gradient-to-r ${bannerSlides[currentSlide].gradient} bg-opacity-80`
+                : `bg-gradient-to-r ${bannerSlides[currentSlide].gradient}`
+            }`}
+            style={bannerSlides[currentSlide].bgImage ? { opacity: 0.85 } : {}}
+          />
+
+          <div className="relative h-full flex items-center justify-between px-12">
+            {/* Left Content */}
+            <div className="flex-1 z-10">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="space-y-4"
+              >
+                {/* Badge */}
+                <div className={`inline-flex items-center gap-2 backdrop-blur-sm px-4 py-2 rounded-full ${bannerSlides[currentSlide].badgeColor}`}>
+                  {(() => {
+                    const IconComponent = bannerSlides[currentSlide].icon;
+                    return IconComponent ? <IconComponent className={`w-5 h-5 ${bannerSlides[currentSlide].iconColor}`} /> : null;
+                  })()}
+                  <span className="text-sm font-medium">{bannerSlides[currentSlide].badgeText}</span>
+                </div>
+                
+                {/* Title */}
+                <h2 className={`text-4xl md:text-5xl font-bold leading-tight ${bannerSlides[currentSlide].titleColor}`}>
+                  {bannerSlides[currentSlide].title}
+                </h2>
+                
+                {/* Subtitle */}
+                <p className={`text-lg md:text-xl max-w-xl ${bannerSlides[currentSlide].subtitleColor}`}>
+                  {bannerSlides[currentSlide].subtitle}
+                </p>
+                
+                {/* Button */}
+                {bannerSlides[currentSlide].button?.show && (
+                  <a
+                    href={bannerSlides[currentSlide].button.link}
+                    target={bannerSlides[currentSlide].button.openInNewTab ? "_blank" : "_self"}
+                    rel={bannerSlides[currentSlide].button.openInNewTab ? "noopener noreferrer" : undefined}
+                    className={`inline-block px-6 py-3 rounded-lg font-semibold transition-colors shadow-lg ${bannerSlides[currentSlide].button.bgColor} ${bannerSlides[currentSlide].button.textColor} ${bannerSlides[currentSlide].button.hoverBgColor}`}
+                  >
+                    {bannerSlides[currentSlide].button.text}
+                  </a>
+                )}
+              </motion.div>
+            </div>
+
+            {/* Right Illustration */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.3 }}
+              className={`flex-shrink-0 text-9xl ${bannerSlides[currentSlide].illustrationOpacity}`}
+            >
+              {bannerSlides[currentSlide].illustration}
+            </motion.div>
+          </div>
+
+          {/* Decorative Elements */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
+        </motion.div>
+      </AnimatePresence>
+
+      {/* Navigation Arrows */}
+      <button
+        onClick={prevSlide}
+        className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white p-2 rounded-full transition-colors z-20"
+        aria-label="Previous slide"
+      >
+        <ChevronLeft className="w-6 h-6" />
+      </button>
+      <button
+        onClick={nextSlide}
+        className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white p-2 rounded-full transition-colors z-20"
+        aria-label="Next slide"
+      >
+        <ChevronRight className="w-6 h-6" />
+      </button>
+
+      {/* Dots Indicator */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+        {bannerSlides.map((_, index) => (
+          <button
+            key={index}
+            onClick={() => goToSlide(index)}
+            className={`transition-all ${
+              index === currentSlide
+                ? 'w-8 bg-white'
+                : 'w-2 bg-white/50 hover:bg-white/75'
+            } h-2 rounded-full`}
+            aria-label={`Go to slide ${index + 1}`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
 
 const Explore = () => {
   const [location] = useLocation();
@@ -252,13 +483,17 @@ const Explore = () => {
   return (
     <div className="min-h-screen bg-gray-50 pt-20 pb-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+         {/* Banner Section */}
+        <ExploreBanner />
         {/* Header Section */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Explore Campaigns</h1>
+        <div className="mb-6">
+          <h1 className="text-4xl font-bold text-red-900 mb-2">Explore Campaigns</h1>
           <p className="text-gray-600">
             Discover campaigns that need your support
           </p>
         </div>
+
+       
 
         {/* Tabs */}
         <div className="mb-6 border-b border-gray-200">
