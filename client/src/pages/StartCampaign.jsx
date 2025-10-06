@@ -14,6 +14,219 @@ import UploadProgressModal from '../components/common/UploadProgressModal';
 import uploadService, { uploadCampaignCover, uploadCampaignImages, uploadCampaignVerification } from '../services/uploadService';
 import axios from 'axios';
 import { API_URL as CONFIG_API_URL, TURNSTILE_CONFIG } from '../config/index.js';
+import { Heart, TrendingUp, Users, ChevronLeft, ChevronRight, Rocket } from 'lucide-react';
+
+// Banner data for Start Campaign page
+const campaignBannerSlides = [
+  {
+    id: 1,
+    title: "Start Your Journey",
+    titleColor: "text-white",
+    subtitle: "Create a campaign and make a real difference in someone's life",
+    subtitleColor: "text-white/90",
+    gradient: "from-emerald-600 to-teal-600",
+    icon: Heart,
+    iconColor: "text-white",
+    badgeText: "Easy Setup",
+    badgeColor: "bg-white/20 text-white",
+    illustration: "🌟",
+    illustrationOpacity: "opacity-20 md:opacity-30",
+    bgImage: null,
+    button: {
+      show: false,
+    },
+  },
+  {
+    id: 2,
+    title: "Share Your Story",
+    titleColor: "text-white",
+    subtitle: "Connect with thousands of generous donors ready to support your cause",
+    subtitleColor: "text-blue-100",
+    gradient: "from-blue-600 to-indigo-600",
+    icon: Users,
+    iconColor: "text-yellow-300",
+    badgeText: "Community Support",
+    badgeColor: "bg-yellow-400/30 text-yellow-100",
+    illustration: "💝",
+    illustrationOpacity: "opacity-25",
+    bgImage: null,
+    button: {
+      show: false,
+    },
+  },
+  {
+    id: 3,
+    title: "Make an Impact",
+    titleColor: "text-white",
+    subtitle: "Join thousands of successful campaigns helping people across Nepal",
+    subtitleColor: "text-pink-100",
+    gradient: "from-purple-600 to-pink-600",
+    icon: Rocket,
+    iconColor: "text-white",
+    badgeText: "Success Stories",
+    badgeColor: "bg-white/20 text-white",
+    illustration: "🚀",
+    illustrationOpacity: "opacity-30",
+    bgImage: "https://kettocdn.gumlet.io/media/banner/0/99/image/aH9Y3P69FXMtBeGO47lzuNcDYGLLYeGOGKVTHucQ.png?w=1536&dpr=1.3",
+    button: {
+      show: false,
+    },
+  },
+];
+
+// Campaign Banner Component
+const CampaignBanner = () => {
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+
+  useEffect(() => {
+    if (isPaused) return;
+    
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % campaignBannerSlides.length);
+    }, 5000);
+
+    return () => clearInterval(timer);
+  }, [isPaused]);
+
+  const goToSlide = (index) => {
+    setCurrentSlide(index);
+  };
+
+  const nextSlide = () => {
+    setCurrentSlide((prev) => (prev + 1) % campaignBannerSlides.length);
+  };
+
+  const prevSlide = () => {
+    setCurrentSlide((prev) => (prev - 1 + campaignBannerSlides.length) % campaignBannerSlides.length);
+  };
+
+  return (
+    <div 
+      className="relative w-full h-64 rounded-2xl overflow-hidden shadow-xl mb-8"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+    >
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={currentSlide}
+          initial={{ opacity: 0, x: 100 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -100 }}
+          transition={{ duration: 0.5 }}
+          className="absolute inset-0"
+        >
+          {/* Background Image Layer */}
+          {campaignBannerSlides[currentSlide].bgImage && (
+            <div 
+              className="absolute inset-0 bg-cover bg-center"
+              style={{ backgroundImage: `url(${campaignBannerSlides[currentSlide].bgImage})` }}
+            />
+          )}
+          
+          {/* Gradient Overlay Layer */}
+          <div 
+            className={`absolute inset-0 ${
+              campaignBannerSlides[currentSlide].bgImage 
+                ? `bg-gradient-to-r ${campaignBannerSlides[currentSlide].gradient} bg-opacity-80`
+                : `bg-gradient-to-r ${campaignBannerSlides[currentSlide].gradient}`
+            }`}
+            style={campaignBannerSlides[currentSlide].bgImage ? { opacity: 0.85 } : {}}
+          />
+
+          <div className="relative h-full flex items-center justify-between px-12">
+            {/* Left Content */}
+            <div className="flex-1 z-10">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="space-y-4"
+              >
+                {/* Badge */}
+                <div className={`inline-flex items-center gap-2 backdrop-blur-sm px-4 py-2 rounded-full ${campaignBannerSlides[currentSlide].badgeColor}`}>
+                  {(() => {
+                    const IconComponent = campaignBannerSlides[currentSlide].icon;
+                    return IconComponent ? <IconComponent className={`w-5 h-5 ${campaignBannerSlides[currentSlide].iconColor}`} /> : null;
+                  })()}
+                  <span className="text-sm font-medium">{campaignBannerSlides[currentSlide].badgeText}</span>
+                </div>
+                
+                {/* Title */}
+                <h2 className={`text-4xl md:text-5xl font-bold leading-tight ${campaignBannerSlides[currentSlide].titleColor}`}>
+                  {campaignBannerSlides[currentSlide].title}
+                </h2>
+                
+                {/* Subtitle */}
+                <p className={`text-lg md:text-xl max-w-xl ${campaignBannerSlides[currentSlide].subtitleColor}`}>
+                  {campaignBannerSlides[currentSlide].subtitle}
+                </p>
+                
+                {/* Button */}
+                {campaignBannerSlides[currentSlide].button?.show && (
+                  <a
+                    href={campaignBannerSlides[currentSlide].button.link}
+                    target={campaignBannerSlides[currentSlide].button.openInNewTab ? "_blank" : "_self"}
+                    rel={campaignBannerSlides[currentSlide].button.openInNewTab ? "noopener noreferrer" : undefined}
+                    className={`inline-block px-6 py-3 rounded-lg font-semibold transition-colors shadow-lg ${campaignBannerSlides[currentSlide].button.bgColor} ${campaignBannerSlides[currentSlide].button.textColor} ${campaignBannerSlides[currentSlide].button.hoverBgColor}`}
+                  >
+                    {campaignBannerSlides[currentSlide].button.text}
+                  </a>
+                )}
+              </motion.div>
+            </div>
+
+            {/* Right Illustration */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.3 }}
+              className={`flex-shrink-0 text-9xl ${campaignBannerSlides[currentSlide].illustrationOpacity}`}
+            >
+              {campaignBannerSlides[currentSlide].illustration}
+            </motion.div>
+          </div>
+
+          {/* Decorative Elements */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
+        </motion.div>
+      </AnimatePresence>
+
+      {/* Navigation Arrows */}
+      <button
+        onClick={prevSlide}
+        className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white p-2 rounded-full transition-colors z-20"
+        aria-label="Previous slide"
+      >
+        <ChevronLeft className="w-6 h-6" />
+      </button>
+      <button
+        onClick={nextSlide}
+        className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white p-2 rounded-full transition-colors z-20"
+        aria-label="Next slide"
+      >
+        <ChevronRight className="w-6 h-6" />
+      </button>
+
+      {/* Dots Indicator */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+        {campaignBannerSlides.map((_, index) => (
+          <button
+            key={index}
+            onClick={() => goToSlide(index)}
+            className={`transition-all ${
+              index === currentSlide
+                ? 'w-8 bg-white'
+                : 'w-2 bg-white/50 hover:bg-white/75'
+            } h-2 rounded-full`}
+            aria-label={`Go to slide ${index + 1}`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
 
 const StartCampaign = () => {
   const [, setLocation] = useLocation();
@@ -686,28 +899,8 @@ const StartCampaign = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <div className="relative text-center mb-12 rounded-2xl overflow-hidden min-h-[250px] md:min-h-[300px]">
-              {/* Background Image */}
-              <img 
-                src="https://kettocdn.gumlet.io/media/banner/0/99/image/aH9Y3P69FXMtBeGO47lzuNcDYGLLYeGOGKVTHucQ.png?w=1536&dpr=1.3"
-                alt="Campaign Background"
-                className="absolute inset-0 w-full h-full object-cover object-center"
-              />
-              
-              {/* Overlay for better text readability */}
-              <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/20 to-black/40 dark:from-black/60 dark:via-black/40 dark:to-black/60"></div>
-              
-              {/* Content */}
-              <div className="relative z-10 flex flex-col justify-center items-center h-full py-12 md:py-16 px-4 md:px-6">
-                <h1 className="text-3xl md:text-4xl lg:text-5xl font-poppins font-bold mb-3 md:mb-4 text-white drop-shadow-2xl text-center leading-tight">
-                  Start Your Campaign
-                </h1>
-                <p className="text-base md:text-lg text-white/95 max-w-xl md:max-w-2xl mx-auto drop-shadow-lg text-center leading-relaxed">
-                  Share your story, connect with supporters, and make a meaningful impact. 
-                  Create your fundraising campaign in just a few simple steps.
-                </p>
-              </div>
-            </div>
+            {/* Dynamic Banner Component */}
+            <CampaignBanner />
             
             {/* Auto-save indicator */}
             <AnimatePresence>
