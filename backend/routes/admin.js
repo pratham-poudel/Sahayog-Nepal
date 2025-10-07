@@ -183,11 +183,13 @@ router.post('/verify-otp-login', strictAuthLimiter, async (req, res) => {
         );
 
         // Set cookie
-        res.cookie('adminToken', token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            maxAge: 24 * 60 * 60 * 1000 // 24 hours
-        });
+       res.cookie('adminToken', token, {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production', // ✅ only true on HTTPS
+  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // ✅ fixes localhost issue
+  maxAge: 24 * 60 * 60 * 1000
+});
+
         
         // Clear OTP from Redis
         await redis.del(otpKey);
