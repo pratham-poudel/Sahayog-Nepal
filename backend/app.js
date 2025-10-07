@@ -14,13 +14,19 @@ const Payment = require('./models/Payment');
 const mongoose = require('mongoose');
 
 // Configure CORS with more explicit options
+app.set('trust proxy', 1); // Trust first proxy if behind a proxy (e.g., Heroku, Nginx)
 app.use(cors({
-  origin: ['http://localhost:5173','sahayognepal.org','https://sahayognepal.org','https://www.sahayognepal.org'],
+  origin: [
+    'http://localhost:5173',
+    'https://sahayognepal.org',
+    'https://www.sahayognepal.org'
+  ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   exposedHeaders: ['Content-Disposition'],
   credentials: true
 }));
+
 
 app.use(express.json());
 app.use(logger('dev'));
