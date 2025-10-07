@@ -235,7 +235,7 @@ const AdminDashboard = () => {
       });
 
       if (response.status === 401) {
-        setLocation('/admin/login');
+        setLocation('/helloadmin');
         return null;
       }
 

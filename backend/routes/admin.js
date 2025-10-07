@@ -1091,20 +1091,61 @@ router.get('/users/:id', adminAuth, async (req, res) => {
             .sort('-createdAt')
             .limit(20);
 
+        // Import required models
+        const BankAccount = require('../models/BankAccount');
+        const WithdrawalRequest = require('../models/WithdrawalRequest');
+
+        // Get user's bank accounts
+        const bankAccounts = await BankAccount.find({ userId: user._id })
+            .populate('verifiedBy', 'username')
+            .sort({ isPrimary: -1, createdAt: -1 });
+
+        // Map bank accounts with document URLs (already stored as full URLs)
+        const bankAccountsWithUrls = bankAccounts.map((account) => {
+            const accountObj = account.toObject();
+            // documentImage already contains the full URL
+            accountObj.documentImageUrl = account.documentImage;
+            return accountObj;
+        });
+
+        // Get user's withdrawal requests
+        const withdrawalRequests = await WithdrawalRequest.find({ creator: user._id })
+            .populate('campaign', 'title targetAmount amountRaised')
+            .populate('bankAccount')
+            .populate('adminResponse.reviewedBy', 'username')
+            .populate('processingDetails.processedBy', 'username')
+            .sort('-createdAt')
+            .limit(50);
+
+        // User's verification document URL (already stored as full URL)
+        const verificationDocumentUrl = user.personalVerificationDocument || null;
+
         const userStats = {
             totalCampaigns: user.campaigns.length,
             totalDonations: donations.length,
             totalDonated: donations.reduce((sum, donation) => sum + donation.amount, 0),
             totalPayments: payments.length,
-            totalPaid: payments.filter(p => p.status === 'Completed').reduce((sum, payment) => sum + payment.amount, 0)
+            totalPaid: payments.filter(p => p.status === 'Completed').reduce((sum, payment) => sum + payment.amount, 0),
+            totalBankAccounts: bankAccounts.length,
+            verifiedBankAccounts: bankAccounts.filter(acc => acc.verificationStatus === 'verified').length,
+            totalWithdrawals: withdrawalRequests.length,
+            totalWithdrawn: withdrawalRequests
+                .filter(w => w.status === 'completed')
+                .reduce((sum, w) => sum + (w.processingDetails?.finalAmount || w.requestedAmount), 0),
+            pendingWithdrawals: withdrawalRequests.filter(w => w.status === 'pending').length
         };
 
         res.json({
             success: true,
             data: {
-                user,
+                user: {
+                    ...user.toObject(),
+                    verificationDocumentUrl
+                },
                 donations,
                 payments,
+                bankAccounts: bankAccountsWithUrls,
+                withdrawalRequests,
                 stats: userStats
             }
         });
