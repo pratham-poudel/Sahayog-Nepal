@@ -27,6 +27,9 @@ app.use(logger('dev'));
 app.use(express.urlencoded({extended:true}));
 app.use(cookieParser());
 
+// Serve static files from public directory (for templates, etc.)
+app.use(express.static(path.join(__dirname, 'public')));
+
 // Apply global rate limiting to all API routes
 const { globalApiLimiter } = require('./middlewares/advancedRateLimiter');
 app.use('/api/', globalApiLimiter);

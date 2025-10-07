@@ -14,7 +14,7 @@ import UploadProgressModal from '../components/common/UploadProgressModal';
 import uploadService, { uploadCampaignCover, uploadCampaignImages, uploadCampaignVerification } from '../services/uploadService';
 import axios from 'axios';
 import { API_URL as CONFIG_API_URL, TURNSTILE_CONFIG } from '../config/index.js';
-import { Heart, TrendingUp, Users, ChevronLeft, ChevronRight, Rocket } from 'lucide-react';
+import { Heart, TrendingUp, Users, ChevronLeft, ChevronRight, Rocket, FileText, Download, CheckCircle2, AlertCircle } from 'lucide-react';
 
 // Banner data for Start Campaign page
 const campaignBannerSlides = [
@@ -234,10 +234,11 @@ const StartCampaign = () => {
   const { theme } = useContext(ThemeContext);
   const { categories, loading: categoriesLoading } = useCategories();
   const [isLoading, setIsLoading] = useState(false);
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(0); // Start from 0 for requirements page
   const [selectedCoverImage, setSelectedCoverImage] = useState(null);
   const [selectedAdditionalImages, setSelectedAdditionalImages] = useState([]);
   const [selectedVerificationDocs, setSelectedVerificationDocs] = useState([]);
+  const [selectedLapLetter, setSelectedLapLetter] = useState(null);
   const [turnstileToken, setTurnstileToken] = useState(null);
   const [turnstileKey, setTurnstileKey] = useState(0); // Force re-render of Turnstile widget
   const [showTurnstile, setShowTurnstile] = useState(false); // Show/hide Turnstile widget
@@ -274,7 +275,8 @@ const StartCampaign = () => {
       story: '',
       coverImage: null,
       additionalImages: [],
-      verificationDocuments: []
+      verificationDocuments: [],
+      lapLetter: null
     },
     mode: 'onChange'
   });
@@ -480,7 +482,10 @@ const StartCampaign = () => {
   const handleNextStep = async () => {
     let isStepValid = false;
     
-    if (currentStep === 1) {
+    if (currentStep === 0) {
+      // Step 0: Requirements page - just go to next step
+      isStepValid = true;
+    } else if (currentStep === 1) {
       isStepValid = await trigger(['title', 'category', 'targetAmount', 'endDate']);
       
       // Additional validation for targetAmount
@@ -515,6 +520,16 @@ const StartCampaign = () => {
         toast({
           title: "Cover image required",
           description: "Please select a cover image for your campaign",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Validate LAP letter
+      if (!selectedLapLetter) {
+        toast({
+          title: "LAP Letter required",
+          description: "Please upload the Local Authority Permission (LAP) Letter",
           variant: "destructive"
         });
         return;
@@ -561,6 +576,17 @@ const StartCampaign = () => {
       toast({
         title: "Verification documents selected", 
         description: `${files.length} verification document(s) selected successfully.`,
+      });
+    }
+  };
+
+  // Handle LAP letter selection
+  const handleLapLetterSelection = (file) => {
+    setSelectedLapLetter(file);
+    if (file) {
+      toast({
+        title: "LAP Letter selected",
+        description: "Local Authority Permission Letter has been selected successfully.",
       });
     }
   };
@@ -644,6 +670,15 @@ const StartCampaign = () => {
       });
       return;
     }
+
+    if (!selectedLapLetter) {
+      toast({
+        title: "LAP Letter required",
+        description: "Please upload the Local Authority Permission (LAP) Letter.",
+        variant: "destructive"
+      });
+      return;
+    }
     
     try {
       setIsLoading(true);
@@ -656,6 +691,13 @@ const StartCampaign = () => {
       stages.push({
         id: 'cover',
         name: 'Uploading cover image...',
+        status: 'pending',
+        progress: 0
+      });
+
+      stages.push({
+        id: 'lap',
+        name: 'Uploading LAP Letter...',
         status: 'pending',
         progress: 0
       });
@@ -688,6 +730,7 @@ const StartCampaign = () => {
       setUploadStages(stages);
 
       let uploadedCoverImage = null;
+      let uploadedLapLetter = null;
       let uploadedAdditionalImages = [];
       let uploadedVerificationDocs = [];
 
@@ -719,7 +762,36 @@ const StartCampaign = () => {
         throw new Error(`Cover image upload failed: ${error.message}`);
       }
 
-      // Stage 2: Upload additional images (if any)
+      // Stage 2: Upload LAP Letter
+      setCurrentUploadStage('Uploading LAP Letter...');
+      setUploadStages(prev => prev.map(stage => 
+        stage.id === 'lap' ? { ...stage, status: 'uploading' } : stage
+      ));
+
+      try {
+        uploadedLapLetter = await uploadService.uploadFile(
+          selectedLapLetter, 
+          { fileType: 'document-lap' }, 
+          (progress) => {
+            setUploadStages(prev => prev.map(stage => 
+              stage.id === 'lap' ? { ...stage, progress } : stage
+            ));
+          }
+        );
+
+        setUploadStages(prev => prev.map(stage => 
+          stage.id === 'lap' ? { ...stage, status: 'completed', progress: 100 } : stage
+        ));
+        completedStages++;
+        setOverallProgress((completedStages / totalStages) * 100);
+      } catch (error) {
+        setUploadStages(prev => prev.map(stage => 
+          stage.id === 'lap' ? { ...stage, status: 'error', error: error.message } : stage
+        ));
+        throw new Error(`LAP Letter upload failed: ${error.message}`);
+      }
+
+      // Stage 3: Upload additional images (if any)
       if (selectedAdditionalImages.length > 0) {
         setCurrentUploadStage(`Uploading ${selectedAdditionalImages.length} additional images...`);
         setUploadStages(prev => prev.map(stage => 
@@ -753,7 +825,7 @@ const StartCampaign = () => {
         }
       }
 
-      // Stage 3: Upload verification documents (if any)
+      // Stage 4: Upload verification documents (if any)
       if (selectedVerificationDocs.length > 0) {
         setCurrentUploadStage(`Uploading ${selectedVerificationDocs.length} verification documents...`);
         setUploadStages(prev => prev.map(stage => 
@@ -787,7 +859,7 @@ const StartCampaign = () => {
         }
       }
 
-      // Stage 4: Submit campaign
+      // Stage 5: Submit campaign
       setCurrentUploadStage('Creating campaign...');
       setUploadStages(prev => prev.map(stage => 
         stage.id === 'submit' ? { ...stage, status: 'uploading' } : stage
@@ -804,6 +876,7 @@ const StartCampaign = () => {
         story: data.story,
         turnstileToken: turnstileToken,
         coverImageUrl: uploadedCoverImage?.publicUrl,
+        lapLetterUrl: uploadedLapLetter?.publicUrl,
         additionalImageUrls: uploadedAdditionalImages.map(img => img.publicUrl),
         verificationDocumentUrls: uploadedVerificationDocs.map(doc => doc.publicUrl)
       };
@@ -1008,7 +1081,7 @@ const StartCampaign = () => {
             
             <div className="mb-10">
               <div className="flex items-center justify-between mb-4">
-                {[1, 2, 3].map((step) => (
+                {[0, 1, 2, 3].map((step) => (
                   <div 
                     key={step}
                     className="flex flex-col items-center"
@@ -1025,7 +1098,7 @@ const StartCampaign = () => {
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
                       ) : (
-                        step
+                        step + 1
                       )}
                       {step === 3 && currentStep === 3 && turnstileToken && (
                         <div className="absolute -top-1 -right-1 h-4 w-4 bg-green-500 rounded-full flex items-center justify-center">
@@ -1038,6 +1111,7 @@ const StartCampaign = () => {
                     <span className={`text-sm mt-3 font-medium transition-colors duration-300 ${
                       currentStep >= step ? 'text-[#8B2325] dark:text-[#a02729]' : 'text-gray-500 dark:text-gray-400'
                     }`}>
+                      {step === 0 && 'Requirements'}
                       {step === 1 && 'Basic Information'}
                       {step === 2 && 'Campaign Details'}
                       {step === 3 && 'Review & Submit'}
@@ -1049,13 +1123,182 @@ const StartCampaign = () => {
                 <div className="absolute top-0 left-0 right-0 h-2 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
                 <div 
                   className="absolute top-0 left-0 h-2 bg-gradient-to-r from-[#8B2325] to-[#a02729] rounded-full transition-all duration-500 ease-out"
-                  style={{ width: `${((currentStep - 1) / 2) * 100}%` }}
+                  style={{ width: `${(currentStep / 3) * 100}%` }}
                 ></div>
               </div>
             </div>
             
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-100 dark:border-gray-700">
               <form onSubmit={handleSubmit(onSubmit)}>
+                {/* Step 0: Requirements */}
+                {currentStep === 0 && (
+                  <div className="p-8 md:p-12">
+                    <div className="flex items-center mb-8">
+                      <div className="h-8 w-1 bg-gradient-to-b from-[#8B2325] to-[#a02729] rounded-full mr-4"></div>
+                      <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Campaign Requirements</h2>
+                    </div>
+                    
+                    <div className="space-y-6">
+                      {/* Introduction */}
+                      <div className="bg-gradient-to-r from-[#8B2325]/5 to-[#a02729]/5 dark:from-[#8B2325]/10 dark:to-[#a02729]/10 border border-[#8B2325]/20 dark:border-[#8B2325]/30 rounded-xl p-6">
+                        <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">
+                          Before You Start
+                        </h3>
+                        <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                          Please ensure you have all the required documents and information ready before proceeding. 
+                          This will make the campaign creation process smooth and efficient.
+                        </p>
+                      </div>
+
+                      {/* Required Documents */}
+                      <div className="space-y-4">
+                        <h3 className="text-xl font-bold text-gray-800 dark:text-white flex items-center">
+                          <CheckCircle2 className="w-6 h-6 text-[#8B2325] mr-2" />
+                          Required Documents & Information
+                        </h3>
+                        
+                        <div className="grid gap-4">
+                          {/* LAP Letter */}
+                          <div className="bg-white dark:bg-gray-700 border-2 border-[#8B2325]/30 dark:border-[#a02729]/30 rounded-lg p-5">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center mb-2">
+                                  <FileText className="w-5 h-5 text-[#8B2325] mr-2" />
+                                  <h4 className="font-semibold text-gray-800 dark:text-white">
+                                    Local Authority Permission (LAP) Letter
+                                  </h4>
+                                  <span className="ml-2 px-2 py-1 bg-[#8B2325] text-white text-xs font-semibold rounded">
+                                    REQUIRED
+                                  </span>
+                                </div>
+                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                                  Official permission letter from your local authority (Ward Office/Municipality). 
+                                  This document verifies your identity and campaign purpose.
+                                </p>
+                                <a 
+                                  href="https://filesatsahayognepal.dallytech.com/misc/user-68c82061d9d8e9b1dc00f30c-1759723042157-f0f5d5c3.pdf"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  download="LAP_Letter_Template.pdf"
+                                  className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-[#8B2325] to-[#a02729] text-white font-medium rounded-lg hover:from-[#7a1f21] hover:to-[#8f2326] transition-all duration-300 shadow-md hover:shadow-lg"
+                                >
+                                  <Download className="w-4 h-4 mr-2" />
+                                  Download Template
+                                </a>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Cover Image */}
+                          <div className="bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg p-5">
+                            <div className="flex items-center mb-2">
+                              <CheckCircle2 className="w-5 h-5 text-[#8B2325] mr-2" />
+                              <h4 className="font-semibold text-gray-800 dark:text-white">Campaign Cover Image</h4>
+                              <span className="ml-2 px-2 py-1 bg-[#8B2325] text-white text-xs font-semibold rounded">
+                                REQUIRED
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              A compelling cover image that represents your campaign (1200x630px recommended, max 15MB)
+                            </p>
+                          </div>
+
+                          {/* Basic Information */}
+                          <div className="bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg p-5">
+                            <div className="flex items-center mb-2">
+                              <CheckCircle2 className="w-5 h-5 text-[#8B2325] mr-2" />
+                              <h4 className="font-semibold text-gray-800 dark:text-white">Basic Campaign Information</h4>
+                              <span className="ml-2 px-2 py-1 bg-[#8B2325] text-white text-xs font-semibold rounded">
+                                REQUIRED
+                              </span>
+                            </div>
+                            <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1 ml-5 list-disc">
+                              <li>Campaign title</li>
+                              <li>Category and subcategory</li>
+                              <li>Fundraising goal (Rs. 10,000 - Rs. 1,00,00,000)</li>
+                              <li>Campaign end date</li>
+                              <li>Short description (max 200 characters)</li>
+                              <li>Detailed campaign story</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Optional Documents */}
+                      <div className="space-y-4">
+                        <h3 className="text-xl font-bold text-gray-800 dark:text-white flex items-center">
+                          <AlertCircle className="w-6 h-6 text-blue-500 mr-2" />
+                          Optional (But Recommended)
+                        </h3>
+                        
+                        <div className="grid gap-4">
+                          {/* Supporting Documents */}
+                          <div className="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-800 rounded-lg p-5">
+                            <div className="flex items-center mb-2">
+                              <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400 mr-2" />
+                              <h4 className="font-semibold text-gray-800 dark:text-white">
+                                Medical Reports / Supporting Documents
+                              </h4>
+                              <span className="ml-2 px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs font-semibold rounded">
+                                OPTIONAL
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              Upload medical reports, hospital bills, certificates, or other relevant documents 
+                              to increase campaign authenticity and donor trust (max 3 documents, 15MB each)
+                            </p>
+                          </div>
+
+                          {/* Additional Images */}
+                          <div className="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-800 rounded-lg p-5">
+                            <div className="flex items-center mb-2">
+                              <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400 mr-2" />
+                              <h4 className="font-semibold text-gray-800 dark:text-white">Additional Campaign Images</h4>
+                              <span className="ml-2 px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs font-semibold rounded">
+                                OPTIONAL
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              Additional images to showcase your campaign story (max 3 images, 15MB each)
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Important Notes */}
+                      <div className="bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 p-5 rounded-lg">
+                        <div className="flex items-start">
+                          <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 mr-3 flex-shrink-0" />
+                          <div>
+                            <h4 className="font-semibold text-amber-800 dark:text-amber-200 mb-2">
+                              Important Notes
+                            </h4>
+                            <ul className="text-sm text-amber-700 dark:text-amber-300 space-y-1 list-disc ml-4">
+                              <li>All documents must be clear and legible</li>
+                              <li>LAP Letter must have official seal/stamp from local authority</li>
+                              <li>Providing accurate information is mandatory</li>
+                              <li>Campaign will be reviewed by our team before going live</li>
+                              <li>False information may lead to campaign rejection</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-10 flex justify-end">
+                      <motion.button
+                        type="button"
+                        className="px-10 py-4 bg-gradient-to-r from-[#8B2325] to-[#a02729] text-white font-semibold rounded-lg hover:from-[#7a1f21] hover:to-[#8f2326] transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                        onClick={handleNextStep}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        I Have Everything Ready →
+                      </motion.button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Step 1: Basic Info */}
                 {currentStep === 1 && (
                   <div className="p-8 md:p-12">
@@ -1283,7 +1526,7 @@ const StartCampaign = () => {
                         </label>
                         <FileSelector
                           fileType="campaign-cover"
-                          accept="image/*"
+                          accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
                           maxFiles={1}
                           onFilesSelected={handleCoverImageSelection}
                           selectedFiles={selectedCoverImage}
@@ -1293,9 +1536,62 @@ const StartCampaign = () => {
                             Click to select cover image or drag and drop
                           </div>
                           <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            PNG, JPG, GIF up to 15MB (1200x630px recommended)
+                            JPG, PNG, GIF, WebP up to 15MB (1200x630px recommended)
                           </div>
                         </FileSelector>
+                      </div>
+                      
+                      <div className="group">
+                        <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                          <span className="flex-1">Local Authority Permission (LAP) Letter*</span>
+                          <span className="px-3 py-1 bg-[#8B2325] text-white text-xs font-semibold rounded-full">
+                            REQUIRED
+                          </span>
+                        </label>
+                        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mb-3">
+                          <div className="flex items-start space-x-3">
+                            <div className="flex-shrink-0">
+                              <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5" />
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="text-sm font-semibold text-amber-800 dark:text-amber-200 mb-1">
+                                Official Document Required
+                              </h4>
+                              <p className="text-sm text-amber-700 dark:text-amber-300 mb-3">
+                                Upload the signed and stamped Local Authority Permission Letter from your ward office or municipality. 
+                                This document is mandatory for campaign verification.
+                              </p>
+                              <a 
+                                href="https://filesatsahayognepal.dallytech.com/misc/user-68c82061d9d8e9b1dc00f30c-1759723042157-f0f5d5c3.pdf"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                download="LAP_Letter_Template.pdf"
+                                className="inline-flex items-center px-3 py-1.5 bg-white dark:bg-gray-700 border border-amber-300 dark:border-amber-600 text-amber-700 dark:text-amber-300 text-sm font-medium rounded-md hover:bg-amber-50 dark:hover:bg-gray-600 transition-colors"
+                              >
+                                <Download className="w-4 h-4 mr-2" />
+                                Download Template
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                        <FileSelector
+                          fileType="document-lap"
+                          accept="image/jpeg,image/jpg,image/png,image/gif,application/pdf"
+                          maxFiles={1}
+                          onFilesSelected={handleLapLetterSelection}
+                          selectedFiles={selectedLapLetter}
+                          className="w-full"
+                        >
+                          <div className="text-sm font-medium">
+                            Click to select LAP Letter or drag and drop
+                          </div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            JPG, PNG, GIF, or PDF up to 15MB
+                          </div>
+                        </FileSelector>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                          The document must have official seal/stamp from local authority
+                        </p>
                       </div>
                       
                       <div className="group">
@@ -1304,7 +1600,7 @@ const StartCampaign = () => {
                         </label>
                         <FileSelector
                           fileType="campaign-image"
-                          accept="image/*"
+                          accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
                           maxFiles={3}
                           onFilesSelected={handleAdditionalImagesSelection}
                           selectedFiles={selectedAdditionalImages}
@@ -1314,7 +1610,7 @@ const StartCampaign = () => {
                             Click to select additional images or drag and drop
                           </div>
                           <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            PNG, JPG, GIF up to 15MB each (max 3 images)
+                            JPG, PNG, GIF, WebP up to 15MB each (max 3 images)
                           </div>
                         </FileSelector>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
@@ -1348,7 +1644,7 @@ const StartCampaign = () => {
                         </div>
                         <FileSelector
                           fileType="campaign-verification"
-                          accept="image/*,application/pdf"
+                          accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,application/pdf"
                           maxFiles={3}
                           onFilesSelected={handleVerificationDocsSelection}
                           selectedFiles={selectedVerificationDocs}
@@ -1358,7 +1654,7 @@ const StartCampaign = () => {
                             Click to select verification documents or drag and drop
                           </div>
                           <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            Images or PDF files up to 15MB each (max 3 documents)
+                            JPG, PNG, GIF, WebP, or PDF up to 15MB each (max 3 documents)
                           </div>
                         </FileSelector>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
@@ -1472,6 +1768,54 @@ const StartCampaign = () => {
                                 </p>
                               </div>
                             ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {selectedLapLetter && (
+                        <div className="bg-white dark:bg-gray-700 p-6 rounded-xl border border-gray-100 dark:border-gray-600 shadow-sm">
+                          <h3 className="font-semibold text-lg mb-4 text-gray-800 dark:text-white flex items-center">
+                            <span>LAP Letter</span>
+                            <span className="ml-2 px-2 py-0.5 bg-[#8B2325] text-white text-xs font-semibold rounded-full">REQUIRED</span>
+                          </h3>
+                          <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg flex items-center space-x-3">
+                            <div className="flex-shrink-0">
+                              {selectedLapLetter.type.startsWith('image/') ? (
+                                selectedLapLetter.preview ? (
+                                  <img 
+                                    src={selectedLapLetter.preview} 
+                                    alt="LAP Letter Preview" 
+                                    className="w-16 h-16 object-cover rounded"
+                                  />
+                                ) : (
+                                  <div className="w-16 h-16 bg-gray-200 dark:bg-gray-600 rounded flex items-center justify-center">
+                                    <svg className="w-8 h-8 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                                    </svg>
+                                  </div>
+                                )
+                              ) : (
+                                <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded flex items-center justify-center">
+                                  <svg className="w-8 h-8 text-red-600 dark:text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 0v12h8V6H8a2 2 0 01-2-2z" clipRule="evenodd" />
+                                  </svg>
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                {selectedLapLetter.name}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                {(selectedLapLetter.size / 1024 / 1024).toFixed(2)} MB • {selectedLapLetter.type}
+                              </p>
+                              <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 flex items-center">
+                                <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                                Official document uploaded
+                              </p>
+                            </div>
                           </div>
                         </div>
                       )}

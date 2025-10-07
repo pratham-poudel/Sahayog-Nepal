@@ -436,20 +436,191 @@ const CampaignDetail = ({ campaign }) => {
     ),
     documents: (
       <div>
-        {campaign.verificationDocuments && campaign.verificationDocuments.length > 0 ? (
+        {(campaign.verificationDocuments && campaign.verificationDocuments.length > 0) || campaign.lapLetter ? (
           <div className="space-y-6">
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm">
-              <div className="flex items-center mb-6">
-                <div className="bg-blue-100 dark:bg-blue-900 p-2 rounded-lg mr-3">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
+            {/* LAP Letter Section */}
+            {campaign.lapLetter && (
+              <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-green-200 dark:border-green-700 shadow-sm">
+                <div className="flex items-center mb-6">
+                  <div className="bg-green-100 dark:bg-green-900 p-2 rounded-lg mr-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Local Authority Permission Letter</h2>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Official authorization document</p>
+                  </div>
                 </div>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Verification Documents</h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {(() => {
+                    const document = campaign.lapLetter;
+                    const fileExtension = document.split('.').pop().toLowerCase();
+                    const fileName = document.split('/').pop();
+                    const isPDF = fileExtension === 'pdf';
+                    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(fileExtension);
+                    
+                    return (
+                      <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-700 hover:shadow-md transition-shadow">
+                        {isImage ? (
+                          <div className="space-y-3">
+                            <div className="aspect-video w-full bg-gray-100 dark:bg-gray-600 rounded-lg overflow-hidden">
+                              <img 
+                                src={document} 
+                                alt="Local Authority Permission Letter"
+                                className="w-full h-full object-cover hover:scale-105 transition-transform cursor-pointer"
+                                onClick={() => window.open(document, '_blank')}
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  e.target.nextSibling.style.display = 'flex';
+                                }}
+                              />
+                              <div className="w-full h-full hidden items-center justify-center bg-gray-200 dark:bg-gray-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                              </div>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate" title={fileName}>
+                                {fileName}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">
+                                {fileExtension} Image
+                              </p>
+                            </div>
+                            <button 
+                              onClick={() => window.open(document, '_blank')}
+                              className="w-full bg-green-600 hover:bg-green-700 text-white text-sm py-2 px-3 rounded-lg transition-colors flex items-center justify-center"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
+                              View Full Size
+                            </button>
+                          </div>
+                        ) : isPDF ? (
+                          <div className="space-y-3">
+                            <div className="aspect-video w-full bg-green-50 dark:bg-green-900/20 rounded-lg flex items-center justify-center border-2 border-dashed border-green-200 dark:border-green-800">
+                              <div className="text-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-green-500 dark:text-green-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <p className="text-lg font-semibold text-green-600 dark:text-green-400">PDF</p>
+                              </div>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate" title={fileName}>
+                                {fileName}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                PDF Document
+                              </p>
+                            </div>
+                            <div className="space-y-2">
+                              <button 
+                                onClick={() => window.open(document, '_blank')}
+                                className="w-full bg-green-600 hover:bg-green-700 text-white text-sm py-2 px-3 rounded-lg transition-colors flex items-center justify-center"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                                View PDF
+                              </button>
+                              <button 
+                                onClick={() => {
+                                  const link = document.createElement('a');
+                                  link.href = document;
+                                  link.download = fileName;
+                                  link.target = '_blank';
+                                  document.body.appendChild(link);
+                                  link.click();
+                                  document.body.removeChild(link);
+                                }}
+                                className="w-full bg-gray-600 hover:bg-gray-700 text-white text-sm py-2 px-3 rounded-lg transition-colors flex items-center justify-center"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                Download
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            <div className="aspect-video w-full bg-gray-100 dark:bg-gray-600 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-500">
+                              <div className="text-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400 uppercase">{fileExtension}</p>
+                              </div>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate" title={fileName}>
+                                {fileName}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                {fileExtension.toUpperCase()} File
+                              </p>
+                            </div>
+                            <div className="space-y-2">
+                              <button 
+                                onClick={() => window.open(document, '_blank')}
+                                className="w-full bg-gray-600 hover:bg-gray-700 text-white text-sm py-2 px-3 rounded-lg transition-colors flex items-center justify-center"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                                Open File
+                              </button>
+                              <button 
+                                onClick={() => {
+                                  const link = document.createElement('a');
+                                  link.href = document;
+                                  link.download = fileName;
+                                  link.target = '_blank';
+                                  document.body.appendChild(link);
+                                  link.click();
+                                  document.body.removeChild(link);
+                                }}
+                                className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm py-2 px-3 rounded-lg transition-colors flex items-center justify-center"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                Download
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
               </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {campaign.verificationDocuments.map((document, index) => {
+            )}
+            
+            {/* Verification Documents Section */}
+            {campaign.verificationDocuments && campaign.verificationDocuments.length > 0 && (
+              <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm">
+                <div className="flex items-center mb-6">
+                  <div className="bg-blue-100 dark:bg-blue-900 p-2 rounded-lg mr-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Verification Documents</h2>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Supporting documents for this campaign</p>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {campaign.verificationDocuments.map((document, index) => {
                   const fileExtension = document.split('.').pop().toLowerCase();
                   const fileName = document.split('/').pop();
                   const isPDF = fileExtension === 'pdf';
@@ -596,6 +767,7 @@ const CampaignDetail = ({ campaign }) => {
                 })}
               </div>
             </div>
+            )}
           </div>
         ) : (
           <div className="text-center py-8 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">

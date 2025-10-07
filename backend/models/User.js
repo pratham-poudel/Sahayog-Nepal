@@ -67,6 +67,10 @@ const userSchema = new mongoose.Schema({
     isPremiumAndVerified: {
         type: Boolean,
         default: false
+    },
+    personalVerificationDocument: {
+        type: String,
+        default: '' // URL to citizenship or other verification document
     }
 }, {
     timestamps: true

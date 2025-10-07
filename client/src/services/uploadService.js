@@ -263,6 +263,7 @@ class UploadService {
       'document-license': ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'application/pdf'],
       'document-citizenship': ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'application/pdf'],
       'document-passport': ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'application/pdf'],
+      'document-lap': ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'application/pdf'],
     };
 
     return typeMap[fileType] || ['image/jpeg', 'image/jpg', 'image/png'];
@@ -347,3 +348,6 @@ export const uploadBlogImage = (file, onProgress) =>
 
 export const uploadDocument = (file, documentType, onProgress) => 
   uploadService.uploadFile(file, { fileType: `document-${documentType}` }, onProgress);
+
+export const uploadLapLetter = (file, onProgress) => 
+  uploadService.uploadFile(file, { fileType: 'document-lap' }, onProgress);

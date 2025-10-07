@@ -7,18 +7,25 @@ import { Link, useLocation } from 'wouter';
 import { useAuthContext } from '../contexts/AuthContext';
 import TurnstileWidget from '../components/common/TurnstileWidget';
 import { TURNSTILE_CONFIG } from '../config/index.js';
+import uploadService from '../services/uploadService';
 
 const Signup = () => {
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState('');
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [documentFile, setDocumentFile] = useState(null);
+  const [documentPreview, setDocumentPreview] = useState(null);
   const [userData, setUserData] = useState({
     email: '',
     firstName: '',
     lastName: '',
     phone: '',
     password: '',
-    otp: ''
+    otp: '',
+    personalVerificationDocument: '',
+    detailsConfirmed: false,
+    termsAccepted: false
   });  const { toast } = useToast();
   const { forceUpdate } = useAuthContext();
   const [, setLocation] = useLocation();
@@ -87,6 +94,66 @@ const Signup = () => {
       otp: userData.otp
     }
   });
+  
+  // Document upload form (Step 3)
+  const {
+    handleSubmit: handleDocumentSubmit,
+    formState: { errors: documentErrors }
+  } = useForm();
+  
+  // Handle document file selection
+  const handleDocumentChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file size (15MB max)
+      if (file.size > 15 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Please select a file smaller than 15MB",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'application/pdf'];
+      if (!allowedTypes.includes(file.type)) {
+        toast({
+          title: "Invalid file type",
+          description: "Please upload an image (JPG, PNG, GIF) or PDF file",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      setDocumentFile(file);
+      
+      // Create preview for images
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setDocumentPreview(reader.result);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        setDocumentPreview(null); // PDF doesn't need preview
+      }
+    }
+  };
+  
+  // Handle document upload submission (Step 3)
+  const onDocumentSubmit = async () => {
+    if (!documentFile) {
+      toast({
+        title: "Document required",
+        description: "Please upload your citizenship or verification document",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setStep(4); // Move to OTP step
+  };
   // Update form input fields for dark mode visibility with enhanced styling
   const formInputClasses = `appearance-none block w-full px-3 py-2 border rounded-lg shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#8B2325] focus:border-[#8B2325] sm:text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800/70 dark:border-gray-700 backdrop-blur-sm transition-all duration-200`;
   // Define a function to reset Turnstile in case of errors
@@ -134,9 +201,13 @@ const Signup = () => {
         throw new Error("Passwords do not match");
       }
       
-      // Verify Turnstile token is present
-      if (!turnstileToken) {
-        throw new Error("Please complete the security verification");
+      // Verify checkboxes are checked
+      if (!data.detailsConfirmed) {
+        throw new Error("Please confirm that your details are correct and not misleading");
+      }
+      
+      if (!data.termsAccepted) {
+        throw new Error("Please accept the Terms of Use and Privacy Policy");
       }
       
       setUserData(prev => ({
@@ -145,60 +216,96 @@ const Signup = () => {
         lastName: data.lastName,
         phone: data.phone,
         password: data.password,
-        turnstileToken: turnstileToken
+        detailsConfirmed: data.detailsConfirmed,
+        termsAccepted: data.termsAccepted
       }));
-        setStep(3);
+      
+      setStep(3);
     } catch (error) {
       toast({
         title: "Error",
         description: error.message || "An error occurred. Please try again.",
         variant: "destructive"
       });
-      
-      // Reset turnstile if there was a verification error
-      if (error.message && error.message === "Please complete the security verification") {
-        resetTurnstile();
-      }
     } finally {
       setIsLoading(false);
     }
   };
-  // Handle OTP verification (Step 3)
+  // Handle OTP verification (Step 4 - Final step with upload)
   const onOtpSubmit = async (data) => {
     setIsLoading(true);
     
     try {
-      // Verify OTP and create account
+      // Verify Turnstile token is present
+      if (!turnstileToken) {
+        throw new Error("Please complete the security verification");
+      }
+      
+      // First, verify OTP and create account (without document)
       const response = await apiRequest('POST', '/api/users/verify-otp', {
         email: userData.email,
         name: `${userData.firstName} ${userData.lastName}`,
         phone: userData.phone,
         password: userData.password,
         otp: data.otp,
-        turnstileToken: userData.turnstileToken
+        turnstileToken: turnstileToken
       });
       
       const result = await response.json();
       
-      if (response.ok) {
-        // Save token to localStorage
-        if (result.token) {
-          localStorage.setItem('token', result.token);
-          // Force update of authentication state
-          if (typeof forceUpdate === 'function') {
-            forceUpdate();
-          }
-        }
-        
-        toast({
-          title: "Account created successfully",
-          description: "Welcome! Your account has been created and you are now logged in."
-        });
-        
-        setLocation('/dashboard');
-      } else {
+      if (!response.ok) {
         throw new Error(result.message || "OTP verification failed");
       }
+      
+      // Save token to localStorage immediately after account creation
+      if (result.token) {
+        localStorage.setItem('token', result.token);
+        // Force update of authentication state
+        if (typeof forceUpdate === 'function') {
+          forceUpdate();
+        }
+      }
+      
+      // Now upload document with the new authentication token
+      let documentUrl = '';
+      if (documentFile) {
+        try {
+          setUploadProgress(10); // Show initial progress
+          const uploadResult = await uploadService.uploadFile(
+            documentFile,
+            { fileType: 'document-citizenship' },
+            (progress) => setUploadProgress(progress)
+          );
+          documentUrl = uploadResult.publicUrl;
+          setUploadProgress(100);
+          
+          // Update user profile with document URL
+          const updateResponse = await apiRequest('PUT', '/api/users/profile', {
+            personalVerificationDocument: documentUrl
+          });
+          
+          if (!updateResponse.ok) {
+            console.error('Failed to update profile with document URL');
+            // Don't fail the signup, just log the error
+          }
+        } catch (uploadError) {
+          console.error('Document upload error:', uploadError);
+          // Don't fail the signup, just show a warning
+          toast({
+            title: "Account created",
+            description: "Your account was created, but document upload failed. You can upload it later from your profile.",
+            variant: "default"
+          });
+        }
+      }
+      
+      toast({
+        title: "Account created successfully",
+        description: "Welcome! Your account has been created and you are now logged in."
+      });
+      
+      setLocation('/dashboard');
+      
     } catch (error) {
       toast({
         title: "Error",
@@ -206,13 +313,13 @@ const Signup = () => {
         variant: "destructive"
       });
       
-      // If there was a security verification error, reset the turnstile and go back to step 2
+      // If there was a security verification error, reset the turnstile
       if (error.message && error.message.includes('Security verification')) {
         resetTurnstile();
-        setStep(2);
       }
     } finally {
       setIsLoading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -407,50 +514,83 @@ const Signup = () => {
             </p>
           )}
         </div>
-      </div>      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Security Verification
-        </label>
-        <TurnstileWidget
-          siteKey={TURNSTILE_CONFIG.siteKey}
-          onVerify={handleTurnstileVerify}
-          onExpire={handleTurnstileExpire}
-          onError={handleTurnstileError}
-          theme="light"
-        />
-        {!turnstileToken && (
-          <p className="mt-2 text-sm text-amber-600 dark:text-amber-400">
-            Please complete the security verification before continuing
-          </p>
-        )}
-        {turnstileToken && (
-          <p className="mt-2 text-sm text-green-600 dark:text-green-400 flex items-center">
-            <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-            </svg>
-            Security verification completed
-          </p>
-        )}
       </div>
 
-      <div className="flex items-center">
-        <input
-          id="terms"
-          name="terms"
-          type="checkbox"
-          className="h-4 w-4 text-[#8B2325] focus:ring-[#8B2325] border-gray-300 dark:border-gray-600 rounded"
-          required
-        />
-        <label htmlFor="terms" className="ml-2 block text-sm text-gray-900 dark:text-gray-300">
-          I agree to the{' '}
-          <button onClick={(e) => e.preventDefault()} className="font-medium text-[#8B2325] dark:text-[#e05759] hover:text-[#a32729]">
-            Terms of Service
-          </button>{' '}
-          and{' '}
-          <button onClick={(e) => e.preventDefault()} className="font-medium text-[#8B2325] dark:text-[#e05759] hover:text-[#a32729]">
-            Privacy Policy
-          </button>
-        </label>
+      {/* KYC Notice */}
+      <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+        <div className="flex items-start">
+          <svg className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+          </svg>
+          <div className="flex-1">
+            <h4 className="text-sm font-semibold text-amber-800 dark:text-amber-300 mb-1">
+              Important: KYC Verification Notice
+            </h4>
+            <p className="text-sm text-amber-700 dark:text-amber-400">
+              Please ensure that all the details you provide (Name, Phone Number, etc.) match exactly with your personal verification document (e.g., Citizenship, Passport). You will be required to upload this document in the next step for verification purposes.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Verification Checkboxes */}
+      <div className="space-y-3">
+        <div className="flex items-start">
+          <input
+            id="detailsConfirmed"
+            type="checkbox"
+            className="h-4 w-4 mt-1 text-[#8B2325] focus:ring-[#8B2325] border-gray-300 dark:border-gray-600 rounded"
+            {...registerUserDetails("detailsConfirmed", { 
+              required: "You must confirm your details are correct" 
+            })}
+          />
+          <label htmlFor="detailsConfirmed" className="ml-3 block text-sm text-gray-900 dark:text-gray-300">
+            I hereby promise and confirm that all the details I am providing are correct, accurate, and not misleading. I understand that providing false information may result in account suspension or legal action.
+          </label>
+        </div>
+        {userDetailsErrors.detailsConfirmed && (
+          <p className="text-sm text-red-600 dark:text-red-400 ml-7">
+            {userDetailsErrors.detailsConfirmed.message}
+          </p>
+        )}
+
+        <div className="flex items-start">
+          <input
+            id="termsAccepted"
+            type="checkbox"
+            className="h-4 w-4 mt-1 text-[#8B2325] focus:ring-[#8B2325] border-gray-300 dark:border-gray-600 rounded"
+            {...registerUserDetails("termsAccepted", { 
+              required: "You must accept the Terms of Use and Privacy Policy" 
+            })}
+          />
+          <label htmlFor="termsAccepted" className="ml-3 block text-sm text-gray-900 dark:text-gray-300">
+            I accept the{' '}
+            <a 
+              href="/terms-of-use" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="font-medium text-[#8B2325] dark:text-[#e05759] hover:text-[#a32729] underline"
+              onClick={(e) => e.stopPropagation()}
+            >
+              Terms of Use
+            </a>{' '}
+            and{' '}
+            <a 
+              href="/privacy-policy" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="font-medium text-[#8B2325] dark:text-[#e05759] hover:text-[#a32729] underline"
+              onClick={(e) => e.stopPropagation()}
+            >
+              Privacy Policy
+            </a>
+          </label>
+        </div>
+        {userDetailsErrors.termsAccepted && (
+          <p className="text-sm text-red-600 dark:text-red-400 ml-7">
+            {userDetailsErrors.termsAccepted.message}
+          </p>
+        )}
       </div>
 
       <div className="flex justify-between space-x-4">        <motion.button
@@ -466,25 +606,158 @@ const Signup = () => {
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           className={`w-2/3 flex justify-center py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
-            isLoading || !turnstileToken 
+            isLoading 
               ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed' 
               : 'bg-gradient-to-br from-[#8B2325] to-[#a32729] hover:shadow-lg'
           } text-white`}
-          disabled={isLoading || !turnstileToken}
+          disabled={isLoading}
         >
           {isLoading ? (
             <span className="animate-pulse">Processing...</span>
-          ) : !turnstileToken ? (
-            <span>Complete verification to continue</span>
           ) : (
-            <span>Continue</span>
+            <span>Continue to Document Upload</span>
           )}
         </motion.button>
       </div>
     </form>
   );
 
-  // Render OTP verification form (Step 3)
+  // Render document upload form (Step 3)
+  const renderDocumentUploadForm = () => (
+    <form className="space-y-6" onSubmit={handleDocumentSubmit(onDocumentSubmit)}>
+      <div>
+        <div className="mb-4 text-center">
+          <div className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-[#8B2325]/10 dark:bg-[#8B2325]/30 mx-auto">
+            <svg className="w-8 h-8 text-[#8B2325] dark:text-[#e05759]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <h3 className="mt-3 text-lg font-medium text-gray-900 dark:text-gray-100">Upload Verification Document</h3>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            Please upload your citizenship, passport, or other government-issued ID for KYC verification.
+          </p>
+        </div>
+
+        {/* Information Notice */}
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
+          <div className="flex items-start">
+            <svg className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+            </svg>
+            <div className="flex-1">
+              <h4 className="text-sm font-semibold text-blue-800 dark:text-blue-300 mb-1">
+                Document Requirements
+              </h4>
+              <ul className="text-sm text-blue-700 dark:text-blue-400 space-y-1">
+                <li>• Accepted formats: JPG, PNG, GIF, or PDF</li>
+                <li>• Maximum file size: 15MB</li>
+                <li>• Document should be clear and readable</li>
+                <li>• Ensure all information is visible</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {/* File Upload Area */}
+        <div className="mt-4">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Verification Document *
+          </label>
+          
+          {!documentFile ? (
+            <label htmlFor="documentUpload" className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors">
+              <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                <svg className="w-12 h-12 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+                  <span className="font-semibold">Click to upload</span> or drag and drop
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  PNG, JPG, GIF or PDF (MAX. 15MB)
+                </p>
+              </div>
+              <input
+                id="documentUpload"
+                type="file"
+                className="hidden"
+                accept="image/jpeg,image/jpg,image/png,image/gif,application/pdf"
+                onChange={handleDocumentChange}
+              />
+            </label>
+          ) : (
+            <div className="relative w-full border-2 border-green-300 dark:border-green-700 rounded-lg p-4 bg-green-50 dark:bg-green-900/20">
+              {documentPreview ? (
+                <div className="mb-3">
+                  <img
+                    src={documentPreview}
+                    alt="Document preview"
+                    className="w-full h-48 object-contain rounded-lg"
+                  />
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-32 bg-gray-100 dark:bg-gray-800 rounded-lg mb-3">
+                  <svg className="w-16 h-16 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              )}
+              
+              <div className="flex items-center justify-between">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                    {documentFile.name}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {(documentFile.size / 1024 / 1024).toFixed(2)} MB
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDocumentFile(null);
+                    setDocumentPreview(null);
+                  }}
+                  className="ml-4 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                >
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="flex justify-between space-x-4">
+        <motion.button
+          type="button"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className="w-1/3 flex justify-center py-3 px-4 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white/90 dark:bg-gray-800/90 hover:bg-gray-50/90 dark:hover:bg-gray-700/90 backdrop-blur-sm transition-all duration-200"
+          onClick={() => setStep(2)}
+        >
+          Back
+        </motion.button>
+        <motion.button
+          type="submit"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className={`w-2/3 flex justify-center py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
+            !documentFile
+              ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed'
+              : 'bg-gradient-to-br from-[#8B2325] to-[#a32729] hover:shadow-lg'
+          } text-white`}
+          disabled={!documentFile}
+        >
+          <span>Continue to Verification</span>
+        </motion.button>
+      </div>
+    </form>
+  );
+
+  // Render OTP verification form (Step 4)
   const renderOtpForm = () => (
     <form className="space-y-6" onSubmit={handleOtpSubmit(onOtpSubmit)}>
       <div>
@@ -525,6 +798,53 @@ const Signup = () => {
         </div>
       </div>
 
+      {/* Upload Progress Indicator */}
+      {uploadProgress > 0 && uploadProgress < 100 && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+              Uploading document...
+            </span>
+            <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+              {uploadProgress}%
+            </span>
+          </div>
+          <div className="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-2">
+            <div 
+              className="bg-blue-600 dark:bg-blue-400 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${uploadProgress}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Turnstile Security Verification */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Security Verification
+        </label>
+        <TurnstileWidget
+          siteKey={TURNSTILE_CONFIG.siteKey}
+          onVerify={handleTurnstileVerify}
+          onExpire={handleTurnstileExpire}
+          onError={handleTurnstileError}
+          theme="light"
+        />
+        {!turnstileToken && (
+          <p className="mt-2 text-sm text-amber-600 dark:text-amber-400">
+            Please complete the security verification before submitting
+          </p>
+        )}
+        {turnstileToken && (
+          <p className="mt-2 text-sm text-green-600 dark:text-green-400 flex items-center">
+            <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
+            Security verification completed
+          </p>
+        )}
+      </div>
+
       <div className="text-center text-sm">
         <p className="text-gray-600 dark:text-gray-400">
           Didn't receive a code? 
@@ -559,7 +879,8 @@ const Signup = () => {
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           className="w-1/3 flex justify-center py-3 px-4 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white/90 dark:bg-gray-800/90 hover:bg-gray-50/90 dark:hover:bg-gray-700/90 backdrop-blur-sm transition-all duration-200"
-          onClick={() => setStep(2)}
+          onClick={() => setStep(3)}
+          disabled={isLoading}
         >
           Back
         </motion.button>
@@ -567,11 +888,17 @@ const Signup = () => {
           type="submit"
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          className="w-2/3 flex justify-center py-3 px-4 bg-gradient-to-br from-[#8B2325] to-[#a32729] text-white rounded-lg font-medium hover:shadow-lg transition-all duration-200"
-          disabled={isLoading}
+          className={`w-2/3 flex justify-center py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
+            isLoading || !turnstileToken
+              ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed'
+              : 'bg-gradient-to-br from-[#8B2325] to-[#a32729] hover:shadow-lg'
+          } text-white`}
+          disabled={isLoading || !turnstileToken}
         >
           {isLoading ? (
-            <span className="animate-pulse">Verifying...</span>
+            <span className="animate-pulse">Creating Account...</span>
+          ) : !turnstileToken ? (
+            <span>Complete verification to submit</span>
           ) : (
             <span>Complete Sign Up</span>
           )}
@@ -587,13 +914,17 @@ const Signup = () => {
         <div className={`flex items-center justify-center h-8 w-8 rounded-full ${step >= 1 ? 'bg-[#8B2325] text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>
           1
         </div>
-        <div className={`w-12 h-1 ${step >= 2 ? 'bg-[#8B2325]' : 'bg-gray-200 dark:bg-gray-700'}`}></div>
+        <div className={`w-10 h-1 ${step >= 2 ? 'bg-[#8B2325]' : 'bg-gray-200 dark:bg-gray-700'}`}></div>
         <div className={`flex items-center justify-center h-8 w-8 rounded-full ${step >= 2 ? 'bg-[#8B2325] text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>
           2
         </div>
-        <div className={`w-12 h-1 ${step >= 3 ? 'bg-[#8B2325]' : 'bg-gray-200 dark:bg-gray-700'}`}></div>
+        <div className={`w-10 h-1 ${step >= 3 ? 'bg-[#8B2325]' : 'bg-gray-200 dark:bg-gray-700'}`}></div>
         <div className={`flex items-center justify-center h-8 w-8 rounded-full ${step >= 3 ? 'bg-[#8B2325] text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>
           3
+        </div>
+        <div className={`w-10 h-1 ${step >= 4 ? 'bg-[#8B2325]' : 'bg-gray-200 dark:bg-gray-700'}`}></div>
+        <div className={`flex items-center justify-center h-8 w-8 rounded-full ${step >= 4 ? 'bg-[#8B2325] text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>
+          4
         </div>
       </div>
     </div>
@@ -604,7 +935,8 @@ const Signup = () => {
     switch(step) {
       case 1: return "Enter Your Email";
       case 2: return "Complete Your Profile";
-      case 3: return "Verify Your Email";
+      case 3: return "Upload Verification Document";
+      case 4: return "Verify Your Email";
       default: return "Create Your Account";
     }
   };
@@ -738,7 +1070,8 @@ const Signup = () => {
             <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-2xl shadow-xl py-8 px-4 sm:px-10 border border-white/20 dark:border-gray-700/30">
               {step === 1 && renderEmailForm()}
               {step === 2 && renderUserDetailsForm()}
-              {step === 3 && renderOtpForm()}
+              {step === 3 && renderDocumentUploadForm()}
+              {step === 4 && renderOtpForm()}
             </div>
           </motion.div>
         </div>

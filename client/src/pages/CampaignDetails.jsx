@@ -134,6 +134,8 @@ const CampaignDetails = () => {
                 daysLeft: campaign.daysLeft || 0,
                 donors: campaign.donors || 0,
                 longDescription: campaign.story,
+                verificationDocuments: campaign.verificationDocuments || [],
+                lapLetter: campaign.lapLetter || null,
                 creator: {
                   _id: campaign.creator?._id,
                   name: campaign.creator?.name || 'Anonymous',

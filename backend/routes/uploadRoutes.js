@@ -38,7 +38,8 @@ router.post('/presigned-url', protect, uploadLimiter, async (req, res) => {
       'blog-image',
       'document-license',
       'document-citizenship', 
-      'document-passport'
+      'document-passport',
+      'document-lap'
     ];
 
     if (!allowedFileTypes.includes(fileType)) {

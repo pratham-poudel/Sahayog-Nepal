@@ -27,6 +27,8 @@ exports.createCampaign = async (req, res) => {
             additionalImages,
             verificationDocumentUrls,
             verificationDocuments,
+            lapLetterUrl,
+            lapLetter,
             turnstileToken
         } = req.body;
 
@@ -46,8 +48,17 @@ exports.createCampaign = async (req, res) => {
             });
         }
 
+        // Validate LAP letter is uploaded
+        if (!lapLetterUrl && !lapLetter) {
+            return res.status(400).json({
+                success: false,
+                message: 'Local Authority Permission (LAP) Letter is required'
+            });
+        }
+
         // Use the uploaded cover image URL directly (store full URL)
         const finalCoverImage = coverImageUrl || coverImage;
+        const finalLapLetter = lapLetterUrl || lapLetter;
         
         // Process additional images if any
         let campaignImages = [];
@@ -99,6 +110,7 @@ exports.createCampaign = async (req, res) => {
             coverImage: finalCoverImage,
             images: campaignImages,
             verificationDocuments: verificationDocs,
+            lapLetter: finalLapLetter,
             creator: req.user._id,
             featured: false // Always set to false now
         });

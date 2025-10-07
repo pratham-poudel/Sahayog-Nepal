@@ -75,7 +75,7 @@ exports.initiateKhaltiPayment = async (req, res) => {
         message: 'Campaign not found'
       });
     }
-    if (campaign.status == 'cancelled' || campaign.status == 'rejected' ) {
+    if (campaign.status !='active'||campaign.status == 'cancelled' || campaign.status == 'rejected' ) {
       return res.status(400).json({
         success: false,
         message: 'Campaign is not active'

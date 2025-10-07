@@ -657,7 +657,7 @@ exports.getUserProfile = async (req, res) => {
 // @access  Private
 exports.updateUserProfile = async (req, res) => {
     try {
-        const { name, email, phone, bio, profilePicture, profilePictureUrl } = req.body;
+        const { name, email, phone, bio, profilePicture, profilePictureUrl, personalVerificationDocument } = req.body;
         
         // Build update object
         const updateData = { name, email, phone, bio };
@@ -668,6 +668,11 @@ exports.updateUserProfile = async (req, res) => {
         }
         if (profilePictureUrl) {
             updateData.profilePictureUrl = profilePictureUrl;
+        }
+        
+        // Add personal verification document if provided
+        if (personalVerificationDocument) {
+            updateData.personalVerificationDocument = personalVerificationDocument;
         }
         
         // Find user and update

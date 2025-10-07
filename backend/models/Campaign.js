@@ -94,6 +94,11 @@ const campaignSchema = new Schema({
     default: [],
     description: 'Optional verification documents (medical reports, certificates, etc.) that support campaign authenticity'
   },
+  lapLetter: {
+    type: String,
+    required: [true, 'Local Authority Permission (LAP) Letter is required'],
+    description: 'Local Authority Permission Letter - Required document for campaign verification'
+  },
   donations: [{
     type: Schema.Types.ObjectId,
     ref: 'Donation'

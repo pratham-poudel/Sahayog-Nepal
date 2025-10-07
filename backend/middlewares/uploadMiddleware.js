@@ -19,6 +19,7 @@ const getFileConfig = (fieldname) => {
     licenseDocument: { fileType: 'document-license', folder: 'documents/licenses' },
     citizenshipDocument: { fileType: 'document-citizenship', folder: 'documents/citizenship' },
     passportDocument: { fileType: 'document-passport', folder: 'documents/passports' },
+    lapLetter: { fileType: 'document-lap', folder: 'documents/lap-letters' },
   };
   return configMap[fieldname] || { fileType: 'other', folder: 'uploads' };
 };
