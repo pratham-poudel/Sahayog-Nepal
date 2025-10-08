@@ -273,8 +273,8 @@ const FeaturedCampaigns = () => {
             animation: fadeIn 0.5s ease-in-out;
           }
           
-          /* Mobile specific styles - FIXED for full card display */
-          @media (max-width: 768px) {
+          /* Tablet and Mobile specific styles - FIXED for iPad and mobile */
+          @media (max-width: 1023px) {
             .carousel-container {
               min-height: auto;
             }
@@ -294,6 +294,17 @@ const FeaturedCampaigns = () => {
               left: auto !important;
               opacity: 1 !important;
               transform: none !important;
+            }
+            
+            .desktop-carousel {
+              display: none !important;
+            }
+          }
+          
+          /* Desktop specific styles */
+          @media (min-width: 1024px) {
+            .mobile-carousel {
+              display: none !important;
             }
           }
         `}
@@ -359,7 +370,7 @@ const FeaturedCampaigns = () => {
                 
                 {/* Campaign cards - smoother minimalist animation */}
                 {/* Desktop view with fixed positioning for smooth animations */}
-                <div className="relative w-full hidden md:block" style={{ height: '500px' }}>
+                <div className="desktop-carousel relative w-full hidden lg:block" style={{ height: '500px' }}>
                   <AnimatePresence mode="wait" initial={false}>
                     {campaigns.map((campaign, index) => (
                       <motion.div
@@ -395,8 +406,8 @@ const FeaturedCampaigns = () => {
                   </AnimatePresence>
                 </div>
                 
-                {/* Mobile view with responsive grid layout */}
-                <div className="md:hidden mobile-carousel">
+                {/* Tablet and Mobile view with responsive grid layout */}
+                <div className="lg:hidden mobile-carousel">
                   <AnimatePresence initial={false}>
                     {campaigns.map((campaign, index) => (
                       <motion.div

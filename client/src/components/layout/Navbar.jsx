@@ -109,7 +109,7 @@ const Navbar = () => {
   ];
 
   return (
-    <nav className="hidden md:flex items-center mx-4 lg:mx-6">
+    <nav className="hidden lg:flex items-center mx-4 lg:mx-6">
       <ul className="flex flex-wrap justify-center space-x-2 lg:space-x-5 font-medium text-gray-800 dark:text-gray-200">
         {links.map((link) => (
           <li key={link.path} className="relative whitespace-nowrap">

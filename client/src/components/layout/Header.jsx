@@ -108,9 +108,9 @@ const Header = () => {
               <ThemeToggle />
             </div>
             
-            {/* Mobile Menu Button */}
+            {/* Mobile Menu Button - Now shows on tablets too */}
             <button 
-              className="flex items-center justify-center w-12 h-12 text-white bg-[#8B2325] dark:bg-[#a32729] rounded-md md:hidden"
+              className="flex items-center justify-center w-12 h-12 text-white bg-[#8B2325] dark:bg-[#a32729] rounded-md lg:hidden"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -121,9 +121,9 @@ const Header = () => {
               <i className="ri-menu-line text-3xl"></i>
             </button>
             
-            {/* Auth Buttons or User Menu */}
+            {/* Auth Buttons or User Menu - Desktop only */}
             {isAuthenticated ? (
-              <div className="hidden md:block relative user-menu-container">
+              <div className="hidden lg:block relative user-menu-container">
                 <button 
                   className="flex items-center space-x-2 focus:outline-none"
                   onClick={toggleUserMenu}
@@ -177,7 +177,7 @@ const Header = () => {
                 </AnimatePresence>
               </div>
             ) : (
-              <div className="hidden md:flex items-center space-x-3">
+              <div className="hidden lg:flex items-center space-x-3">
                 <Link href="/login">
                   <div className="py-2 px-5 border-2 border-[#8B2325] text-[#8B2325] dark:text-[#a32729] dark:border-[#a32729] rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm font-medium">
                     Log In
