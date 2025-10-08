@@ -178,6 +178,7 @@ const DonationForm = ({ campaignId, campaignTitle = "This Campaign" }) => {
   const [customAmount, setCustomAmount] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [message, setMessage] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -217,8 +218,11 @@ const DonationForm = ({ campaignId, campaignTitle = "This Campaign" }) => {
       if (user.email && !email) {
         setEmail(user.email);
       }
+      if (user.phone && !phone) {
+        setPhone(user.phone);
+      }
     }
-  }, [isAuthenticated, user, name, email]);
+  }, [isAuthenticated, user, name, email, phone]);
 
   // Cleanup for websocket and intervals
   useEffect(() => {
@@ -331,6 +335,16 @@ const DonationForm = ({ campaignId, campaignTitle = "This Campaign" }) => {
         return;
       }
       
+      // Validate phone number is provided
+      if (!phone.trim()) {
+        toast({
+          title: "Phone number required",
+          description: "Please provide your phone number for policy compliance.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
       // Validate name if not anonymous
       if (!isAnonymous && !name.trim()) {
         toast({
@@ -371,6 +385,7 @@ const DonationForm = ({ campaignId, campaignTitle = "This Campaign" }) => {
         totalAmount: Math.round(calculationSummary.totalAmount * 100), // Convert to paisa
         donorName: isAnonymous ? 'Anonymous' : name,
         donorEmail: email,
+        donorPhone: phone,
         donorMessage: message,
         isAnonymous,
         userId: isAuthenticated && user ? user._id : null // Include user ID if user is logged in
@@ -793,6 +808,19 @@ const DonationForm = ({ campaignId, campaignTitle = "This Campaign" }) => {
                         </label>
                       </div>
                       
+                      {/* Show info message about required fields */}
+                      <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
+                        <p className="text-xs text-blue-700 dark:text-blue-300 flex items-start">
+                          <svg className="w-4 h-4 mr-1.5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                          </svg>
+                          <span>
+                            Email and phone number are required for all donations for policy compliance and to send you a receipt. 
+                            {isAnonymous && " Your identity will remain private on the campaign page."}
+                          </span>
+                        </p>
+                      </div>
+                      
                       {/* Only show name field if not anonymous */}
                       {!isAnonymous && (
                         <div>
@@ -832,6 +860,30 @@ const DonationForm = ({ campaignId, campaignTitle = "This Campaign" }) => {
                           required
                         />
                         {isAuthenticated && user?.email && email === user.email && (
+                          <p className="text-xs text-green-600 dark:text-green-400 mt-1 flex items-center">
+                            <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                            Auto-filled from your account
+                          </p>
+                        )}
+                      </div>
+                      
+                      {/* Phone number field - ALWAYS visible and required */}
+                      <div>
+                        <input
+                          type="tel"
+                          placeholder={isAuthenticated && user?.phone ? "Phone Number (auto-filled from your account)" : "Phone Number (required)"}
+                          className={`w-full py-3 px-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white ${
+                            isAuthenticated && user?.phone && phone === user.phone 
+                              ? 'border-green-300 dark:border-green-600 bg-green-50 dark:bg-green-900/10' 
+                              : 'border-gray-200 dark:border-gray-700'
+                          }`}
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          required
+                        />
+                        {isAuthenticated && user?.phone && phone === user.phone && (
                           <p className="text-xs text-green-600 dark:text-green-400 mt-1 flex items-center">
                             <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />

@@ -22,6 +22,11 @@ const donationSchema = new Schema({
     trim: true,
     lowercase: true
   },
+  donorPhone: {
+    type: String,
+    trim: true,
+    required: [true, 'Phone number is required']
+  },
   amount: {
     type: Number,
     required: true, 

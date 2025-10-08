@@ -45,17 +45,18 @@ exports.initiateKhaltiPayment = async (req, res) => {
       platformFeePercentage,
       totalAmount,
       donorName, 
-      donorEmail, 
+      donorEmail,
+      donorPhone,
       donorMessage,
       isAnonymous,
       userId
     } = req.body;
 
     // Validate required fields
-    if (!campaignId || !amount || !totalAmount || !donorEmail) {
+    if (!campaignId || !amount || !totalAmount || !donorEmail || !donorPhone) {
       return res.status(400).json({ 
         success: false, 
-        message: 'Missing required fields' 
+        message: 'Missing required fields (email and phone are mandatory)' 
       });
     }
 
@@ -92,6 +93,7 @@ exports.initiateKhaltiPayment = async (req, res) => {
       userId: userId || null, // Use userId from request body
       donorName: isAnonymous ? 'Anonymous' : donorName,
       donorEmail,
+      donorPhone,
       donorMessage,
       isAnonymous,
       platformFee: platformFee/100,
@@ -116,7 +118,7 @@ exports.initiateKhaltiPayment = async (req, res) => {
       customer_info: {
         name: isAnonymous ? 'Anonymous Donor' : donorName || 'Donor',
         email: donorEmail,
-        phone: ''  // Phone is required by Khalti but can be empty
+        phone: donorPhone || ''  // Phone number from user input
       },
       amount_breakdown: [
         {
@@ -333,6 +335,7 @@ const donation = new Donation({
   donorId: payment.userId, // Can be null for guest donations
   donorName: payment.donorName,
   donorEmail: payment.donorEmail,
+  donorPhone: payment.donorPhone,
   amount: payment.amount,
   message: payment.donorMessage,
   anonymous: isAnonymous,
@@ -526,7 +529,8 @@ exports.initiateEsewaPayment = async (req, res) => {
       platformFeePercentage,
       totalAmount,
       donorName, 
-      donorEmail, 
+      donorEmail,
+      donorPhone,
       donorMessage,
       isAnonymous,
       userId
@@ -535,10 +539,10 @@ exports.initiateEsewaPayment = async (req, res) => {
     console.log('eSewa payment initiation request:', req.body);
 
     // Validate required fields
-    if (!campaignId || !amount || !totalAmount || !donorEmail) {
+    if (!campaignId || !amount || !totalAmount || !donorEmail || !donorPhone) {
       return res.status(400).json({ 
         success: false, 
-        message: 'Missing required fields' 
+        message: 'Missing required fields (email and phone are mandatory)' 
       });
     }
 
@@ -583,6 +587,7 @@ exports.initiateEsewaPayment = async (req, res) => {
       campaignId,
       donorName: isAnonymous ? 'Anonymous' : donorName,
       donorEmail,
+      donorPhone,
       donorMessage,
       isAnonymous,
       platformFee,
@@ -702,6 +707,7 @@ exports.handleEsewaCallback = async (req, res) => {
             donorId: payment.userId, // Can be null for guest donations
             donorName: payment.donorName,
             donorEmail: payment.donorEmail,
+            donorPhone: payment.donorPhone,
             amount: payment.amount,
             message: payment.donorMessage,
             anonymous: isAnonymous,
@@ -819,17 +825,18 @@ exports.initiateFonepayPayment = async (req, res) => {
       platformFeePercentage,
       totalAmount, // in paisa
       donorName, 
-      donorEmail, 
+      donorEmail,
+      donorPhone,
       donorMessage,
       isAnonymous,
       userId
     } = req.body;
 
     // Validate required fields
-    if (!campaignId || !amount || !totalAmount || !donorEmail) {
+    if (!campaignId || !amount || !totalAmount || !donorEmail || !donorPhone) {
       return res.status(400).json({ 
         success: false, 
-        message: 'Missing required fields' 
+        message: 'Missing required fields (email and phone are mandatory)' 
       });
     }
 
@@ -870,6 +877,7 @@ exports.initiateFonepayPayment = async (req, res) => {
       campaignId,
       donorName: isAnonymous ? 'Anonymous' : donorName,
       donorEmail,
+      donorPhone,
       donorMessage,
       isAnonymous,
       platformFee,
@@ -1002,6 +1010,7 @@ exports.checkFonepayStatus = async (req, res) => {
           donorId: payment.userId, // Can be null for guest donations
           donorName: payment.donorName,
           donorEmail: payment.donorEmail,
+          donorPhone: payment.donorPhone,
           amount: payment.amount,
           message: payment.donorMessage,
           anonymous: payment.isAnonymous,

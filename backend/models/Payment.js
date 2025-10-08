@@ -27,6 +27,11 @@ const paymentSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  donorPhone: {
+    type: String,
+    required: true,
+    trim: true
+  },
   donorMessage: {
     type: String
   },
