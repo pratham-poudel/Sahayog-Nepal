@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /* Import Professional Typography */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400;1,600&display=swap');
 
 @layer base {
   * {
@@ -58,6 +58,14 @@
     letter-spacing: 0.025em;
     text-transform: uppercase;
     font-size: 0.75rem;
+  }
+
+  /* Quote/Testimonial Style */
+  .text-quote {
+    font-family: 'Crimson Text', Georgia, serif;
+    font-style: italic;
+    line-height: 1.75;
+    letter-spacing: 0.01em;
   }
 
   /* Light Theme (default) */

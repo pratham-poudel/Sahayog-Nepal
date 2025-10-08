@@ -155,48 +155,48 @@ export const formatStatsForDisplay = (rawStats) => {
     totalUsers: {
       value: rawStats.totalUsers || 0,
       formatted: rawStats.formatted?.totalUsers || formatNumber(rawStats.totalUsers || 0),
-      label: "Generous Hearts",
-      description: "Amazing people who have joined our platform",
+      label: "Kind Souls",
+      description: "Ordinary people doing extraordinary things together",
       icon: "❤️",
       suffix: "+"
     },
     totalFunds: {
       value: rawStats.totalFunds || 0,
       formatted: rawStats.formatted?.totalFunds || formatCurrency(rawStats.totalFunds || 0),
-      label: "Funds Raised",
-      description: "Total funding raised through our platform",
+      label: "Lives Touched",
+      description: "Dreams funded, families helped, futures brightened",
       icon: "💰",
       suffix: ""
     },
     activeCampaigns: {
       value: rawStats.activeCampaigns || 0,
       formatted: rawStats.formatted?.activeCampaigns || (rawStats.activeCampaigns || 0).toString(),
-      label: "Active Campaigns", 
-      description: "Ongoing campaigns seeking support",
+      label: "Stories Unfolding", 
+      description: "Families hoping, communities building, change happening",
       icon: "🎯",
       suffix: ""
     },
     totalCampaigns: {
       value: rawStats.totalCampaigns || 0,
       formatted: rawStats.formatted?.totalCampaigns || (rawStats.totalCampaigns || 0).toString(),
-      label: "Total Campaigns",
-      description: "All campaigns ever created",
+      label: "Dreams Started",
+      description: "Every journey begins with a single step of courage",
       icon: "📊",
       suffix: ""
     },
     totalDonors: {
       value: rawStats.totalDonors || 0,
       formatted: rawStats.formatted?.totalDonors || formatNumber(rawStats.totalDonors || 0),
-      label: "Total Donors",
-      description: "People who have made donations",
+      label: "Generous Hearts",
+      description: "Strangers becoming family through kindness",
       icon: "🤝",
       suffix: "+"
     },
     districtsReached: {
       value: rawStats.districtsReached || 0,
       formatted: rawStats.formatted?.districtsReached || (rawStats.districtsReached || 0).toString(),
-      label: "Districts Reached",
-      description: "Across beautiful Nepal",
+      label: "Communities Connected",
+      description: "From mountains to valleys, hope knows no boundaries",
       icon: "🗺️",
       suffix: ""
     }

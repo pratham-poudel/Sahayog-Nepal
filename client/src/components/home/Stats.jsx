@@ -113,7 +113,7 @@ const Stats = () => {
       </div>
       
       <div className="container mx-auto px-4 md:px-6 lg:px-8 relative z-10">
-        {/* Section Header */}
+        {/* Section Header with emotional copy */}
         <motion.div 
           className="text-center mb-16"
           initial={{ opacity: 0, y: 30 }}
@@ -122,15 +122,17 @@ const Stats = () => {
           viewport={{ once: true }}
         >
           <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-[#8B2325]/10 to-blue-500/10 rounded-full mb-6">
-            <span className="text-caption text-[#8B2325] dark:text-red-400 font-semibold">Our Growing Impact</span>
+            <span className="text-sm text-[#8B2325] dark:text-red-400 font-medium tracking-wide">
+              Together We Rise
+            </span>
           </div>
           
-          <h2 className="text-h2 text-4xl md:text-5xl lg:text-6xl mb-6 bg-gradient-to-r from-[#8B2325] via-blue-600 to-[#8B2325] bg-clip-text text-transparent font-black">
-            Making Nepal Stronger
+          <h2 className="text-4xl md:text-5xl lg:text-6xl mb-6 text-gray-900 dark:text-white font-bold" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            The Power of Community
           </h2>
           
-          <p className="text-body text-xl md:text-2xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed">
-            Every number tells a story of hope, community, and positive change across our beautiful nation.
+          <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>
+            Each number represents a family touched, a life changed, and a dream fulfilled. This is what happens when Nepal comes together.
           </p>
         </motion.div>
         
@@ -231,7 +233,7 @@ const Stats = () => {
           )}
         </div>
         
-        {/* Call to Action */}
+        {/* Emotional Call to Action */}
         <motion.div 
           className="text-center mt-16"
           initial={{ opacity: 0, y: 20 }}
@@ -239,11 +241,11 @@ const Stats = () => {
           transition={{ duration: 0.6, delay: 0.8 }}
           viewport={{ once: true }}
         >
-          <div className="inline-flex items-center gap-4 bg-gradient-to-r from-[#8B2325]/10 to-blue-500/10 backdrop-blur-sm rounded-full px-6 py-3 border border-[#8B2325]/20">
-            <span className="text-2xl">🚀</span>
-            <p className="text-body text-lg font-semibold text-gray-700 dark:text-gray-300">
-              Join our journey to reach{' '}
-              <span className="text-[#8B2325] dark:text-red-400 font-bold">₹10M raised</span> by 2025!
+          <div className="inline-flex items-center gap-4 bg-gradient-to-r from-[#8B2325]/10 to-blue-500/10 backdrop-blur-sm rounded-2xl px-6 py-4 border border-[#8B2325]/20">
+            <span className="text-3xl">�</span>
+            <p className="text-lg font-medium text-gray-700 dark:text-gray-300" style={{ fontFamily: 'Inter, sans-serif' }}>
+              Every number here is a story of kindness—
+              <span className="text-[#8B2325] dark:text-red-400 font-bold"> yours could be next</span>
             </p>
           </div>
         </motion.div>

@@ -9,30 +9,30 @@ const HowItWorks = () => {
   
   const steps = [
     {
-      icon: '🚀',
-      title: 'Launch Your Cause',
-      description: 'Create a compelling campaign in under 5 minutes. Tell your story with photos, videos, and set your fundraising goal.',
-      detail: 'Our intuitive campaign builder guides you through every step, from writing compelling descriptions to setting realistic goals.',
+      icon: '🌱',
+      title: 'Share Your Story',
+      description: 'Tell us what matters to your heart. Every journey begins with hope and a story worth telling.',
+      detail: 'We help you put words to your dreams. Share photos, write from your heart, and set a goal that will change everything.',
       iconBg: 'bg-gradient-to-br from-[#8B2325]/20 to-red-500/20',
       iconColor: 'text-[#8B2325]',
       stepNumber: '01',
       color: 'red'
     },
     {
-      icon: '📱',
-      title: 'Amplify Your Reach',
-      description: 'Share across social media, WhatsApp, and email. Built-in sharing tools help you reach more generous hearts.',
-      detail: 'Get custom sharing templates, QR codes, and social media assets designed to maximize your campaign visibility.',
+      icon: '🤝',
+      title: 'Build Your Community',
+      description: 'When you share your story, you invite others to become part of something bigger than all of us.',
+      detail: 'Your friends, family, and even strangers become your strength. Together, we turn hope into action.',
       iconBg: 'bg-gradient-to-br from-blue-500/20 to-indigo-500/20',
       iconColor: 'text-blue-600',
       stepNumber: '02',
       color: 'blue'
     },
     {
-      icon: '💰',
-      title: 'Receive & Celebrate',
-      description: 'Get funds directly to your bank account. Track donations in real-time and thank your amazing supporters.',
-      detail: 'Transparent tracking, instant notifications, and automated thank-you messages help you stay connected with donors.',
+      icon: '�',
+      title: 'Watch Dreams Come True',
+      description: 'See kindness multiply as support flows in. Every contribution brings you closer to making it happen.',
+      detail: 'Track each gift of love, thank those who believed in you, and celebrate every milestone on your journey.',
       iconBg: 'bg-gradient-to-br from-green-500/20 to-emerald-500/20',
       iconColor: 'text-green-600',
       stepNumber: '03',
@@ -79,15 +79,17 @@ const HowItWorks = () => {
           viewport={{ once: true }}
         >
           <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-[#8B2325]/10 to-blue-500/10 rounded-full mb-8">
-            <span className="text-caption text-[#8B2325] dark:text-red-400 font-semibold">Simple Process</span>
+            <span className="text-sm text-[#8B2325] dark:text-red-400 font-medium tracking-wide">
+              Your Journey to Change
+            </span>
           </div>
           
-          <h2 className="text-h2 text-4xl md:text-5xl lg:text-6xl mb-6 bg-gradient-to-r from-[#8B2325] via-blue-600 to-[#8B2325] bg-clip-text text-transparent font-black">
-            How It Works
+          <h2 className="text-4xl md:text-5xl lg:text-6xl mb-6 text-gray-900 dark:text-white font-bold" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            How Hope Becomes Reality
           </h2>
           
-          <p className="text-body text-xl md:text-2xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed">
-            From idea to impact in three simple steps. Join thousands making a difference across Nepal.
+          <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>
+            Three simple steps to turn your dreams into action. Thousands have walked this path—now it's your turn to shine.
           </p>
         </motion.div>
 
@@ -179,13 +181,13 @@ const HowItWorks = () => {
           <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl rounded-3xl border border-white/20 dark:border-gray-700/20 p-12 shadow-2xl max-w-4xl mx-auto">
             
             <div className="flex items-center justify-center gap-6 mb-8">
-              <div className="text-6xl">🎯</div>
+              <div className="text-5xl">✨</div>
               <div>
-                <h3 className="text-h3 text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                  Ready to Make History?
+                <h3 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  Your Story Matters
                 </h3>
-                <p className="text-body text-gray-600 dark:text-gray-300">
-                  Join {stats?.totalUsers?.formatted || '1,250+'} changemakers already transforming Nepal
+                <p className="text-gray-600 dark:text-gray-300" style={{ fontFamily: 'Inter, sans-serif' }}>
+                  Join {stats?.totalUsers?.formatted || '1,250+'} people who chose to make a difference
                 </p>
               </div>
             </div>
@@ -193,44 +195,44 @@ const HowItWorks = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/start-campaign">
                 <motion.button 
-                  className="group relative py-4 px-8 bg-gradient-to-r from-[#8B2325] via-[#a32729] to-[#8B2325] text-white font-bold rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 flex items-center justify-center overflow-hidden"
-                  whileHover={{ scale: 1.05, y: -2 }}
+                  className="group relative py-4 px-8 bg-gradient-to-r from-[#8B2325] via-[#a32729] to-[#8B2325] text-white font-semibold rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center overflow-hidden"
+                  whileHover={{ scale: 1.02, y: -2 }}
                   whileTap={{ scale: 0.98 }}
+                  style={{ fontFamily: 'Inter, sans-serif' }}
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                   <span className="relative z-10 flex items-center">
-                    <span className="text-2xl mr-2">🚀</span>
-                    Start Your Campaign Now
+                    Begin Your Journey
                   </span>
                 </motion.button>
               </Link>
               
               <Link to="/explore">
                 <motion.button
-                  className="py-4 px-8 border-2 border-[#8B2325] bg-white/80 backdrop-blur-sm dark:bg-gray-800/80 dark:border-red-400 text-[#8B2325] dark:text-red-400 font-bold rounded-xl hover:bg-[#8B2325] hover:text-white dark:hover:bg-red-400 dark:hover:text-white shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center"
-                  whileHover={{ scale: 1.05, y: -2 }}
+                  className="py-4 px-8 border-2 border-gray-300 bg-white/80 backdrop-blur-sm dark:bg-gray-800/80 dark:border-gray-600 text-gray-700 dark:text-gray-200 font-semibold rounded-2xl hover:border-[#8B2325] hover:text-[#8B2325] dark:hover:border-red-400 dark:hover:text-red-400 shadow-md hover:shadow-lg transition-all duration-300 flex items-center justify-center"
+                  whileHover={{ scale: 1.02, y: -2 }}
                   whileTap={{ scale: 0.98 }}
+                  style={{ fontFamily: 'Inter, sans-serif' }}
                 >
                   <span className="flex items-center">
-                    <span className="text-2xl mr-2">👀</span>
-                    Explore Active Campaigns
+                    Support a Story
                   </span>
                 </motion.button>
               </Link>
             </div>
             
-            <div className="mt-8 flex items-center justify-center gap-8 text-sm text-gray-500 dark:text-gray-400">
+            <div className="mt-8 flex items-center justify-center gap-8 text-sm text-gray-500 dark:text-gray-400 flex-wrap">
               <div className="flex items-center gap-2">
                 <span className="text-green-500 text-lg">✓</span>
-                <span>No setup fees</span>
+                <span>Free to start</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-green-500 text-lg">✓</span>
-                <span>0% platform fee</span>
+                <span>Safe and secure</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-green-500 text-lg">✓</span>
-                <span>Secure payments</span>
+                <span>Trusted by families</span>
               </div>
             </div>
           </div>

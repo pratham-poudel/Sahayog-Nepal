@@ -245,23 +245,23 @@ const FeaturedCampaigns = () => {
   };
 
   return (
-    <section className="py-12 px-4 bg-gray-50 dark:bg-gray-900">
+    <section className="py-16 px-4 bg-gradient-to-b from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/50">
       <style>
         {`
           .carousel-container {
             position: relative;
             overflow: hidden;
-            height: 500px; /* Fixed height to prevent jitter */
+            min-height: 500px;
           }
           
           .carousel-card {
             transition: opacity 0.8s cubic-bezier(0.25, 0.1, 0.25, 1.0), transform 0.5s cubic-bezier(0.25, 0.1, 0.25, 1.0), box-shadow 0.5s cubic-bezier(0.25, 0.1, 0.25, 1.0);
-            will-change: opacity, transform; /* Performance optimization */
+            will-change: opacity, transform;
           }
           
           .carousel-card:hover {
-            transform: scale(1.02); /* Scale instead of translate for smoother effect */
-            box-shadow: 0 20px 25px -5px rgba(139, 35, 37, 0.25);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(139, 35, 37, 0.15);
           }
           
           @keyframes fadeIn {
@@ -273,54 +273,49 @@ const FeaturedCampaigns = () => {
             animation: fadeIn 0.5s ease-in-out;
           }
           
-          /* Mobile specific styles */
+          /* Mobile specific styles - FIXED for full card display */
           @media (max-width: 768px) {
             .carousel-container {
-              height: auto;
-              min-height: 480px;
+              min-height: auto;
             }
             
             .mobile-carousel {
-              display: grid;
-              grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-              gap: 16px;
-              padding: 8px 4px;
+              display: flex;
+              flex-direction: column;
+              gap: 20px;
+              padding: 8px 0;
             }
             
             .mobile-card {
               width: 100%;
-              margin-bottom: 1rem;
+              margin: 0;
               height: auto;
-              min-height: 450px;
               position: relative !important; 
               left: auto !important;
               opacity: 1 !important;
-            }
-          }
-          
-          /* Small mobile screens */
-          @media (max-width: 480px) {
-            .mobile-carousel {
-              grid-template-columns: 1fr;
+              transform: none !important;
             }
           }
         `}
       </style>
       <div className="container mx-auto">
         <motion.div 
-          className="text-center mb-8"
+          className="text-center mb-12"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           viewport={{ once: true }}
         >
-          <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 w-16 h-1 bg-[#8B2325] rounded-full"></div>
-          <h2 className="text-3xl md:text-4xl font-poppins font-bold mb-5 relative inline-block">
-            Featured Campaigns
-            <span className="absolute -bottom-2 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#8B2325] to-transparent"></span>
+          <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-[#8B2325]/10 to-blue-500/10 rounded-full mb-6">
+            <span className="text-sm text-[#8B2325] dark:text-red-400 font-medium tracking-wide">
+              Stories That Need You
+            </span>
+          </div>
+          <h2 className="text-4xl md:text-5xl font-bold mb-5 text-gray-900 dark:text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            Lives Waiting to Change
           </h2>
-          <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto text-lg leading-relaxed">
-            Discover initiatives that are changing lives across Nepal and join the movement by supporting these causes.
+          <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto text-lg leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>
+            Behind every campaign is a family with hope, a child with dreams, or a community seeking a better tomorrow.
           </p>
         </motion.div>
 

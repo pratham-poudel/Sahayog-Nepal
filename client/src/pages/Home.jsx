@@ -5,6 +5,7 @@ import SEO from '../utils/seo.jsx';
 // Components
 import Hero from '../components/home/Hero';
 import Stats from '../components/home/Stats';
+import InspirationQuote from '../components/home/InspirationQuote';
 import FeaturedCampaigns from '../components/home/FeaturedCampaigns';
 import TopDonors from '../components/home/TopDonors';
 import HowItWorks from '../components/home/HowItWorks';
@@ -30,8 +31,8 @@ const Home = () => {
     <>
       <SEO 
         title="Home" 
-        description="Join Nepal's first donation platform to support causes that matter. Together, we can make a difference in communities across Nepal."
-        keywords="donation Nepal, crowdfunding Nepal, fundraising Nepal, community support, Nepal charity"
+        description="Every dream deserves a chance to grow. From the hills of Pokhara to the valleys of Kathmandu, your kindness can change a life today. Join Nepal's most trusted community of givers."
+        keywords="help Nepal, support causes Nepal, crowdfunding Nepal, donate Nepal, community support, kindness, change lives"
       />
 
       <motion.div
@@ -40,10 +41,11 @@ const Home = () => {
         variants={sectionVariants}
       >
         <Hero />
+        <InspirationQuote />
         <Stats />
         <FeaturedCampaigns />
-        <TopDonors />
         <HowItWorks />
+        <TopDonors />
         <CampaignCTA />
         <Newsletter />
       </motion.div>
