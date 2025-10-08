@@ -193,95 +193,120 @@ const Hero = () => {
               transition={{ duration: 5, repeat: Infinity }}
             />
             
-            <h1 className="relative z-10">
-              {/* Emotional, Story-Driven Headline */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, ease: "easeOut" }}
-                className="mb-6"
-              >
-                <span className="inline-block text-sm text-[#8B2325] dark:text-red-400 bg-gradient-to-r from-[#8B2325]/10 to-blue-500/10 px-4 py-2 rounded-full font-medium mb-6 border border-[#8B2325]/20 tracking-wide">
-                  When hearts unite, hope multiplies
-                </span>
-              </motion.div>
-
-              <motion.span 
-                className="block text-5xl md:text-6xl lg:text-7xl mb-3 text-gray-900 dark:text-white font-bold leading-tight"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 1, ease: "easeOut", delay: 0.2 }}
-                style={{ fontFamily: 'Poppins, sans-serif' }}
-              >
-                Every Dream Deserves
-              </motion.span>
-              
-              <motion.span 
-                className="block text-4xl md:text-5xl lg:text-6xl mb-8 leading-tight"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.8, ease: "easeOut", delay: 0.4 }}
-                style={{ fontFamily: 'Poppins, sans-serif' }}
-              >
-                <span className="bg-gradient-to-r from-[#8B2325] via-red-600 to-[#8B2325] bg-clip-text text-transparent font-bold">
-                  A Chance to Grow
-                </span>
-              </motion.span>
-            </h1>
-            
+            {/* ✨ SACRED OPENER - Sanskrit Shloka */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.6 }}
-              className="mb-10"
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="mb-6"
             >
-              {/* Heartfelt, meaningful description */}
-              <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300 mb-4 max-w-2xl mx-auto md:mx-0 leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>
-                From the hills of Pokhara to the valleys of Kathmandu, your kindness can change a life today.
-              </p>
-              
-              <p className="text-base md:text-lg text-gray-500 dark:text-gray-400 mb-6 max-w-2xl mx-auto md:mx-0 leading-relaxed italic" style={{ fontFamily: 'Inter, sans-serif' }}>
-                "A single act of kindness throws out roots in all directions, and the roots spring up and make new trees."
-              </p>
-              
-              <div className="flex items-center gap-4 justify-center md:justify-start flex-wrap">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Building hope since 2024</span>
+              <div className="relative">
+                {/* Subtle divine glow effect */}
+                <div className="absolute -inset-2 bg-gradient-to-r from-amber-400/20 via-rose-400/20 to-amber-400/20 rounded-2xl blur-xl opacity-60 animate-pulse"></div>
+                
+                <div className="relative bg-white/40 dark:bg-gray-800/40 backdrop-blur-sm rounded-xl px-4 py-3 border border-amber-200/50 dark:border-amber-700/30">
+                  <p className="text-lg md:text-xl font-serif text-amber-600 dark:text-amber-400 leading-relaxed text-center md:text-left" style={{ fontFamily: 'Noto Serif Devanagari, serif' }}>
+                    सर्वे भवन्तु सुखिनः, सर्वे सन्तु निरामयाः।
+                  </p>
+                  <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 italic mt-1 text-center md:text-left" style={{ fontFamily: 'Inter, sans-serif' }}>
+                    May all be happy, may all be free from illness
+                  </p>
                 </div>
-                <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
-                <span className="text-sm text-gray-500 dark:text-gray-500">Trusted by families across Nepal</span>
               </div>
             </motion.div>
+
+            {/* 🌿 EMOTIONAL CORE - Main Heading */}
+            <motion.h1 
+              className="relative z-10 text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white leading-tight mt-6 mb-4"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 1, ease: "easeOut", delay: 0.2 }}
+              style={{ fontFamily: 'Poppins, sans-serif' }}
+            >
+              <span className="block">Every Dream Deserves</span>
+              <span className="block bg-gradient-to-r from-[#8B2325] via-rose-600 to-amber-600 bg-clip-text text-transparent">
+                A Chance to Grow
+              </span>
+            </motion.h1>
             
+            {/* 🌍 HUMAN CONNECTION - Location-based supporting line */}
+            <motion.p 
+              className="text-lg md:text-xl text-gray-600 dark:text-gray-300 mt-4 max-w-2xl mx-auto md:mx-0 leading-relaxed"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.4 }}
+              style={{ fontFamily: 'Inter, sans-serif' }}
+            >
+              From the hills of Dadeldhura to the valleys of Kathmandu, your kindness can change a life today.
+            </motion.p>
+            
+            {/* 💫 INSPIRATIONAL QUOTE - Softer, contemplative tone */}
+            <motion.blockquote 
+              className="mt-6 mb-8 pl-4 border-l-4 border-amber-400 dark:border-amber-600"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, delay: 0.6 }}
+            >
+              <p className="text-sm md:text-base text-gray-500 dark:text-gray-400 italic leading-relaxed" style={{ fontFamily: 'Georgia, serif' }}>
+                "A single act of kindness throws out roots in all directions, and the roots spring up and make new trees."
+              </p>
+            </motion.blockquote>
+            
+            {/* 🏗️ TRUST & CREDIBILITY BADGES */}
+            <motion.div
+              className="mb-8"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.7 }}
+            >
+              <p className="text-xs md:text-sm uppercase tracking-widest text-gray-500 dark:text-gray-400 flex items-center gap-3 justify-center md:justify-start flex-wrap" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                <span className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+                  Building hope since 2024
+                </span>
+                <span className="text-gray-400">•</span>
+                <span>Trusted by families across Nepal</span>
+              </p>
+            </motion.div>
+            
+            {/* 🎯 CLEAR CTAs - Action-oriented with gradient glow */}
             <motion.div 
-              className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start w-full"
+              className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start w-full mb-10"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.8 }}
             >
-              <Link to="/start-campaign" className="group">
+              <Link to="/start-campaign" className="group relative">
                 <motion.button 
-                  className="relative w-full sm:w-auto py-4 px-8 bg-gradient-to-r from-[#8B2325] via-[#a32729] to-[#8B2325] text-white font-semibold rounded-2xl shadow-lg hover:shadow-xl transform transition-all duration-300 flex items-center justify-center overflow-hidden"
+                  className="relative w-full sm:w-auto py-4 px-8 bg-gradient-to-r from-amber-500 via-rose-500 to-amber-500 bg-size-200 bg-pos-0 hover:bg-pos-100 text-white font-semibold rounded-xl shadow-lg hover:shadow-2xl transform transition-all duration-500 flex items-center justify-center overflow-hidden"
                   whileHover={{ 
                     scale: 1.02,
                     y: -2
                   }}
                   whileTap={{ scale: 0.98 }}
-                  style={{ fontFamily: 'Inter, sans-serif' }}
+                  style={{ 
+                    fontFamily: 'Inter, sans-serif',
+                    backgroundSize: '200% auto'
+                  }}
                 >
-                  {/* Animated background glow */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  {/* Animated gradient glow border */}
+                  <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-r from-amber-400 via-rose-400 to-amber-400 blur-md -z-10"></div>
                   
-                  <span className="relative z-10 flex items-center">
+                  {/* Shimmer effect */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 translate-x-[-100%] group-hover:translate-x-[100%] transition-all duration-1000"></div>
+                  
+                  <span className="relative z-10 flex items-center gap-2">
                     Start Your Story
+                    <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
                   </span>
                 </motion.button>
               </Link>
               
               <Link to="/explore" className="group">
                 <motion.button
-                  className="relative w-full sm:w-auto py-4 px-8 border-2 border-gray-300 bg-white/80 backdrop-blur-sm dark:bg-gray-800/80 dark:border-gray-600 text-gray-700 dark:text-gray-200 font-semibold rounded-2xl hover:border-[#8B2325] hover:text-[#8B2325] dark:hover:border-red-400 dark:hover:text-red-400 shadow-md hover:shadow-lg transition-all duration-300 flex items-center justify-center overflow-hidden"
+                  className="relative w-full sm:w-auto py-4 px-8 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 font-semibold rounded-xl hover:border-amber-500 dark:hover:border-amber-500 hover:text-amber-600 dark:hover:text-amber-400 shadow-md hover:shadow-lg transition-all duration-300 flex items-center justify-center overflow-hidden"
                   whileHover={{ 
                     scale: 1.02,
                     y: -2
@@ -289,112 +314,96 @@ const Hero = () => {
                   whileTap={{ scale: 0.98 }}
                   style={{ fontFamily: 'Inter, sans-serif' }}
                 >
-                  <span className="relative z-10 flex items-center">
+                  {/* Subtle glow on hover */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-amber-500/0 to-rose-500/0 group-hover:from-amber-500/5 group-hover:to-rose-500/5 transition-all duration-300 rounded-xl"></div>
+                  
+                  <span className="relative z-10 flex items-center gap-2">
                     Find Stories to Support
+                    <svg className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
                   </span>
                 </motion.button>
               </Link>
             </motion.div>
             
+            {/* 👥 SOCIAL PROOF - Community engagement teaser */}
             <motion.div 
               className="flex items-center justify-center md:justify-start mt-12"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: isVisible ? 1 : 0, y: isVisible ? 0 : 20 }}
               transition={{ duration: 0.8, delay: 1.0, ease: "easeOut" }}
             >
-              {/* Emotional social proof with top donors */}
-              <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl p-5 border border-white/20 dark:border-gray-700/20 shadow-lg max-w-lg w-full">
-                <div className="flex flex-col gap-4">
-                  {/* Community stats */}
-                  <div className="flex items-center gap-4">
-                    <div className="flex -space-x-3">
-                      {[22, 43, 76, 35, 18].map((id, index) => (
-                        <motion.img 
-                          key={id}
-                          className="h-11 w-11 rounded-full border-3 border-white dark:border-gray-800 object-cover shadow-md"
-                          src={`https://randomuser.me/api/portraits/${index % 2 === 0 ? 'women' : 'men'}/${id}.jpg`}
-                          alt="Community member"
-                          width="44"
-                          height="44"
-                          loading="lazy"
-                          fetchpriority="low"
-                          initial={{ opacity: 0, scale: 0.8, x: -10 }}
-                          animate={{ opacity: 1, scale: 1, x: 0 }}
-                          transition={{ duration: 0.3, delay: 1.2 + (index * 0.1) }}
-                        />
-                      ))}
-                    </div>
-                    
-                    <div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1" style={{ fontFamily: 'Inter, sans-serif' }}>
-                        Joined by
-                      </p>
-                      <p className="font-bold text-gray-900 dark:text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                        <span className="text-xl font-black bg-gradient-to-r from-[#8B2325] to-blue-600 bg-clip-text text-transparent">
-                          {formattedHomeStats?.totalUsers?.formatted ? `${formattedHomeStats.totalUsers.formatted}+` : "1,250+"}
-                        </span>
-                        <span className="text-sm ml-1">kind souls</span>
-                      </p>
-                    </div>
-                  </div>
-                  
-                  {/* Top 3 Donors - Dynamic */}
-                  {topDonors.length > 0 && (
-                    <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                          Today's Hearts of Gold
-                        </p>
-                        <Link to="/explore">
-                          <span className="text-xs text-[#8B2325] dark:text-red-400 hover:underline cursor-pointer">
-                            See all →
-                          </span>
-                        </Link>
-                      </div>
-                      <div className="flex gap-2">
-                        {topDonors.slice(0, 3).map((donorData, index) => {
-                          // Extract donor info from nested structure
-                          const donor = donorData.donor || {};
-                          const firstName = donor.name?.split(' ')[0] || 'Anonymous';
-                          const profilePicture = donor.profilePictureUrl || null;
-                          
-                          return (
-                            <motion.div
-                              key={donorData._id || index}
-                              className="flex-1 bg-gradient-to-br from-white/80 to-gray-50/80 dark:from-gray-700/80 dark:to-gray-800/80 rounded-xl p-3 border border-white/40 dark:border-gray-600/40 hover:shadow-md transition-all duration-300"
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ duration: 0.3, delay: 1.4 + (index * 0.1) }}
-                            >
-                              <div className="flex items-center gap-2 mb-2">
-                                <img 
-                                  src={profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(donor.name || 'Anonymous')}&background=8B2325&color=fff`}
-                                  alt={donor.name || 'Anonymous donor'}
-                                  className="w-8 h-8 rounded-full object-cover border-2 border-[#8B2325]/20"
-                                />
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-xs font-bold text-gray-900 dark:text-white truncate" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                                    {firstName}
-                                  </p>
-                                  <p className="text-[10px] text-gray-500 dark:text-gray-400">
-                                    #{index + 1} Giver
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="bg-[#8B2325]/10 dark:bg-red-900/20 rounded-lg px-2 py-1">
-                                <p className="text-xs font-black text-[#8B2325] dark:text-red-400 text-center">
-                                  ₹{donorData.totalDonated?.toLocaleString() || '0'}
-                                </p>
-                              </div>
-                            </motion.div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
+              {/* Simple, elegant social proof */}
+              <div className="flex items-center gap-4 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-2xl px-5 py-4 border border-gray-200/50 dark:border-gray-700/30 shadow-md hover:shadow-lg transition-all duration-300 max-w-lg">
+                <div className="flex -space-x-3">
+                  {[22, 43, 76, 35, 18].map((id, index) => (
+                    <motion.img 
+                      key={id}
+                      className="h-10 w-10 rounded-full border-2 border-white dark:border-gray-800 object-cover shadow-sm"
+                      src={`https://randomuser.me/api/portraits/${index % 2 === 0 ? 'women' : 'men'}/${id}.jpg`}
+                      alt="Community member"
+                      width="40"
+                      height="40"
+                      loading="lazy"
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.3, delay: 1.2 + (index * 0.08) }}
+                    />
+                  ))}
+                </div>
+                
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400" style={{ fontFamily: 'Inter, sans-serif' }}>
+                    Joined by <strong className="text-gray-900 dark:text-white font-bold">
+                      {formattedHomeStats?.totalUsers?.formatted ? `${formattedHomeStats.totalUsers.formatted}+` : "200+"}
+                    </strong> community members
+                  </p>
                 </div>
               </div>
             </motion.div>
+            
+            {/* Optional: Top donors showcase - can be shown below or removed */}
+            {topDonors.length > 0 && (
+              <motion.div
+                className="mt-6 bg-gradient-to-r from-amber-50/50 to-rose-50/50 dark:from-amber-900/10 dark:to-rose-900/10 backdrop-blur-sm rounded-xl px-4 py-3 border border-amber-200/30 dark:border-amber-700/20 max-w-lg"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 1.3 }}
+              >
+                <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-2 uppercase tracking-wide" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                  💛 Today's Hearts of Gold
+                </p>
+                <div className="flex gap-2">
+                  {topDonors.slice(0, 3).map((donorData, index) => {
+                    const donor = donorData.donor || {};
+                    const firstName = donor.name?.split(' ')[0] || 'Anonymous';
+                    const profilePicture = donor.profilePictureUrl || null;
+                    
+                    return (
+                      <div
+                        key={donorData._id || index}
+                        className="flex-1 bg-white/70 dark:bg-gray-800/70 rounded-lg p-2 border border-white/60 dark:border-gray-700/40 hover:shadow-md transition-all duration-300"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <img 
+                            src={profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(donor.name || 'Anonymous')}&background=f59e0b&color=fff`}
+                            alt={donor.name || 'Anonymous donor'}
+                            className="w-6 h-6 rounded-full object-cover border border-amber-400/30"
+                          />
+                          <p className="text-xs font-bold text-gray-900 dark:text-white truncate flex-1" style={{ fontFamily: 'Inter, sans-serif' }}>
+                            {firstName}
+                          </p>
+                        </div>
+                        <p className="text-xs font-black text-amber-600 dark:text-amber-400 text-center">
+                          ₹{donorData.totalDonated?.toLocaleString() || '0'}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
           </motion.div>
 
           <motion.div 
