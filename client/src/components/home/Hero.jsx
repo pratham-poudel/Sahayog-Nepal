@@ -525,11 +525,11 @@ const Hero = () => {
                     ))}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-3 gap-3">
                     <div className="text-center group">
-                      <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-2xl p-3 mb-2 group-hover:shadow-lg transition-shadow duration-300">
+                      <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-2xl p-2.5 mb-2 group-hover:shadow-lg transition-shadow duration-300">
                         <motion.p 
-                          className="text-2xl font-black bg-gradient-to-r from-[#8B2325] to-red-600 bg-clip-text text-transparent"
+                          className="text-lg sm:text-xl md:text-2xl font-black bg-gradient-to-r from-[#8B2325] to-red-600 bg-clip-text text-transparent truncate"
                           initial={{ opacity: 0, scale: 0.8 }}
                           animate={{ opacity: 1, scale: 1 }}
                           transition={{ duration: 0.5, delay: 1 }}
@@ -539,14 +539,14 @@ const Hero = () => {
                           {formattedHomeStats?.totalCampaigns?.formatted || "42"}
                         </motion.p>
                       </div>
-                      <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>Stories</p>
-                      <p className="text-[10px] text-gray-500 dark:text-gray-400" style={{ fontFamily: 'Inter, sans-serif' }}>Live now</p>
+                      <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1 truncate" style={{ fontFamily: 'Poppins, sans-serif' }}>Stories</p>
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate" style={{ fontFamily: 'Inter, sans-serif' }}>Live now</p>
                     </div>
                     
                     <div className="text-center group">
-                      <div className="bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/30 dark:to-emerald-800/30 rounded-2xl p-3 mb-2 group-hover:shadow-lg transition-shadow duration-300">
+                      <div className="bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/30 dark:to-emerald-800/30 rounded-2xl p-2.5 mb-2 group-hover:shadow-lg transition-shadow duration-300">
                         <motion.p 
-                          className="text-2xl font-black bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent"
+                          className="text-lg sm:text-xl md:text-2xl font-black bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent truncate px-1"
                           initial={{ opacity: 0, scale: 0.8 }}
                           animate={{ opacity: 1, scale: 1 }}
                           transition={{ duration: 0.5, delay: 1.2 }}
@@ -556,14 +556,14 @@ const Hero = () => {
                           {liveStats?.formatted?.totalRaised || "₹2.5M"}
                         </motion.p>
                       </div>
-                      <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>Raised</p>
-                      <p className="text-[10px] text-gray-500 dark:text-gray-400" style={{ fontFamily: 'Inter, sans-serif' }}>Total impact</p>
+                      <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1 truncate" style={{ fontFamily: 'Poppins, sans-serif' }}>Raised</p>
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate" style={{ fontFamily: 'Inter, sans-serif' }}>Total impact</p>
                     </div>
                     
                     <div className="text-center group">
-                      <div className="bg-gradient-to-br from-purple-50 to-violet-100 dark:from-purple-900/30 dark:to-violet-800/30 rounded-2xl p-3 mb-2 group-hover:shadow-lg transition-shadow duration-300">
+                      <div className="bg-gradient-to-br from-purple-50 to-violet-100 dark:from-purple-900/30 dark:to-violet-800/30 rounded-2xl p-2.5 mb-2 group-hover:shadow-lg transition-shadow duration-300">
                         <motion.p 
-                          className="text-2xl font-black bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"
+                          className="text-lg sm:text-xl md:text-2xl font-black bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent truncate"
                           initial={{ opacity: 0, scale: 0.8 }}
                           animate={{ opacity: 1, scale: 1 }}
                           transition={{ duration: 0.5, delay: 1.4 }}
@@ -573,8 +573,8 @@ const Hero = () => {
                           {liveStats?.recentDonations || "5"}
                         </motion.p>
                       </div>
-                      <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>Today</p>
-                      <p className="text-[10px] text-gray-500 dark:text-gray-400" style={{ fontFamily: 'Inter, sans-serif' }}>New gifts</p>
+                      <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1 truncate" style={{ fontFamily: 'Poppins, sans-serif' }}>Today</p>
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate" style={{ fontFamily: 'Inter, sans-serif' }}>New gifts</p>
                     </div>
                   </div>
                 )}

@@ -5,27 +5,58 @@ const InspirationQuote = () => {
   const [currentQuote, setCurrentQuote] = useState(0);
   
   const quotes = [
-    {
-      text: "No act of kindness, no matter how small, is ever wasted.",
-      author: "Aesop",
-      context: "Ancient wisdom that guides us still"
-    },
-    {
-      text: "We rise by lifting others.",
-      author: "Robert Ingersoll",
-      context: "The heart of community"
-    },
-    {
-      text: "The best way to find yourself is to lose yourself in the service of others.",
-      author: "Mahatma Gandhi",
-      context: "A path to purpose"
-    },
-    {
-      text: "Alone we can do so little; together we can do so much.",
-      author: "Helen Keller",
-      context: "The power of unity"
-    }
-  ];
+  {
+    text: "No act of kindness, no matter how small, is ever wasted.",
+    author: "Aesop",
+    context: "Ancient wisdom that guides us still"
+  },
+  {
+    text: "We rise by lifting others.",
+    author: "Robert Ingersoll",
+    context: "The heart of community"
+  },
+  {
+    text: "Alone we can do so little; together we can do so much.",
+    author: "Helen Keller",
+    context: "The power of unity"
+  },
+  {
+    text: "It's not how much we give, but how much love we put into giving.",
+    author: "Mother Teresa",
+    context: "Heart over wealth"
+  },
+  {
+    text: "The greatness of a community is most accurately measured by the compassionate actions of its members.",
+    author: "Coretta Scott King",
+    context: "True power lies in collective kindness"
+  },
+  {
+    text: "Never doubt that a small group of thoughtful, committed citizens can change the world; indeed, it's the only thing that ever has.",
+    author: "Margaret Mead",
+    context: "The unstoppable force of community"
+  },
+  {
+    text: "The whole is greater than the sum of its parts.",
+    author: "Aristotle",
+    context: "The essence of collaboration"
+  },
+  {
+    text: "Only a life lived for others is a life worthwhile.",
+    author: "Albert Einstein",
+    context: "Purpose found in service"
+  },
+  {
+    text: "If you want to go fast, go alone. If you want to go far, go together.",
+    author: "African Proverb",
+    context: "Timeless truth of collaboration"
+  },
+  {
+    text: "He who wishes to secure the good of others has already secured his own.",
+    author: "Confucius",
+    context: "The circle of shared good"
+  }
+];
+
 
   useEffect(() => {
     const interval = setInterval(() => {
