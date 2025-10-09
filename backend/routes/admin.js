@@ -25,10 +25,54 @@ const emailAbuseMonitoring = require('./emailAbuseMonitoring');
 // Use email abuse monitoring routes
 router.use('/', emailAbuseMonitoring);
 
-
+// Debug endpoint to test cookie configuration (remove in production after debugging)
+router.get('/debug-cookie-test', async (req, res) => {
+    const debugInfo = {
+        environment: process.env.NODE_ENV,
+        cookiesReceived: req.cookies,
+        origin: req.headers.origin,
+        host: req.headers.host,
+        userAgent: req.headers['user-agent'],
+        protocol: req.protocol,
+        secure: req.secure,
+        cookieSettings: {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            path: '/',
+            domain: process.env.COOKIE_DOMAIN || 'not set'
+        }
+    };
+    
+    console.log('🍪 Cookie Debug Info:', debugInfo);
+    
+    // Set a test cookie
+    const testCookieOptions = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        maxAge: 60000, // 1 minute
+        path: '/'
+    };
+    
+    if (process.env.NODE_ENV === 'production' && process.env.COOKIE_DOMAIN) {
+        testCookieOptions.domain = process.env.COOKIE_DOMAIN;
+    }
+    
+    res.cookie('testCookie', 'testValue_' + Date.now(), testCookieOptions);
+    
+    res.json({
+        success: true,
+        message: 'Debug info logged. Check browser DevTools → Application → Cookies to see if testCookie was set',
+        debugInfo
+    });
+});
 
 // Check if admin is authenticated
 router.get('/check-auth', adminAuth, (req, res) => {
+    console.log('🔐 Auth Check - Cookies received:', req.cookies);
+    console.log('🔐 Auth Check - Admin:', req.admin ? 'Authenticated' : 'Not authenticated');
+    
     res.json({
         success: true,
         admin: {
@@ -137,6 +181,15 @@ router.post('/verify-otp-login', strictAuthLimiter, async (req, res) => {
     try {
         const { adminId, otp } = req.body;
         
+        console.log('🔐 OTP Verification Request:', {
+            adminId,
+            otpProvided: otp ? '******' : 'missing',
+            origin: req.headers.origin,
+            protocol: req.protocol,
+            secure: req.secure,
+            environment: process.env.NODE_ENV
+        });
+        
         if (!adminId || !otp) {
             return res.status(400).json({
                 success: false,
@@ -149,6 +202,7 @@ router.post('/verify-otp-login', strictAuthLimiter, async (req, res) => {
         const storedOtp = await redis.get(otpKey);
         
         if (!storedOtp) {
+            console.log('❌ OTP expired or not found for adminId:', adminId);
             return res.status(401).json({
                 success: false,
                 message: 'OTP expired or invalid'
@@ -156,11 +210,14 @@ router.post('/verify-otp-login', strictAuthLimiter, async (req, res) => {
         }
         
         if (storedOtp !== otp) {
+            console.log('❌ Invalid OTP provided for adminId:', adminId);
             return res.status(401).json({
                 success: false,
                 message: 'Invalid OTP'
             });
         }
+        
+        console.log('✅ OTP verified successfully for adminId:', adminId);
         
         // OTP is valid, proceed with login
         const admin = await Admin.findById(adminId);
@@ -182,15 +239,30 @@ router.post('/verify-otp-login', strictAuthLimiter, async (req, res) => {
             { expiresIn: '1d' }
         );
 
-        // Set cookie
-       res.cookie('adminToken', token, {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production', // ✅ only true on HTTPS
-  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // ✅ fixes localhost issue
-  maxAge: 24 * 60 * 60 * 1000
-});
+        // Set cookie with proper production configuration
+        const cookieOptions = {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            maxAge: 24 * 60 * 60 * 1000,
+            path: '/'
+        };
 
+        // Add domain for production if specified
+        if (process.env.NODE_ENV === 'production' && process.env.COOKIE_DOMAIN) {
+            cookieOptions.domain = process.env.COOKIE_DOMAIN;
+        }
+
+        console.log('🍪 Setting cookie with options:', {
+            ...cookieOptions,
+            domain: cookieOptions.domain || 'not set (uses request domain)',
+            environment: process.env.NODE_ENV
+        });
+
+        res.cookie('adminToken', token, cookieOptions);
         
+        console.log('✅ Cookie set successfully. Token length:', token.length);
+
         // Clear OTP from Redis
         await redis.del(otpKey);
 
@@ -352,12 +424,21 @@ router.post('/login', async (req, res) => {
             { expiresIn: '1d' }
         );
 
-        // Set cookie
-        res.cookie('adminToken', token, {
+        // Set cookie with proper production configuration
+        const cookieOptions = {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            maxAge: 24 * 60 * 60 * 1000 // 1 day
-        });
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            maxAge: 24 * 60 * 60 * 1000,
+            path: '/'
+        };
+
+        // Add domain for production if specified
+        if (process.env.NODE_ENV === 'production' && process.env.COOKIE_DOMAIN) {
+            cookieOptions.domain = process.env.COOKIE_DOMAIN;
+        }
+
+        res.cookie('adminToken', token, cookieOptions);
 
         res.json({
             success: true,
