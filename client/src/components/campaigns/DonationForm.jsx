@@ -606,11 +606,22 @@ const DonationForm = ({ campaignId, campaignTitle = "This Campaign" }) => {
       
     } catch (error) {
       console.error('Payment error:', error);
-      toast({
-        title: "Payment Failed",
-        description: error.message || "There was an error processing your payment. Please try again.",
-        variant: "destructive"
-      });
+      
+      // Check if it's a VPN detection error
+      if (error.response?.data?.error === 'VPN_DETECTED') {
+        toast({
+          title: "VPN/Proxy Detected",
+          description: error.response.data.message || "Please disable your VPN or proxy connection and try again.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Payment Failed",
+          description: error.response?.data?.message || error.message || "There was an error processing your payment. Please try again.",
+          variant: "destructive"
+        });
+      }
+      
       setIsLoading(false);
       setProcessingPayment(false);
     }

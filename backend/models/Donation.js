@@ -43,7 +43,10 @@ const donationSchema = new Schema({
   anonymous: {
     type: Boolean,
     default: false
-  }
+  },
+  riskScore: { type: Number, default: 0 },
+flags: { type: [String], default: [] }
+
 }, {
   timestamps: true
 });

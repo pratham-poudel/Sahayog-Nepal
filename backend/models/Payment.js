@@ -16,6 +16,11 @@ const paymentSchema = new mongoose.Schema({
     ref: 'Campaign',
     required: true
   },
+  donationId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Donation',
+    default: null
+  },
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
@@ -113,6 +118,33 @@ const paymentSchema = new mongoose.Schema({
   },
   fonepayWebSocketUrl: {
     type: String
+  },
+  
+  // AML and security fields
+  riskScore: { type: Number, default: 0 },      // 0-100
+  flags: { type: [String], default: [] },       // matched indicators
+  amlStatus: { type: String, enum: ['ok','pending_review','blocked'], default: 'ok' },
+  
+  // IP and geolocation tracking
+  ip: {
+    type: String,
+    default: null
+  },
+  country: {
+    type: String,
+    default: null
+  },
+  countryCode: {
+    type: String,
+    default: null
+  },
+  isVPNDetected: {
+    type: Boolean,
+    default: false
+  },
+  vpnProvider: {
+    type: String,
+    default: null
   }
 }, {
   timestamps: true

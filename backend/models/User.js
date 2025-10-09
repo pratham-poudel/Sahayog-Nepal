@@ -33,10 +33,6 @@ const userSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Campaign'
     }],
-    createdAt: {
-        type: Date,
-        default: Date.now
-    },
     profilePicture: {
         type: String,
         default: '' // Empty string for default (filename only)
@@ -71,7 +67,12 @@ const userSchema = new mongoose.Schema({
     personalVerificationDocument: {
         type: String,
         default: '' // URL to citizenship or other verification document
-    }
+    },
+    riskScore: { type: Number, default: 0 },
+    kycVerified: { type: Boolean, default: false },
+    country: { type: String, default: null }, // For AML country check
+    countryCode: { type: String, default: null } // For AML country check
+
 }, {
     timestamps: true
 });

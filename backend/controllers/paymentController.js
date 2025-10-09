@@ -10,6 +10,8 @@ const redis=require('../utils/RedisClient')
 const { sendTransactionEmail } = require('../utils/sendTransactionEmail');
 const { clearCampaignCaches, clearSpecificCampaignCache } = require('../utils/cacheUtils');
 const WebSocket = require('ws');
+const { getClientIp, isVPNAdvanced, getIPInfo } = require('../utils/vpnDetection');
+const amlQueue = require('../queues/amlqueue');
 
 
 // Config variables
@@ -52,6 +54,28 @@ exports.initiateKhaltiPayment = async (req, res) => {
       userId
     } = req.body;
 
+    // Get client IP
+    const clientIp = getClientIp(req);
+    console.log(`[Payment] Client IP: ${clientIp}`);
+
+    // Check for VPN/Proxy
+    const vpnCheck = await isVPNAdvanced(clientIp);
+    if (vpnCheck.isVPN) {
+      console.log(`[Payment] VPN/Proxy detected: ${vpnCheck.provider}`);
+      return res.status(403).json({
+        success: false,
+        error: 'VPN_DETECTED',
+        message: 'Payment cannot be processed through VPN or proxy connections. Please disable your VPN and try again.',
+        details: {
+          provider: vpnCheck.provider
+        }
+      });
+    }
+
+    // Get full IP information including country
+    const ipInfo = await getIPInfo(clientIp);
+    console.log(`[Payment] IP Info:`, ipInfo);
+
     // Validate required fields
     if (!campaignId || !amount || !totalAmount || !donorEmail || !donorPhone) {
       return res.status(400).json({ 
@@ -90,7 +114,7 @@ exports.initiateKhaltiPayment = async (req, res) => {
     const payment = new Payment({
       amount: amount/100,
       campaignId,
-      userId: userId || null, // Use userId from request body
+      userId: userId || null, /* Lines 93-94 omitted */
       donorName: isAnonymous ? 'Anonymous' : donorName,
       donorEmail,
       donorPhone,
@@ -103,9 +127,13 @@ exports.initiateKhaltiPayment = async (req, res) => {
       status: 'Initiated',
       purchaseOrderId,
       purchaseOrderName: `Donation to ${campaign.title}`,
-    });
-
-    await payment.save();
+      // IP and security information
+      ip: ipInfo.ip,
+      country: ipInfo.country,
+      countryCode: ipInfo.countryCode,
+      isVPNDetected: ipInfo.isVPN,
+      vpnProvider: null
+    });    await payment.save();
 
     // Prepare payment initiation request to Khalti
     const khaltiPayload = {
@@ -342,11 +370,31 @@ const donation = new Donation({
 });
     await donation.save();
     
+    // Link donation to payment
+    payment.donationId = donation._id;
+    await payment.save();
+    
     // Clear campaign-related caches since payment affects campaign statistics
     await clearCampaignCaches();
     await clearSpecificCampaignCache(payment.campaignId._id);
     
     await sendTransactionEmail(payment.donorEmail, payment);
+
+    // Push to AML queue for analysis if payment is completed
+    if (status === 'Completed' || !status) {
+      try {
+        await amlQueue.add('analyze-payment', {
+          paymentId: payment._id.toString()
+        }, {
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 5000 }
+        });
+        console.log(`[AML] Payment ${payment._id} queued for analysis`);
+      } catch (queueError) {
+        console.error('[AML] Failed to queue payment for analysis:', queueError);
+        // Don't fail the payment if queueing fails
+      }
+    }
 
     // Determine redirect URL based on payment status
     let redirectUrl;
@@ -538,6 +586,28 @@ exports.initiateEsewaPayment = async (req, res) => {
 
     console.log('eSewa payment initiation request:', req.body);
 
+    // Get client IP
+    const clientIp = getClientIp(req);
+    console.log(`[Payment] Client IP: ${clientIp}`);
+
+    // Check for VPN/Proxy
+    const vpnCheck = await isVPNAdvanced(clientIp);
+    if (vpnCheck.isVPN) {
+      console.log(`[Payment] VPN/Proxy detected: ${vpnCheck.provider}`);
+      return res.status(403).json({
+        success: false,
+        error: 'VPN_DETECTED',
+        message: 'Payment cannot be processed through VPN or proxy connections. Please disable your VPN and try again.',
+        details: {
+          provider: vpnCheck.provider
+        }
+      });
+    }
+
+    // Get full IP information including country
+    const ipInfo = await getIPInfo(clientIp);
+    console.log(`[Payment] IP Info:`, ipInfo);
+
     // Validate required fields
     if (!campaignId || !amount || !totalAmount || !donorEmail || !donorPhone) {
       return res.status(400).json({ 
@@ -598,6 +668,12 @@ exports.initiateEsewaPayment = async (req, res) => {
       purchaseOrderId: transaction_uuid,
       purchaseOrderName: `Donation to ${campaign.title}`,
       transactionId: transaction_uuid,
+      // IP and security information
+      ip: ipInfo.ip,
+      country: ipInfo.country,
+      countryCode: ipInfo.countryCode,
+      isVPNDetected: ipInfo.isVPN,
+      vpnProvider: null
     });
 
     await payment.save();
@@ -714,11 +790,30 @@ exports.handleEsewaCallback = async (req, res) => {
 });
       await donation.save();
       
+      // Link donation to payment
+      payment.donationId = donation._id;
+      await payment.save();
+      
       // Clear campaign-related caches since payment affects campaign statistics
       await clearCampaignCaches();
       await clearSpecificCampaignCache(payment.campaignId._id);
       
       await sendTransactionEmail(payment.donorEmail, payment);
+
+      // Push to AML queue for analysis
+      try {
+        await amlQueue.add('analyze-payment', {
+          paymentId: payment._id.toString()
+        }, {
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 5000 }
+        });
+        console.log(`[AML] Payment ${payment._id} queued for analysis`);
+      } catch (queueError) {
+        console.error('[AML] Failed to queue payment for analysis:', queueError);
+        // Don't fail the payment if queueing fails
+      }
+
       return res.redirect(`${WEBSITE_URL}/payment/success?paymentId=${payment._id}`);
     } else {
       payment.status = 'Failed';
@@ -832,6 +927,28 @@ exports.initiateFonepayPayment = async (req, res) => {
       userId
     } = req.body;
 
+    // Get client IP
+    const clientIp = getClientIp(req);
+    console.log(`[Payment] Client IP: ${clientIp}`);
+
+    // Check for VPN/Proxy
+    const vpnCheck = await isVPNAdvanced(clientIp);
+    if (vpnCheck.isVPN) {
+      console.log(`[Payment] VPN/Proxy detected: ${vpnCheck.provider}`);
+      return res.status(403).json({
+        success: false,
+        error: 'VPN_DETECTED',
+        message: 'Payment cannot be processed through VPN or proxy connections. Please disable your VPN and try again.',
+        details: {
+          provider: vpnCheck.provider
+        }
+      });
+    }
+
+    // Get full IP information including country
+    const ipInfo = await getIPInfo(clientIp);
+    console.log(`[Payment] IP Info:`, ipInfo);
+
     // Validate required fields
     if (!campaignId || !amount || !totalAmount || !donorEmail || !donorPhone) {
       return res.status(400).json({ 
@@ -887,6 +1004,12 @@ exports.initiateFonepayPayment = async (req, res) => {
       status: 'Initiated',
       purchaseOrderId: prn,
       purchaseOrderName: `Donation to ${campaign.title}`,
+      // IP and security information
+      ip: ipInfo.ip,
+      country: ipInfo.country,
+      countryCode: ipInfo.countryCode,
+      isVPNDetected: ipInfo.isVPN,
+      vpnProvider: null
     });
 
     await payment.save();
@@ -1018,6 +1141,9 @@ exports.checkFonepayStatus = async (req, res) => {
         
         await donation.save();
         
+        // Link donation to payment
+        payment.donationId = donation._id;
+        
         // Clear campaign-related caches since payment affects campaign statistics
         await clearCampaignCaches();
         await clearSpecificCampaignCache(payment.campaignId);
@@ -1026,6 +1152,20 @@ exports.checkFonepayStatus = async (req, res) => {
         
         // Mark as processed
         payment.isProcessed = true;
+
+        // Push to AML queue for analysis
+        try {
+          await amlQueue.add('analyze-payment', {
+            paymentId: payment._id.toString()
+          }, {
+            attempts: 3,
+            backoff: { type: 'exponential', delay: 5000 }
+          });
+          console.log(`[AML] Payment ${payment._id} queued for analysis`);
+        } catch (queueError) {
+          console.error('[AML] Failed to queue payment for analysis:', queueError);
+          // Don't fail the payment if queueing fails
+        }
       }
     } else if (response.data.paymentStatus === 'failed') {
       payment.status = 'Failed';

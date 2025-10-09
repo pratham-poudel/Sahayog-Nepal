@@ -36,6 +36,49 @@ app.use(cookieParser());
 // Serve static files from public directory (for templates, etc.)
 app.use(express.static(path.join(__dirname, 'public')));
 
+// ========== Bull Board Setup ==========
+const { createBullBoard } = require('@bull-board/api');
+const { BullMQAdapter } = require('@bull-board/api/bullMQAdapter');
+const { ExpressAdapter } = require('@bull-board/express');
+const amlQueue = require('./queues/amlqueue');
+
+const serverAdapter = new ExpressAdapter();
+serverAdapter.setBasePath('/admin/queues');
+
+createBullBoard({
+  queues: [new BullMQAdapter(amlQueue)],
+  serverAdapter: serverAdapter,
+});
+
+// Basic auth middleware for Bull Board
+function bullBoardAuth(req, res, next) {
+  const auth = { 
+    login: process.env.BULLBOARD_USER || 'admin', 
+    password: process.env.BULLBOARD_PASS || 'strongpassword' 
+  };
+  
+  const header = req.headers.authorization || '';
+  const token = header.split(' ')[1] || '';
+  
+  if (!token) {
+    res.setHeader('WWW-Authenticate', 'Basic realm="Queue Monitoring"');
+    return res.status(401).send('Authentication required');
+  }
+  
+  const [user, pass] = Buffer.from(token, 'base64').toString().split(':');
+  
+  if (user === auth.login && pass === auth.password) {
+    return next();
+  }
+  
+  res.setHeader('WWW-Authenticate', 'Basic realm="Queue Monitoring"');
+  res.status(401).send('Invalid credentials');
+}
+
+// Mount Bull Board with authentication
+app.use('/admin/queues', bullBoardAuth, serverAdapter.getRouter());
+// ========================================
+
 // Apply global rate limiting to all API routes
 const { globalApiLimiter } = require('./middlewares/advancedRateLimiter');
 app.use('/api/', globalApiLimiter);
