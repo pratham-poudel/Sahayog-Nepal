@@ -37,6 +37,7 @@ import {
   RadialBar
 } from 'recharts';
 
+
 const DetailedStatistics = () => {
   const { campaignid } = useParams();
   const [statistics, setStatistics] = useState(null);
@@ -113,8 +114,8 @@ const DetailedStatistics = () => {
       try {
         setLoading(true);
         const [statsResponse, trendsResponse] = await Promise.all([
-          fetch(`http://localhost:5000/api/donations/campaign/${campaignid}/statistics`),
-          fetch(`http://localhost:5000/api/donations/campaign/${campaignid}/trends?period=30`)
+          fetch(`${import.meta.env.VITE_API_URL}/api/donations/campaign/${campaignid}/statistics`),
+          fetch(`${import.meta.env.VITE_API_URL}/api/donations/campaign/${campaignid}/trends?period=30`)
         ]);
 
         if (!statsResponse.ok || !trendsResponse.ok) {
@@ -144,7 +145,7 @@ const DetailedStatistics = () => {
       try {
         setDonorsLoading(true);
         const response = await fetch(
-          `http://localhost:5000/api/donations/campaign/${campaignid}/donors?page=${page}&limit=20`
+          `${import.meta.env.VITE_API_URL}/api/donations/campaign/${campaignid}/donors?page=${page}&limit=20`
         );
 
         if (!response.ok) {
