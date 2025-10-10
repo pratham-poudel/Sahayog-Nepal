@@ -13,8 +13,9 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState('');
   const [loginMode, setLoginMode] = useState('password'); // 'password' or 'otp'
-  const [otpStep, setOtpStep] = useState(1); // 1: email input, 2: otp verification
-  const [otpEmail, setOtpEmail] = useState('');
+  const [otpStep, setOtpStep] = useState(1); // 1: identifier input, 2: otp verification
+  const [otpIdentifier, setOtpIdentifier] = useState('');
+  const [otpIdentifierType, setOtpIdentifierType] = useState('');
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const { loginAndRedirect } = useAuthContext();
@@ -42,7 +43,8 @@ const Login = () => {
     setLoginMode(mode);
     setTurnstileToken('');
     setOtpStep(1);
-    setOtpEmail('');
+    setOtpIdentifier('');
+    setOtpIdentifierType('');
     
     // Reset turnstile widget with a slight delay to ensure proper cleanup
     setTimeout(() => {
@@ -52,18 +54,18 @@ const Login = () => {
     }, 100);
   };
   
-  // Form for email/password login
-  const { register, handleSubmit, formState: { errors } } = useForm({
+  // Form for identifier/password login
+  const { register, handleSubmit, formState: { errors }, watch } = useForm({
     defaultValues: {
-      email: '',
+      identifier: '',
       password: ''
     }
   });
 
-  // Form for OTP email input
-  const { register: registerOtpEmail, handleSubmit: handleOtpEmailSubmit, formState: { errors: otpEmailErrors } } = useForm({
+  // Form for OTP identifier input
+  const { register: registerOtpIdentifier, handleSubmit: handleOtpIdentifierSubmit, formState: { errors: otpIdentifierErrors }, watch: watchOtpIdentifier } = useForm({
     defaultValues: {
-      email: ''
+      identifier: ''
     }
   });
 
@@ -104,7 +106,7 @@ const Login = () => {
     };
   }, []);
 
-  // Email/Password login
+  // Identifier/Password login
   const onSubmit = async (data) => {
     setIsLoading(true);
     
@@ -113,9 +115,47 @@ const Login = () => {
       if (!turnstileToken) {
         throw new Error("Please complete the security verification");
       }
-      
-      const success = await loginAndRedirect(data.email, data.password, '/dashboard', turnstileToken);
-      if (!success) throw new Error(success.message || 'Login failed');
+
+      // Detect if identifier is email or phone
+      const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.identifier);
+      const isPhone = /^[0-9]{10}$/.test(data.identifier);
+
+      if (!isEmail && !isPhone) {
+        throw new Error("Please enter a valid email or 10-digit phone number");
+      }
+
+      const requestBody = {
+        password: data.password,
+        turnstileToken
+      };
+
+      if (isEmail) {
+        requestBody.email = data.identifier;
+      } else {
+        requestBody.phone = data.identifier;
+      }
+
+      const response = await fetch(`${API_URL}/api/users/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        localStorage.setItem('token', result.token);
+        localStorage.setItem('user', JSON.stringify(result.user));
+        toast({
+          title: "Login successful",
+          description: "Welcome back!"
+        });
+        setLocation('/dashboard');
+      } else {
+        throw new Error(result.message || 'Login failed');
+      }
     } catch (error) {
       toast({
         title: "Login failed",
@@ -133,7 +173,7 @@ const Login = () => {
   };
 
   // Send OTP for login
-  const onOtpEmailSubmit = async (data) => {
+  const onOtpIdentifierSubmit = async (data) => {
     setIsLoading(true);
     
     try {
@@ -141,25 +181,39 @@ const Login = () => {
         throw new Error("Please complete the security verification");
       }
 
+      // Detect if identifier is email or phone
+      const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.identifier);
+      const isPhone = /^[0-9]{10}$/.test(data.identifier);
+
+      if (!isEmail && !isPhone) {
+        throw new Error("Please enter a valid email or 10-digit phone number");
+      }
+
+      const requestBody = { turnstileToken };
+      
+      if (isEmail) {
+        requestBody.email = data.identifier;
+      } else {
+        requestBody.phone = data.identifier;
+      }
+
       const response = await fetch(`${API_URL}/api/users/send-login-otp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          email: data.email,
-          turnstileToken
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const result = await response.json();
 
       if (result.success) {
-        setOtpEmail(data.email);
+        setOtpIdentifier(data.identifier);
+        setOtpIdentifierType(result.identifierType);
         setOtpStep(2);
         toast({
           title: "OTP sent",
-          description: "Please check your email for the verification code."
+          description: `Please check your ${result.identifierType} for the verification code.`
         });
       } else {
         throw new Error(result.message || "Failed to send OTP");
@@ -184,15 +238,25 @@ const Login = () => {
     setIsLoading(true);
     
     try {
+      // Detect if identifier is email or phone
+      const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(otpIdentifier);
+      
+      const requestBody = {
+        otp: data.otp
+      };
+
+      if (isEmail) {
+        requestBody.email = otpIdentifier;
+      } else {
+        requestBody.phone = otpIdentifier;
+      }
+
       const response = await fetch(`${API_URL}/api/users/login-with-otp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          email: otpEmail,
-          otp: data.otp
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const result = await response.json();
@@ -402,28 +466,29 @@ const Login = () => {
               <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Email Address
+                    Email or Phone Number
                   </label>
                   <div className="relative">
                     <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
                     <input
-                      id="email"
-                      type="email"
-                      autoComplete="email"
-                      className={`${formInputClasses} ${errors.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
-                      placeholder="you@example.com"
-                      {...register("email", { 
-                        required: "Email is required", 
-                        pattern: {
-                          value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                          message: "Invalid email address"
+                      id="identifier"
+                      type="text"
+                      autoComplete="username"
+                      className={`${formInputClasses} ${errors.identifier ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
+                      placeholder="you@example.com or 9812345678"
+                      {...register("identifier", { 
+                        required: "Email or phone number is required",
+                        validate: (value) => {
+                          const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+                          const isPhone = /^[0-9]{10}$/.test(value);
+                          return isEmail || isPhone || "Please enter a valid email or 10-digit phone number";
                         }
                       })}
                     />
                   </div>
-                  {errors.email && (
+                  {errors.identifier && (
                     <p className="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center">
-                      <FiArrowRight className="mr-1" /> {errors.email.message}
+                      <FiArrowRight className="mr-1" /> {errors.identifier.message}
                     </p>
                   )}
                 </div>
@@ -497,31 +562,32 @@ const Login = () => {
             {loginMode === 'otp' && (
               <>
                 {otpStep === 1 && (
-                  <form className="space-y-5" onSubmit={handleOtpEmailSubmit(onOtpEmailSubmit)}>
+                  <form className="space-y-5" onSubmit={handleOtpIdentifierSubmit(onOtpIdentifierSubmit)}>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Email Address
+                        Email or Phone Number
                       </label>
                       <div className="relative">
                         <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
                         <input
-                          id="otp-email"
-                          type="email"
-                          autoComplete="email"
-                          className={`${formInputClasses} ${otpEmailErrors.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
-                          placeholder="you@example.com"
-                          {...registerOtpEmail("email", { 
-                            required: "Email is required", 
-                            pattern: {
-                              value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                              message: "Invalid email address"
+                          id="otp-identifier"
+                          type="text"
+                          autoComplete="username"
+                          className={`${formInputClasses} ${otpIdentifierErrors.identifier ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
+                          placeholder="you@example.com or 9812345678"
+                          {...registerOtpIdentifier("identifier", { 
+                            required: "Email or phone number is required",
+                            validate: (value) => {
+                              const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+                              const isPhone = /^[0-9]{10}$/.test(value);
+                              return isEmail || isPhone || "Please enter a valid email or 10-digit phone number";
                             }
                           })}
                         />
                       </div>
-                      {otpEmailErrors.email && (
+                      {otpIdentifierErrors.identifier && (
                         <p className="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center">
-                          <FiArrowRight className="mr-1" /> {otpEmailErrors.email.message}
+                          <FiArrowRight className="mr-1" /> {otpIdentifierErrors.identifier.message}
                         </p>
                       )}
                     </div>
@@ -554,10 +620,10 @@ const Login = () => {
                   <form className="space-y-5" onSubmit={handleOtpSubmit(onOtpSubmit)}>
                     <div className="text-center mb-4">
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        We've sent a verification code to
+                        We've sent a verification code to your {otpIdentifierType}
                       </p>
                       <p className="font-medium text-gray-900 dark:text-white">
-                        {otpEmail}
+                        {otpIdentifier}
                       </p>
                     </div>
 

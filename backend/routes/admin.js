@@ -6,6 +6,7 @@ const Campaign = require('../models/Campaign');
 const User = require('../models/User');
 const Payment = require('../models/Payment');
 const Donation = require('../models/Donation');
+const Employee = require('../models/Employee');
 const adminAuth = require('../middleware/adminAuth');
 const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
@@ -1974,6 +1975,325 @@ router.post('/logout', (req, res) => {
         success: true,
         message: 'Logged out successfully'
     });
+});
+
+// ============= EMPLOYEE MANAGEMENT ROUTES =============
+
+// Get all employees with department filter
+router.get('/employees', adminAuth, async (req, res) => {
+    try {
+        const { department, isActive, page = 1, limit = 50 } = req.query;
+        
+        const query = {};
+        if (department) query.department = department;
+        if (isActive !== undefined) query.isActive = isActive === 'true';
+
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+
+        const [employees, total] = await Promise.all([
+            Employee.find(query)
+                .select('-accessCode')
+                .populate('createdBy', 'username email')
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(parseInt(limit))
+                .lean(),
+            Employee.countDocuments(query)
+        ]);
+
+        res.json({
+            success: true,
+            employees,
+            pagination: {
+                total,
+                page: parseInt(page),
+                limit: parseInt(limit),
+                totalPages: Math.ceil(total / parseInt(limit)),
+                hasMore: skip + employees.length < total
+            }
+        });
+
+    } catch (error) {
+        console.error('Error fetching employees:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch employees'
+        });
+    }
+});
+
+// Get single employee details
+router.get('/employees/:id', adminAuth, async (req, res) => {
+    try {
+        const employee = await Employee.findById(req.params.id)
+            .select('-accessCode')
+            .populate('createdBy', 'username email')
+            .lean();
+
+        if (!employee) {
+            return res.status(404).json({
+                success: false,
+                message: 'Employee not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            employee
+        });
+
+    } catch (error) {
+        console.error('Error fetching employee:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch employee details'
+        });
+    }
+});
+
+// Create new employee
+router.post('/employees', adminAuth, async (req, res) => {
+    try {
+        const { name, email, phone, department, accessCode, designationNumber } = req.body;
+
+        // Validate required fields
+        if (!name || !email || !phone || !department || !accessCode || !designationNumber) {
+            return res.status(400).json({
+                success: false,
+                message: 'All fields are required: name, email, phone, department, accessCode, designationNumber'
+            });
+        }
+
+        // Validate access code format (5 digits)
+        if (!/^\d{5}$/.test(accessCode)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Access code must be exactly 5 digits'
+            });
+        }
+
+        // Validate phone format (10 digits)
+        if (!/^\d{10}$/.test(phone)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Phone number must be exactly 10 digits'
+            });
+        }
+
+        // Validate department
+        const validDepartments = [
+            'USER_KYC_VERIFIER',
+            'CAMPAIGN_VERIFIER',
+            'WITHDRAWAL_DEPARTMENT',
+            'TRANSACTION_MANAGEMENT',
+            'LEGAL_AUTHORITY_DEPARTMENT'
+        ];
+
+        if (!validDepartments.includes(department)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid department'
+            });
+        }
+
+        // Check if email already exists
+        const existingEmail = await Employee.findOne({ email: email.toLowerCase() });
+        if (existingEmail) {
+            return res.status(400).json({
+                success: false,
+                message: 'An employee with this email already exists'
+            });
+        }
+
+        // Check if phone already exists
+        const existingPhone = await Employee.findOne({ phone });
+        if (existingPhone) {
+            return res.status(400).json({
+                success: false,
+                message: 'An employee with this phone number already exists'
+            });
+        }
+
+        // Check if designation number already exists
+        const existingDesignation = await Employee.findOne({ 
+            designationNumber: designationNumber.toUpperCase() 
+        });
+        if (existingDesignation) {
+            return res.status(400).json({
+                success: false,
+                message: 'This designation number is already assigned'
+            });
+        }
+
+        // Create new employee
+        const employee = new Employee({
+            name: name.trim(),
+            email: email.toLowerCase().trim(),
+            phone: phone.trim(),
+            department,
+            accessCode,
+            designationNumber: designationNumber.toUpperCase().trim(),
+            createdBy: req.admin._id
+        });
+
+        await employee.save();
+
+        // Return employee without accessCode
+        const employeeResponse = employee.toObject();
+        delete employeeResponse.accessCode;
+
+        res.status(201).json({
+            success: true,
+            message: 'Employee created successfully',
+            employee: employeeResponse
+        });
+
+    } catch (error) {
+        console.error('Error creating employee:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to create employee'
+        });
+    }
+});
+
+// Update employee
+router.put('/employees/:id', adminAuth, async (req, res) => {
+    try {
+        const { name, email, phone, department, isActive, accessCode } = req.body;
+        
+        const employee = await Employee.findById(req.params.id);
+        
+        if (!employee) {
+            return res.status(404).json({
+                success: false,
+                message: 'Employee not found'
+            });
+        }
+
+        // Update fields if provided
+        if (name) employee.name = name.trim();
+        if (email) {
+            // Check if email already exists for another employee
+            const existingEmail = await Employee.findOne({ 
+                email: email.toLowerCase(),
+                _id: { $ne: req.params.id }
+            });
+            if (existingEmail) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'This email is already in use'
+                });
+            }
+            employee.email = email.toLowerCase().trim();
+        }
+        if (phone) {
+            // Check if phone already exists for another employee
+            const existingPhone = await Employee.findOne({ 
+                phone,
+                _id: { $ne: req.params.id }
+            });
+            if (existingPhone) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'This phone number is already in use'
+                });
+            }
+            employee.phone = phone.trim();
+        }
+        if (department) employee.department = department;
+        if (typeof isActive === 'boolean') employee.isActive = isActive;
+        if (accessCode && /^\d{5}$/.test(accessCode)) {
+            employee.accessCode = accessCode;
+        }
+
+        await employee.save();
+
+        const employeeResponse = employee.toObject();
+        delete employeeResponse.accessCode;
+
+        res.json({
+            success: true,
+            message: 'Employee updated successfully',
+            employee: employeeResponse
+        });
+
+    } catch (error) {
+        console.error('Error updating employee:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update employee'
+        });
+    }
+});
+
+// Delete employee (soft delete - set isActive to false)
+router.delete('/employees/:id', adminAuth, async (req, res) => {
+    try {
+        const employee = await Employee.findById(req.params.id);
+        
+        if (!employee) {
+            return res.status(404).json({
+                success: false,
+                message: 'Employee not found'
+            });
+        }
+
+        employee.isActive = false;
+        await employee.save();
+
+        res.json({
+            success: true,
+            message: 'Employee deactivated successfully'
+        });
+
+    } catch (error) {
+        console.error('Error deleting employee:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to delete employee'
+        });
+    }
+});
+
+// Get employee statistics by department
+router.get('/employees/statistics/department', adminAuth, async (req, res) => {
+    try {
+        const statistics = await Employee.aggregate([
+            {
+                $group: {
+                    _id: '$department',
+                    total: { $sum: 1 },
+                    active: {
+                        $sum: { $cond: ['$isActive', 1, 0] }
+                    },
+                    inactive: {
+                        $sum: { $cond: ['$isActive', 0, 1] }
+                    }
+                }
+            }
+        ]);
+
+        const totalEmployees = await Employee.countDocuments();
+        const activeEmployees = await Employee.countDocuments({ isActive: true });
+
+        res.json({
+            success: true,
+            statistics: {
+                total: totalEmployees,
+                active: activeEmployees,
+                inactive: totalEmployees - activeEmployees,
+                byDepartment: statistics
+            }
+        });
+
+    } catch (error) {
+        console.error('Error fetching employee statistics:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch statistics'
+        });
+    }
 });
 
 module.exports = router;

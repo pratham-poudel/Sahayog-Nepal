@@ -23,10 +23,10 @@ export const sendWelcomeEmail = async (email, name, ipAddress = null) => {
     
     try {
         await client.sendMailWithTemplate({
-            "mail_template_key": "2518b.6fac2f4cafd5524b.k1.cb5a2a60-283f-11f0-ba67-525400c92439.19697158006",
+            "mail_template_key": "2518b.3ace3b1d1c29ece1.k1.28be5b90-a586-11f0-a219-d2cf08f4ca8c.199cc15d7c9",
             "from": 
             {
-                "address": "noreply@gogoiarmaantech.me",
+                "address": "noreply@sahayognepal.org",
                 "name": "Sahayog Nepal"
             },
             "to": 

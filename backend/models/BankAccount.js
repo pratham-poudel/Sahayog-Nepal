@@ -95,10 +95,33 @@ const bankAccountSchema = new mongoose.Schema({
         type: Date,
         default: null
     },
-      verifiedBy: {
+    verifiedBy: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
+        refPath: 'verifiedByModel',
         default: null
+    },
+    
+    verifiedByModel: {
+        type: String,
+        enum: ['User', 'Admin', 'Employee'],
+        default: null
+    },
+    
+    // Employee verification tracking (for Withdrawal Department)
+    employeeVerification: {
+        employeeId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Employee'
+        },
+        employeeName: String,
+        employeeDesignation: String,
+        verifiedAt: Date,
+        action: {
+            type: String,
+            enum: ['verified', 'rejected']
+        },
+        reason: String,
+        notes: String
     },
     
     rejectionReason: {

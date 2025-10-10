@@ -54,6 +54,26 @@ const withdrawalRequestSchema = new Schema({
     default: 'pending',
     index: true
   },
+  // Employee department processing (Withdrawal Department approval)
+  employeeProcessedBy: {
+    employeeId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Employee'
+    },
+    employeeName: String,
+    employeeDesignation: String,
+    processedAt: Date,
+    action: {
+      type: String,
+      enum: ['approved', 'rejected']
+    },
+    notes: {
+      type: String,
+      trim: true,
+      maxlength: [1000, 'Notes cannot exceed 1000 characters']
+    }
+  },
+  // Admin processing (Transaction Department final processing)
   adminResponse: {
     reviewedBy: {
       type: Schema.Types.ObjectId,
@@ -89,9 +109,22 @@ const withdrawalRequestSchema = new Schema({
 });
 
 // Indexes for efficient querying
+// Compound index for status-based queries with sorting (CRITICAL for pagination)
+withdrawalRequestSchema.index({ status: 1, createdAt: -1 });
+
+// Compound indexes for employee department filtering
 withdrawalRequestSchema.index({ campaign: 1, status: 1 });
 withdrawalRequestSchema.index({ creator: 1, status: 1, createdAt: -1 });
-withdrawalRequestSchema.index({ status: 1, createdAt: -1 });
+
+// Index for transaction reference search (used by Transaction Management)
+withdrawalRequestSchema.index({ 'processingDetails.transactionReference': 1 });
+
+// Index for employee tracking
+withdrawalRequestSchema.index({ 'employeeProcessedBy.employeeId': 1 });
+withdrawalRequestSchema.index({ 'processingDetails.processedBy': 1 });
+
+// Compound index for multi-status queries (approved, processing, completed, failed)
+withdrawalRequestSchema.index({ status: 1, 'processingDetails.processedAt': -1 });
 
 // Virtual for processing time elapsed
 withdrawalRequestSchema.virtual('processingTimeElapsed').get(function() {

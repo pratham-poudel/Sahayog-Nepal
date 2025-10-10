@@ -27,7 +27,7 @@ const sendVerificationEmail = async (email, name, ipAddress = null) => {
         await client.sendMail({
             "from": 
             {
-                "address": "noreply@gogoiarmaantech.me",
+                "address": "noreply@sahayognepal.org",
                 "name": "Sahayog Nepal"
             },
             "to": 
@@ -394,7 +394,7 @@ const sendVerificationEmail = async (email, name, ipAddress = null) => {
                             </div>
                             
                             <div class="cta-section">
-                                <a href="https://sahayognepal.com/profile" class="cta-button">
+                                <a href="https://sahayognepal.com/dashboard" class="cta-button">
                                     View Your Verified Profile
                                 </a>
                             </div>
@@ -414,7 +414,7 @@ const sendVerificationEmail = async (email, name, ipAddress = null) => {
                             
                             <div class="footer-info">
                                 This verification notification was sent to ${email}<br>
-                                For support inquiries: <strong>support@sahayognepal.com</strong><br><br>
+                                For support inquiries: <strong>support@sahayognepal.org</strong><br><br>
                                 © ${new Date().getFullYear()} Sahayog Nepal. All rights reserved.<br>
                                 Trusted by thousands of verified campaign creators across Nepal
                             </div>

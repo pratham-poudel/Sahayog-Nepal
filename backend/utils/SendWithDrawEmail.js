@@ -19,7 +19,7 @@ const sendWithdrawalRequestEmail = async (email, withdrawalData) => {
 
   await zeptoClient.sendMail({
     from: {
-      address: "Accounts@gogoiarmaantech.me",
+      address: "Accounts@sahayognepal.org",
       name: "Submission Succesfull • Sahayog Nepal"
     },
     to: [
@@ -120,7 +120,7 @@ const sendWithdrawalRequestEmail = async (email, withdrawalData) => {
   <div style="border-top: 1px solid #cccccc; padding-top: 20px; text-align: center;">
     <p style="margin: 0; font-size: 12px; color: #999999;">
       Sahayog Nepal<br>
-      Email: <a href="mailto:support@gogoiarmaantech.me" style="color: #8B2325; text-decoration: none;">support@gogoiarmaantech.me</a>
+      Email: <a href="mailto:support@sahayognepal.org" style="color: #8B2325; text-decoration: none;">support@sahayognepal.org</a>
     </p>
   </div>
 </div>`
@@ -174,7 +174,7 @@ const sendWithdrawStatusEmail = async (email, statusData) => {
 
   await zeptoClient.sendMail({
     from: {
-      address: "Accounts@gogoiarmaantech.me",
+      address: "Accounts@sahayognepal.org",
       name: "Withdrawal Status Update • Sahayog Nepal"
     },
     to: [
@@ -299,7 +299,7 @@ const sendWithdrawStatusEmail = async (email, statusData) => {
   <div style="border-top: 1px solid #cccccc; padding-top: 20px; text-align: center;">
     <p style="margin: 0; font-size: 12px; color: #999999;">
       Sahayog Nepal<br>
-      Email: <a href="mailto:support@gogoiarmaantech.me" style="color: #8B2325; text-decoration: none;">support@gogoiarmaantech.me</a>
+      Email: <a href="mailto:support@sahayognepal.org" style="color: #8B2325; text-decoration: none;">support@sahayognepal.org</a>
     </p>
   </div>
 </div>`

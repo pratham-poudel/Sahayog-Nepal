@@ -121,7 +121,22 @@ const campaignSchema = new Schema({
       type: String,
       required: true
     }
-  }],  status: {
+  }],
+  verifiedBy: {
+    employeeId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Employee'
+    },
+    employeeName: String,
+    employeeDesignation: String,
+    verifiedAt: Date
+  },
+  verificationNotes: {
+    type: String,
+    default: '',
+    description: 'Notes added by the campaign verifier during verification process'
+  },
+  status: {
     type: String,
     enum: ['pending', 'active', 'completed', 'cancelled', 'rejected'],
     default: 'pending'

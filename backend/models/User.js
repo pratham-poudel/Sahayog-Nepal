@@ -9,14 +9,18 @@ const userSchema = new mongoose.Schema({
     },
     email: {
         type: String,
-        required: [true, 'Please provide your email'],
+        required: false, // Email is optional if phone is provided
         unique: true,
+        sparse: true, // Allows multiple null values for unique index
         lowercase: true,
         match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email address']
     },
     phone: {
         type: String,
-        trim: true
+        required: false, // Phone is optional if email is provided
+        trim: true,
+        unique: true,
+        sparse: true, // Allows multiple null values for unique index
     },
     password: {
         type: String,
@@ -71,10 +75,32 @@ const userSchema = new mongoose.Schema({
     riskScore: { type: Number, default: 0 },
     kycVerified: { type: Boolean, default: false },
     country: { type: String, default: null }, // For AML country check
-    countryCode: { type: String, default: null } // For AML country check
+    countryCode: { type: String, default: null }, // For AML country check
+    
+    // KYC Verification Tracking
+    kycVerifiedBy: {
+        employeeId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Employee',
+            default: null
+        },
+        employeeName: { type: String, default: null },
+        designationNumber: { type: String, default: null }
+    },
+    kycVerifiedAt: { type: Date, default: null },
+    kycVerificationNotes: { type: String, default: null }
 
 }, {
     timestamps: true
+});
+
+// Validation: Ensure at least email or phone is provided
+userSchema.pre('validate', function(next) {
+    if (!this.email && !this.phone) {
+        next(new Error('Please provide either an email or phone number'));
+    } else {
+        next();
+    }
 });
 
 // Hash password before saving
@@ -101,6 +127,24 @@ userSchema.index({ createdAt: -1 });
 
 // Compound index for campaigns lookup
 userSchema.index({ _id: 1, campaigns: 1 });
+
+// Text search index for name, email, and phone
+userSchema.index({ 
+    name: 'text', 
+    email: 'text', 
+    phone: 'text' 
+}, {
+    weights: {
+        name: 10,
+        email: 5,
+        phone: 5
+    }
+});
+
+// KYC verification indexes
+userSchema.index({ kycVerified: 1 });
+userSchema.index({ isPremiumAndVerified: 1 });
+userSchema.index({ kycVerified: 1, createdAt: -1 });
 
 const User = mongoose.model('User', userSchema);
 

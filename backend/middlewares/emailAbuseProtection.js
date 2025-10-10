@@ -1,51 +1,54 @@
 const redis = require('../utils/RedisClient.js');
 
 /**
- * Advanced Email Abuse Protection Middleware
- * Provides comprehensive protection against email abuse patterns
+ * Advanced Email/Phone Abuse Protection Middleware
+ * Provides comprehensive protection against email and phone abuse patterns
  */
 
-// Email frequency tracker - prevents rapid successive emails to same address
+// Email/Phone frequency tracker - prevents rapid successive OTP requests to same identifier
 const emailFrequencyProtection = async (req, res, next) => {
     const email = req.body?.email;
+    const phone = req.body?.phone;
     
-    if (!email) {
-        return res.status(400).json({
-            success: false,
-            message: 'Email is required',
-            errorCode: 'EMAIL_REQUIRED'
-        });
+    // Allow if neither email nor phone is provided (will be validated by controller)
+    if (!email && !phone) {
+        return next();
     }
 
-    const emailKey = `email-freq:${email}`;
-    const lastEmailTime = await redis.get(emailKey);
-      if (lastEmailTime) {
-        const timeDiff = Date.now() - parseInt(lastEmailTime);
-        const minInterval = 30 * 1000; // 30 seconds minimum between emails to same address (reduced from 1 minute)
+    const identifier = email || phone;
+    const identifierKey = `identifier-freq:${identifier}`;
+    const lastRequestTime = await redis.get(identifierKey);
+      if (lastRequestTime) {
+        const timeDiff = Date.now() - parseInt(lastRequestTime);
+        const minInterval = 30 * 1000; // 30 seconds minimum between requests to same identifier
         
         if (timeDiff < minInterval) {
             const remainingTime = Math.ceil((minInterval - timeDiff) / 1000);
             return res.status(429).json({
                 success: false,
-                message: `Please wait ${remainingTime} seconds before requesting another email to this address.`,
+                message: `Please wait ${remainingTime} seconds before requesting another verification code.`,
                 retryAfter: remainingTime,
-                errorCode: 'EMAIL_FREQUENCY_LIMIT'
+                errorCode: 'FREQUENCY_LIMIT'
             });
         }
     }
     
-    // Set the timestamp for this email request
-    await redis.set(emailKey, Date.now().toString(), 'EX', 180); // 3 minutes expiry (reduced from 5 minutes)
+    // Set the timestamp for this request
+    await redis.set(identifierKey, Date.now().toString(), 'EX', 180); // 3 minutes expiry
     next();
 };
 
 // OTP attempt tracking - prevents brute force OTP verification
 const otpAttemptProtection = async (req, res, next) => {
     const email = req.body?.email;
+    const phone = req.body?.phone;
     
-    if (!email) {
+    if (!email && !phone) {
         return next();
-    }    const attemptKey = `otp-attempts:${email}`;
+    }
+
+    const identifier = email || phone;
+    const attemptKey = `otp-attempts:${identifier}`;
     const attempts = await redis.get(attemptKey);
     const maxAttempts = 8; // Maximum failed OTP attempts (increased from 5)
     const lockoutTime = 15 * 60; // 15 minutes lockout (reduced from 30 minutes)
@@ -69,6 +72,14 @@ const otpAttemptProtection = async (req, res, next) => {
 const suspiciousPatternDetection = async (req, res, next) => {
     const ip = req.ip;
     const email = req.body?.email;
+    const phone = req.body?.phone;
+    const identifier = email || phone;
+    
+    // Skip if no identifier provided
+    if (!identifier) {
+        return next();
+    }
+    
     const userAgent = req.get('User-Agent') || '';
     
     // Track suspicious patterns
@@ -76,31 +87,49 @@ const suspiciousPatternDetection = async (req, res, next) => {
     const pattern = await redis.get(patternKey);
     
     let patternData = pattern ? JSON.parse(pattern) : {
-        emailsRequested: [],
+        identifiersRequested: [],
         timestamps: [],
         userAgents: new Set()
     };
     
+    // Backward compatibility: migrate old data format to new format
+    if (patternData.emailsRequested && !patternData.identifiersRequested) {
+        patternData.identifiersRequested = patternData.emailsRequested;
+        delete patternData.emailsRequested;
+    }
+    
+    // Ensure identifiersRequested exists
+    if (!patternData.identifiersRequested) {
+        patternData.identifiersRequested = [];
+    }
+    
+    // Ensure timestamps exists
+    if (!patternData.timestamps) {
+        patternData.timestamps = [];
+    }
+    
     // Convert userAgents back to Set if it was stored as array
     if (Array.isArray(patternData.userAgents)) {
         patternData.userAgents = new Set(patternData.userAgents);
+    } else if (!patternData.userAgents) {
+        patternData.userAgents = new Set();
     }
     
     // Add current request data
-    patternData.emailsRequested.push(email);
+    patternData.identifiersRequested.push(identifier);
     patternData.timestamps.push(Date.now());
     patternData.userAgents.add(userAgent);
     
     // Keep only last 20 requests for analysis
-    if (patternData.emailsRequested.length > 20) {
-        patternData.emailsRequested = patternData.emailsRequested.slice(-20);
+    if (patternData.identifiersRequested.length > 20) {
+        patternData.identifiersRequested = patternData.identifiersRequested.slice(-20);
         patternData.timestamps = patternData.timestamps.slice(-20);
     }
     
     // Detect suspicious patterns
     const now = Date.now();
     const recentRequests = patternData.timestamps.filter(t => now - t < 60 * 60 * 1000); // Last hour
-    const uniqueEmails = new Set(patternData.emailsRequested.slice(-10)); // Last 10 requests
+    const uniqueIdentifiers = new Set(patternData.identifiersRequested.slice(-10)); // Last 10 requests
       // Pattern 1: Too many requests in short time
     if (recentRequests.length > 25) { // Increased from 15 to 25
         await redis.set(`blocked:${ip}`, 'suspicious_activity', 'EX', 30 * 60); // Block for 30 minutes (reduced from 1 hour)
@@ -111,13 +140,13 @@ const suspiciousPatternDetection = async (req, res, next) => {
         });
     }
     
-    // Pattern 2: Too many different emails from same IP
-    if (uniqueEmails.size > 12) { // Increased from 8 to 12
-        await redis.set(`blocked:${ip}`, 'email_enumeration', 'EX', 20 * 60); // Block for 20 minutes (reduced from 30 minutes)
+    // Pattern 2: Too many different identifiers from same IP
+    if (uniqueIdentifiers.size > 12) { // Increased from 8 to 12
+        await redis.set(`blocked:${ip}`, 'identifier_enumeration', 'EX', 20 * 60); // Block for 20 minutes (reduced from 30 minutes)
         return res.status(429).json({
             success: false,
-            message: 'Too many different email addresses. Access temporarily blocked.',
-            errorCode: 'EMAIL_ENUMERATION_DETECTED'
+            message: 'Too many different verification attempts. Access temporarily blocked.',
+            errorCode: 'ENUMERATION_DETECTED'
         });
     }
     
@@ -161,10 +190,11 @@ const checkBlockedIP = async (req, res, next) => {
     next();
 };
 
-// Email domain validation and blacklist
+// Email domain validation and blacklist (only applies to email, not phone)
 const emailDomainProtection = async (req, res, next) => {
     const email = req.body?.email;
     
+    // Skip validation if no email is provided (phone might be used instead)
     if (!email) {
         return next();
     }
@@ -207,19 +237,19 @@ const emailDomainProtection = async (req, res, next) => {
 };
 
 // Track failed OTP verification attempts
-const trackFailedOTPAttempt = async (email) => {
-    const attemptKey = `otp-attempts:${email}`;
+const trackFailedOTPAttempt = async (identifier) => {
+    const attemptKey = `otp-attempts:${identifier}`;
     const current = await redis.get(attemptKey);
     const attempts = current ? parseInt(current) + 1 : 1;
     
-    await redis.set(attemptKey, attempts.toString(), 'EX', 15 * 60); // 15 minutes expiry (reduced from 30 minutes)
+    await redis.set(attemptKey, attempts.toString(), 'EX', 15 * 60); // 15 minutes expiry
     
     return attempts;
 };
 
 // Clear OTP attempt counter on successful verification
-const clearOTPAttempts = async (email) => {
-    const attemptKey = `otp-attempts:${email}`;
+const clearOTPAttempts = async (identifier) => {
+    const attemptKey = `otp-attempts:${identifier}`;
     await redis.del(attemptKey);
 };
 

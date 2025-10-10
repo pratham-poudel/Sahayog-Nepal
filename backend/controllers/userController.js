@@ -5,6 +5,7 @@ const mongoose = require('mongoose');
 const redis = require('../utils/RedisClient');
 const { clearCampaignCaches } = require('../utils/cacheUtils');
 const { sendOtpEmail } = require('../utils/sendOtpEmail');
+const { sendSmsOtp } = require('../utils/sendSmsOtp');
 const { sendLoginWithOtp } = require('../utils/sendLoginWithOtp');
 const { sendWelcomeEmail } = require('../utils/SendWelcomeEmail');
 const { trackFailedOTPAttempt, clearOTPAttempts, logEmailAbuse, emailFrequencyProtection } = require('../middlewares/emailAbuseProtection');
@@ -62,46 +63,68 @@ exports.registerUser = async (req, res) => {
     }
 };
 
-// @desc    Send email verification OTP
+// @desc    Send email or SMS verification OTP
 // @route   POST /api/users/send-otp
 // @access  Public
 exports.sendEmailOtp = async (req, res) => {
     try {
-        const { email } = req.body;
+        const { email, phone } = req.body;
 
-        if (!email) {
-            await logEmailAbuse(req, 'MISSING_EMAIL', 'Email field missing in OTP request');
+        // Validate that at least one identifier is provided
+        if (!email && !phone) {
+            await logEmailAbuse(req, 'MISSING_IDENTIFIER', 'Neither email nor phone provided in OTP request');
             return res.status(400).json({
                 success: false,
-                message: 'Email is required',
-                errorCode: 'EMAIL_REQUIRED'
+                message: 'Please provide either email or phone number',
+                errorCode: 'IDENTIFIER_REQUIRED'
             });
         }
 
-        // Validate email format
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-            await logEmailAbuse(req, 'INVALID_EMAIL_FORMAT', `Invalid email format: ${email}`);
-            return res.status(400).json({
-                success: false,
-                message: 'Please provide a valid email address',
-                errorCode: 'INVALID_EMAIL_FORMAT'
-            });
+        let identifier = email || phone;
+        let identifierType = email ? 'email' : 'phone';
+
+        // Validate email format if email is provided
+        if (email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                await logEmailAbuse(req, 'INVALID_EMAIL_FORMAT', `Invalid email format: ${email}`);
+                return res.status(400).json({
+                    success: false,
+                    message: 'Please provide a valid email address',
+                    errorCode: 'INVALID_EMAIL_FORMAT'
+                });
+            }
         }
 
-        // Check if user already exists
-        const existingUser = await User.findOne({ email });
+        // Validate phone format if phone is provided
+        if (phone) {
+            // Basic phone validation (adjust regex based on your requirements)
+            const phoneRegex = /^[0-9]{10,15}$/;
+            const cleanPhone = phone.replace(/[\s\-\+]/g, '');
+            if (!phoneRegex.test(cleanPhone)) {
+                await logEmailAbuse(req, 'INVALID_PHONE_FORMAT', `Invalid phone format: ${phone}`);
+                return res.status(400).json({
+                    success: false,
+                    message: 'Please provide a valid phone number',
+                    errorCode: 'INVALID_PHONE_FORMAT'
+                });
+            }
+        }
+
+        // Check if user already exists with this email or phone
+        const query = email ? { email } : { phone };
+        const existingUser = await User.findOne(query);
         if (existingUser) {
-            await logEmailAbuse(req, 'EXISTING_USER_OTP_REQUEST', `OTP requested for existing user: ${email}`);
+            await logEmailAbuse(req, 'EXISTING_USER_OTP_REQUEST', `OTP requested for existing user: ${identifier}`);
             return res.status(400).json({
                 success: false,
-                message: 'User with this email already exists',
+                message: `User with this ${identifierType} already exists`,
                 errorCode: 'USER_ALREADY_EXISTS'
             });
         }
 
-        // Check if there's already a pending OTP for this email
-        const existingOtp = await redis.get(`otp:${email}`);
+        // Check if there's already a pending OTP for this identifier
+        const existingOtp = await redis.get(`otp:${identifier}`);
         if (existingOtp) {
             const otpData = JSON.parse(existingOtp);
             // If OTP was generated less than 2 minutes ago, prevent resend
@@ -120,29 +143,35 @@ exports.sendEmailOtp = async (req, res) => {
             otp: otp,
             timestamp: Date.now(),
             attempts: 0,
-            ip: req.ip
+            ip: req.ip,
+            type: identifierType,
+            identifier: identifier
         };
 
         console.log('Storing OTP data:', otpData);
         console.log('OTP data as JSON:', JSON.stringify(otpData));
 
         // Store OTP in Redis with 10 minutes expiry
-        await redis.set(`otp:${email}`, JSON.stringify(otpData), 'EX', 60 * 10);
+        await redis.set(`otp:${identifier}`, JSON.stringify(otpData), 'EX', 60 * 10);
         
         // Verify storage by reading it back
-        const verifyStorage = await redis.get(`otp:${email}`);
+        const verifyStorage = await redis.get(`otp:${identifier}`);
         console.log('Verified stored data:', verifyStorage);
 
-        // Send OTP email
-        await sendOtpEmail(email, otp);
-
-        // Log successful OTP generation
-        console.log(`[OTP SENT] Email: ${email}, IP: ${req.ip}, Timestamp: ${new Date().toISOString()}`);
+        // Send OTP via email or SMS based on identifier type
+        if (identifierType === 'email') {
+            await sendOtpEmail(email, otp);
+            console.log(`[EMAIL OTP SENT] Email: ${email}, IP: ${req.ip}, Timestamp: ${new Date().toISOString()}`);
+        } else {
+            await sendSmsOtp(phone, otp);
+            console.log(`[SMS OTP SENT] Phone: ${phone}, IP: ${req.ip}, Timestamp: ${new Date().toISOString()}`);
+        }
 
         res.status(200).json({
             success: true,
-            message: 'OTP sent to email successfully',
-            expiresIn: 600 // 10 minutes in seconds
+            message: `OTP sent to ${identifierType} successfully`,
+            expiresIn: 600, // 10 minutes in seconds
+            identifierType: identifierType
         });
 
     } catch (error) {
@@ -162,10 +191,20 @@ exports.sendEmailOtp = async (req, res) => {
 // @access  Public
 exports.verifyOtp = async (req, res) => {
     try {
-        const { email, otp, name, phone, password } = req.body;
+        const { email, phone, otp, name, password } = req.body;
+
+        // Check if identifier (email or phone) is provided
+        if (!email && !phone) {
+            await logEmailAbuse(req, 'INCOMPLETE_VERIFICATION', 'Missing identifier in OTP verification');
+            return res.status(400).json({
+                success: false,
+                message: 'Please provide either email or phone number',
+                errorCode: 'MISSING_IDENTIFIER'
+            });
+        }
 
         // Check if all required fields are provided
-        if (!email || !otp || !name || !password) {
+        if (!otp || !name || !password) {
             await logEmailAbuse(req, 'INCOMPLETE_VERIFICATION', 'Missing required fields in OTP verification');
             return res.status(400).json({
                 success: false,
@@ -174,16 +213,34 @@ exports.verifyOtp = async (req, res) => {
             });
         }
 
-        // Validate email format
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-            await logEmailAbuse(req, 'INVALID_EMAIL_VERIFICATION', `Invalid email in verification: ${email}`);
-            return res.status(400).json({
-                success: false,
-                message: 'Please provide a valid email address',
-                errorCode: 'INVALID_EMAIL_FORMAT'
-            });
-        }        // Validate OTP format (should be 6 digits)
+        // Validate email format if email is provided
+        if (email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                await logEmailAbuse(req, 'INVALID_EMAIL_VERIFICATION', `Invalid email in verification: ${email}`);
+                return res.status(400).json({
+                    success: false,
+                    message: 'Please provide a valid email address',
+                    errorCode: 'INVALID_EMAIL_FORMAT'
+                });
+            }
+        }
+
+        // Validate phone format if phone is provided
+        if (phone) {
+            const phoneRegex = /^[0-9]{10,15}$/;
+            const cleanPhone = phone.replace(/[\s\-\+]/g, '');
+            if (!phoneRegex.test(cleanPhone)) {
+                await logEmailAbuse(req, 'INVALID_PHONE_VERIFICATION', `Invalid phone in verification: ${phone}`);
+                return res.status(400).json({
+                    success: false,
+                    message: 'Please provide a valid phone number',
+                    errorCode: 'INVALID_PHONE_FORMAT'
+                });
+            }
+        }
+
+        // Validate OTP format (should be 6 digits)
         if (!/^\d{6}$/.test(otp)) {
             await logEmailAbuse(req, 'INVALID_OTP_FORMAT', `Invalid OTP format: ${otp}`);
             return res.status(400).json({
@@ -191,13 +248,37 @@ exports.verifyOtp = async (req, res) => {
                 message: 'OTP must be a 6-digit number',
                 errorCode: 'INVALID_OTP_FORMAT'
             });
-        }// Get OTP data from Redis
-        const storedOtpData = await redis.get(`otp:${email}`);
-        
+        }
+
+        // Try to find which identifier was used for OTP (check both if both are provided)
+        let identifier = null;
+        let identifierType = null;
+        let storedOtpData = null;
+
+        // First try phone if provided
+        if (phone) {
+            storedOtpData = await redis.get(`otp:${phone}`);
+            if (storedOtpData) {
+                identifier = phone;
+                identifierType = 'phone';
+            }
+        }
+
+        // If not found and email is provided, try email
+        if (!storedOtpData && email) {
+            storedOtpData = await redis.get(`otp:${email}`);
+            if (storedOtpData) {
+                identifier = email;
+                identifierType = 'email';
+            }
+        }
+
+        console.log('Looking for OTP with identifier:', identifier, 'type:', identifierType);
         console.log('Raw Redis data:', storedOtpData);
         
         if (!storedOtpData) {
-            await logEmailAbuse(req, 'EXPIRED_OTP_ATTEMPT', `Attempted verification with expired OTP for: ${email}`);
+            const attemptedIdentifier = phone || email;
+            await logEmailAbuse(req, 'EXPIRED_OTP_ATTEMPT', `Attempted verification with expired OTP for: ${attemptedIdentifier}`);
             return res.status(400).json({
                 success: false,
                 message: 'OTP has expired or does not exist. Please request a new one.',
@@ -223,14 +304,16 @@ exports.verifyOtp = async (req, res) => {
                     otp: String(otpData),
                     timestamp: Date.now(),
                     attempts: 0,
-                    ip: req.ip
+                    ip: req.ip,
+                    type: identifierType,
+                    identifier: identifier
                 };
             }
             
         } catch (error) {
             console.log('JSON parse error:', error.message);
-            await logEmailAbuse(req, 'CORRUPTED_OTP_DATA', `Corrupted OTP data for: ${email}`);
-            await redis.del(`otp:${email}`); // Clean up corrupted data
+            await logEmailAbuse(req, 'CORRUPTED_OTP_DATA', `Corrupted OTP data for: ${identifier}`);
+            await redis.del(`otp:${identifier}`); // Clean up corrupted data
             return res.status(400).json({
                 success: false,
                 message: 'Invalid OTP data. Please request a new OTP.',
@@ -253,8 +336,8 @@ exports.verifyOtp = async (req, res) => {
             console.log('OTP mismatch - Received:', receivedOtp, 'Expected:', storedOtp);
             
             // Track failed attempt
-            const failedAttempts = await trackFailedOTPAttempt(email);
-            await logEmailAbuse(req, 'FAILED_OTP_VERIFICATION', `Failed OTP attempt ${failedAttempts} for: ${email}`);
+            const failedAttempts = await trackFailedOTPAttempt(identifier);
+            await logEmailAbuse(req, 'FAILED_OTP_VERIFICATION', `Failed OTP attempt ${failedAttempts} for: ${identifier}`);
             
             // Ensure attempts is a valid number, default to 0 if undefined/null
             const currentAttempts = Number(otpData.attempts) || 0;
@@ -269,7 +352,7 @@ exports.verifyOtp = async (req, res) => {
             
             // If too many failed attempts, invalidate the OTP
             if (otpData.attempts >= 3) {
-                await redis.del(`otp:${email}`);
+                await redis.del(`otp:${identifier}`);
                 return res.status(400).json({
                     success: false,
                     message: 'Too many failed attempts. Please request a new OTP.',
@@ -277,7 +360,7 @@ exports.verifyOtp = async (req, res) => {
                 });
             } else {
                 // Update the stored data with new attempt count
-                await redis.set(`otp:${email}`, JSON.stringify(otpData), 'EX', 60 * 10);
+                await redis.set(`otp:${identifier}`, JSON.stringify(otpData), 'EX', 60 * 10);
                 return res.status(400).json({
                     success: false,
                     message: `Invalid OTP. ${remainingAttempts} attempts remaining.`,
@@ -289,14 +372,15 @@ exports.verifyOtp = async (req, res) => {
         
         console.log('OTP verification successful!');
 
-        // Check if user already exists (double-check)
-        const existingUser = await User.findOne({ email });
+        // Check if user already exists with the verified identifier (double-check)
+        const query = identifierType === 'email' ? { email: identifier } : { phone: identifier };
+        const existingUser = await User.findOne(query);
         if (existingUser) {
-            await redis.del(`otp:${email}`); // Clean up OTP
-            await logEmailAbuse(req, 'DUPLICATE_USER_CREATION', `Attempted to create duplicate user: ${email}`);
+            await redis.del(`otp:${identifier}`); // Clean up OTP
+            await logEmailAbuse(req, 'DUPLICATE_USER_CREATION', `Attempted to create duplicate user: ${identifier}`);
             return res.status(400).json({
                 success: false,
-                message: 'User with this email already exists',
+                message: `User with this ${identifierType} already exists`,
                 errorCode: 'USER_ALREADY_EXISTS'
             });
         }
@@ -304,28 +388,30 @@ exports.verifyOtp = async (req, res) => {
         // Create new user
         const user = await User.create({
             name,
-            email,
-            password,
-            phone
+            email: email || undefined, // Only set if provided
+            phone: phone || undefined, // Only set if provided
+            password
         });
 
         // Clean up OTP and clear attempt counters
-        await redis.del(`otp:${email}`);
-        await clearOTPAttempts(email);
+        await redis.del(`otp:${identifier}`);
+        await clearOTPAttempts(identifier);
 
         // Generate token
         const token = generateToken(user._id);
         
-        // Send welcome email
-        try {
-            await sendWelcomeEmail(user.email, user.name);
-        } catch (emailError) {
-            console.error('Error sending welcome email:', emailError);
-            // Don't fail registration if welcome email fails
+        // Send welcome email (only if email is provided)
+        if (email) {
+            try {
+                await sendWelcomeEmail(user.email, user.name);
+            } catch (emailError) {
+                console.error('Error sending welcome email:', emailError);
+                // Don't fail registration if welcome email fails
+            }
         }
 
         // Log successful registration
-        console.log(`[USER REGISTERED] Email: ${email}, Name: ${name}, IP: ${req.ip}, Timestamp: ${new Date().toISOString()}`);
+        console.log(`[USER REGISTERED] ${identifierType}: ${identifier}, Name: ${name}, IP: ${req.ip}, Timestamp: ${new Date().toISOString()}`);
 
         res.status(201).json({
             success: true,
@@ -343,6 +429,19 @@ exports.verifyOtp = async (req, res) => {
         console.error('Error verifying OTP:', error);
         await logEmailAbuse(req, 'OTP_VERIFICATION_ERROR', `Error during OTP verification: ${error.message}`);
         
+        // Handle MongoDB duplicate key errors
+        if (error.code === 11000) {
+            const duplicateField = Object.keys(error.keyValue)[0];
+            const duplicateValue = error.keyValue[duplicateField];
+            
+            return res.status(400).json({
+                success: false,
+                message: `A user with this ${duplicateField} already exists. Please use a different ${duplicateField} or try logging in.`,
+                errorCode: 'DUPLICATE_USER',
+                field: duplicateField
+            });
+        }
+        
         res.status(500).json({
             success: false,
             message: 'Error verifying OTP. Please try again later.',
@@ -358,22 +457,35 @@ exports.verifyOtp = async (req, res) => {
 // Note: Turnstile validation is now handled by middleware
 exports.loginUser = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { email, phone, password } = req.body;
         
-        // Validate required fields (turnstile validation handled by middleware)
-        if (!email || !password) {
+        // Validate that at least one identifier is provided
+        if (!email && !phone) {
             return res.status(400).json({
                 success: false,
-                message: 'Email and password are required'
+                message: 'Email or phone number is required'
             });
         }
 
+        // Validate password is provided
+        if (!password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Password is required'
+            });
+        }
+
+        // Build query to find user by email or phone
+        const query = email ? { email } : { phone };
+        const identifier = email || phone;
+        const identifierType = email ? 'email' : 'phone';
+
         // Check if user exists
-        const user = await User.findOne({ email }).select('+password');
+        const user = await User.findOne(query).select('+password');
         if (!user) {
             return res.status(401).json({
                 success: false,
-                message: 'Invalid email or password'
+                message: `Invalid ${identifierType} or password`
             });
         }
 
@@ -411,6 +523,7 @@ exports.loginUser = async (req, res) => {
                 _id: user._id,
                 name: user.name,
                 email: user.email,
+                phone: user.phone,
                 role: user.role,
                 profilePicture: user.profilePicture || '',
                 profilePictureUrl: profilePictureUrl
@@ -433,39 +546,53 @@ exports.loginUser = async (req, res) => {
 // Note: Turnstile validation is now handled by middleware
 exports.sendLoginOtp = async (req, res) => {
     try {
-        const { email } = req.body;
+        const { email, phone } = req.body;
 
-        // Validate required fields (turnstile validation handled by middleware)
-        if (!email) {
+        // Validate that at least one identifier is provided
+        if (!email && !phone) {
             return res.status(400).json({
                 success: false,
-                message: 'Email is required'
+                message: 'Email or phone number is required'
             });
         }
 
+        const identifier = email || phone;
+        const identifierType = email ? 'email' : 'phone';
+
+        // Build query to find user by email or phone
+        const query = email ? { email } : { phone };
+
         // Check if user exists
-        const user = await User.findOne({ email });
+        const user = await User.findOne(query);
         if (!user) {
             return res.status(404).json({
                 success: false,
-                message: 'User not found with this email address'
+                message: `User not found with this ${identifierType}`
             });        }        // Generate 6-digit OTP (e.g., 100000 to 999999)
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
         // Store OTP in Redis with 10 minutes expiry
         const otpData = {
             otp: otp,
-            email: email,
+            identifier: identifier,
+            identifierType: identifierType,
             timestamp: Date.now(),
             attempts: 0,
             type: 'login'
         };
-          await redis.set(`login-otp:${email}`, JSON.stringify(otpData), 'EX', 60 * 10);        // Send OTP email
-        await sendLoginWithOtp(email, otp);
+          await redis.set(`login-otp:${identifier}`, JSON.stringify(otpData), 'EX', 60 * 10);        
+        
+        // Send OTP via email or SMS based on identifier type
+        if (identifierType === 'email') {
+            await sendLoginWithOtp(email, otp);
+        } else {
+            await sendSmsOtp(phone, otp);
+        }
 
         res.status(200).json({
             success: true,
-            message: 'OTP sent successfully to your email'
+            message: `OTP sent successfully to your ${identifierType}`,
+            identifierType: identifierType
         });
 
     } catch (error) {
@@ -483,28 +610,41 @@ exports.sendLoginOtp = async (req, res) => {
 // @access  Public
 exports.loginWithOtp = async (req, res) => {
     try {
-        const { email, otp } = req.body;
+        const { email, phone, otp } = req.body;
 
-        // Validate required fields
-        if (!email || !otp) {
+        // Validate that at least one identifier is provided
+        if (!email && !phone) {
             return res.status(400).json({
                 success: false,
-                message: 'Email and OTP are required'
+                message: 'Email or phone number is required'
             });
-        }// Find user
-        const user = await User.findOne({ email });
+        }
+
+        // Validate OTP is provided
+        if (!otp) {
+            return res.status(400).json({
+                success: false,
+                message: 'OTP is required'
+            });
+        }
+
+        // Determine identifier and type
+        const identifier = email || phone;
+        const identifierType = email ? 'email' : 'phone';
+        const query = email ? { email } : { phone };
+
+        // Find user
+        const user = await User.findOne(query);
         
         if (!user) {
             return res.status(404).json({
                 success: false,
-                message: 'User not found'
+                message: `User not found with this ${identifierType}`
             });
         }
 
-       
-
         // Get OTP data from Redis
-        const storedOtpData = await redis.get(`login-otp:${email}`);
+        const storedOtpData = await redis.get(`login-otp:${identifier}`);
         
         if (!storedOtpData) {
             return res.status(400).json({
@@ -517,7 +657,7 @@ exports.loginWithOtp = async (req, res) => {
         try {
             otpData = JSON.parse(storedOtpData);
         } catch (error) {
-            await redis.del(`login-otp:${email}`);
+            await redis.del(`login-otp:${identifier}`);
             return res.status(400).json({
                 success: false,
                 message: 'Invalid OTP data. Please request a new OTP.'
@@ -532,14 +672,14 @@ exports.loginWithOtp = async (req, res) => {
             
             // If too many failed attempts, invalidate the OTP
             if (otpData.attempts >= 3) {
-                await redis.del(`login-otp:${email}`);
+                await redis.del(`login-otp:${identifier}`);
                 return res.status(400).json({
                     success: false,
                     message: 'Too many failed attempts. Please request a new OTP.'
                 });
             } else {
                 // Update the stored data with new attempt count
-                await redis.set(`login-otp:${email}`, JSON.stringify(otpData), 'EX', 60 * 10);
+                await redis.set(`login-otp:${identifier}`, JSON.stringify(otpData), 'EX', 60 * 10);
                 const remainingAttempts = Math.max(0, 3 - otpData.attempts);
                 return res.status(400).json({
                     success: false,
@@ -549,7 +689,7 @@ exports.loginWithOtp = async (req, res) => {
         }
 
         // Clear OTP from Redis after successful verification
-        await redis.del(`login-otp:${email}`);
+        await redis.del(`login-otp:${identifier}`);
 
         // Generate JWT token
        const token = generateToken(user._id);
@@ -576,6 +716,7 @@ exports.loginWithOtp = async (req, res) => {
                 _id: user._id,
                 name: user.name,
                 email: user.email,
+                phone: user.phone,
                 role: user.role,
                 profilePicture: user.profilePicture || '',
                 profilePictureUrl: profilePictureUrl

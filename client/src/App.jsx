@@ -47,6 +47,11 @@ import UserProfile from "./pages/UserProfile";
 import TermsOfUse from "./pages/TermsOfUse";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import CookiePolicy from "./pages/CookiePolicy";
+import EmployeePortal from "./pages/EmployeePortal";
+import KYCVerifierDashboard from "./pages/KYCVerifierDashboard";
+import CampaignVerifierDashboard from "./pages/CampaignVerifierDashboard";
+import WithdrawalProcessorDashboard from "./pages/WithdrawalProcessorDashboard";
+import TransactionManagementDashboard from "./pages/TransactionManagementDashboard";
 
 // App wrapper to use auth context
 function AppContent() {
@@ -84,7 +89,7 @@ function AppContent() {
   }, [location]);
 
   // Check if current route is an admin route
-  const isAdminRoute = location.startsWith('/admin') || location.startsWith('/helloadmin');
+  const isAdminRoute = location.startsWith('/admin') || location.startsWith('/helloadmin') || location.startsWith('/employee');
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -175,6 +180,11 @@ function AppContent() {
               <Route path="/admin/payment/:id">
                 {(params) => <PaymentDetail id={params.id} />}
               </Route>
+              <Route path="/employee" component={EmployeePortal} />
+              <Route path="/employee/kyc-dashboard" component={KYCVerifierDashboard} />
+              <Route path="/employee/campaign-verifier" component={CampaignVerifierDashboard} />
+              <Route path="/employee/withdrawal-processor" component={WithdrawalProcessorDashboard} />
+              <Route path="/employee/transaction-management" component={TransactionManagementDashboard} />
               <Route path="/payment/success" component={PaymentSuccess} />
               <Route path="/payment/cancel" component={PaymentCancel} />
               <Route path="/payment/error">

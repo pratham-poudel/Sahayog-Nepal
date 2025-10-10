@@ -28,7 +28,7 @@ export const sendTransactionEmail = async (email, payment, ipAddress = null) => 
     try {
         await zeptoClient.sendMail({
             from: {
-                address: "transactions@gogoiarmaantech.me",
+                address: "transactions@sahayognepal.org",
                 name: "Sahayog Nepal - Transaction Confirmation"
             },
       to: [
@@ -182,8 +182,8 @@ export const sendTransactionEmail = async (email, payment, ipAddress = null) => 
         <div style="background-color: #f8f9fa; padding: 32px 40px; border-top: 1px solid #e9ecef; text-align: center;">
             <p style="margin: 0; font-size: 14px; color: #6c757d;">
                 Questions or concerns? Contact our support team at 
-                <a href="mailto:support@gogoiarmaantech.me" style="color: #e67e22; text-decoration: none;">
-                    support@gogoiarmaantech.me
+                <a href="mailto:support@sahayognepal.org" style="color: #e67e22; text-decoration: none;">
+                    support@sahayognepal.org
                 </a>
             </p>        </div>
 

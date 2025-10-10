@@ -9,7 +9,7 @@ const sendBankAccountEmail = async (email, data) => {
     try {
         await zeptoClient.sendMail({
             from: {
-                address: "Accounts@gogoiarmaantech.me",
+                address: "Accounts@sahayognepal.org",
                 name: "Submission Successful • Sahayog Nepal"
             },
             to: [
@@ -137,7 +137,7 @@ const sendBankAccountEmail = async (email, data) => {
   <div style="border-top: 1px solid #cccccc; padding-top: 20px; text-align: center;">
     <p style="margin: 0; font-size: 12px; color: #999999;">
       Sahayog Nepal - Empowering Communities Through Collective Support<br>
-      Email: <a href="mailto:support@gogoiarmaantech.me" style="color: #8B2325; text-decoration: none;">support@gogoiarmaantech.me</a><br>
+      Email: <a href="mailto:support@sahayognepal.org" style="color: #8B2325; text-decoration: none;">support@sahayognepal.org</a><br>
       <span style="font-size: 10px; color: #cccccc;">This is an automated message. Please do not reply to this email.</span>
     </p>
   </div>
@@ -198,7 +198,7 @@ const sendBankAccountStatusEmail = async (email, statusData) => {
     try {
         await zeptoClient.sendMail({
             from: {
-                address: "Accounts@gogoiarmaantech.me",
+                address: "Accounts@sahayognepal.org",
                 name: "Verification Update • Sahayog Nepal"
             },
             to: [
@@ -329,7 +329,7 @@ const sendBankAccountStatusEmail = async (email, statusData) => {
   <div style="border-top: 1px solid #cccccc; padding-top: 20px; text-align: center;">
     <p style="margin: 0; font-size: 12px; color: #999999;">
       Sahayog Nepal - Empowering Communities Through Collective Support<br>
-      Email: <a href="mailto:support@gogoiarmaantech.me" style="color: #8B2325; text-decoration: none;">support@gogoiarmaantech.me</a><br>
+      Email: <a href="mailto:support@sahayognepal.org" style="color: #8B2325; text-decoration: none;">support@sahayognepal.org</a><br>
       <span style="font-size: 10px; color: #cccccc;">This is an automated message. Please do not reply to this email.</span>
     </p>
   </div>

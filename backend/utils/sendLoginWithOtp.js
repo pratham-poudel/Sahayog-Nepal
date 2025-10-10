@@ -10,7 +10,7 @@ const sendLoginWithOtp = async (email, otp) => {
   // Send Login OTP via ZeptoMail
   await zeptoClient.sendMail({
     from: {
-      address: "authentication@gogoiarmaantech.me",
+      address: "authentication@sahayognepal.org",
       name: "Login OTP • Sahayog Nepal"
     },
     to: [
@@ -45,7 +45,7 @@ const sendLoginWithOtp = async (email, otp) => {
   <!-- Footer -->
   <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;" />
   <p style="font-size: 12px; color: #888; text-align: center;">
-    Sent by Sahayog Nepal • <a href="mailto:support@gogoiarmaantech.me" style="color: #8B2325;">support@gogoiarmaantech.me</a>
+    Sent by Sahayog Nepal • <a href="mailto:support@sahayognepal.org" style="color: #8B2325;">support@sahayognepal.org</a>
   </p>
 </div>
 `  });

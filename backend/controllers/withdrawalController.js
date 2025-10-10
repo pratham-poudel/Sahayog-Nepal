@@ -91,6 +91,14 @@ const createWithdrawalRequest = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Not authorized' });
     }
 
+    // Validate LAP letter exists
+    if (!campaign.lapLetter) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Local Authority Permission (LAP) Letter is required before processing withdrawals for this campaign. Please upload the LAP letter first.' 
+      });
+    }
+
     // Check campaign end status for flexible withdrawal rules
     const isCampaignEnded = campaign.status === 'completed' || new Date(campaign.endDate) < new Date();
     

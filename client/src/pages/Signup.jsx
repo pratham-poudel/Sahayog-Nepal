@@ -16,6 +16,7 @@ const Signup = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [documentFile, setDocumentFile] = useState(null);
   const [documentPreview, setDocumentPreview] = useState(null);
+  const [identifierType, setIdentifierType] = useState(''); // 'email' or 'phone'
   const [userData, setUserData] = useState({
     email: '',
     firstName: '',
@@ -54,14 +55,14 @@ const Signup = () => {
     });
   };
   
-  // Email form (Step 1)
+  // Email/Phone form (Step 1)
   const { 
-    register: registerEmail, 
-    handleSubmit: handleEmailSubmit, 
-    formState: { errors: emailErrors } 
+    register: registerIdentifier, 
+    handleSubmit: handleIdentifierSubmit, 
+    formState: { errors: identifierErrors } 
   } = useForm({
     defaultValues: {
-      email: userData.email
+      identifier: userData.email || userData.phone
     }
   });
   
@@ -163,23 +164,52 @@ const Signup = () => {
   };
   
   // Handle email submission (Step 1)
-  const onEmailSubmit = async (data) => {
+  // Handle identifier (email or phone) submission (Step 1)
+  const onIdentifierSubmit = async (data) => {
     setIsLoading(true);
     
     try {
-      // Check if email is already in use
-      const response = await apiRequest('POST', '/api/users/send-otp', { email: data.email });
+      const identifier = data.identifier;
+      
+      // Determine if identifier is email or phone
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const phoneRegex = /^[0-9]{10,15}$/;
+      
+      let isEmail = false;
+      let isPhone = false;
+      let requestBody = {};
+      
+      if (emailRegex.test(identifier)) {
+        isEmail = true;
+        requestBody = { email: identifier };
+        setIdentifierType('email');
+      } else if (phoneRegex.test(identifier.replace(/[\s\-\+]/g, ''))) {
+        isPhone = true;
+        requestBody = { phone: identifier.replace(/[\s\-\+]/g, '') };
+        setIdentifierType('phone');
+      } else {
+        throw new Error("Please enter a valid email address or phone number");
+      }
+      
+      // Send OTP request
+      const response = await apiRequest('POST', '/api/users/send-otp', requestBody);
       const result = await response.json();
       
       if (response.ok) {
-        setUserData(prev => ({ ...prev, email: data.email }));
+        // Save the identifier to userData
+        if (isEmail) {
+          setUserData(prev => ({ ...prev, email: identifier, phone: '' }));
+        } else {
+          setUserData(prev => ({ ...prev, phone: identifier.replace(/[\s\-\+]/g, ''), email: '' }));
+        }
+        
         toast({
-          title: "Verification email sent",
-          description: "We've sent a verification code to your email address."
+          title: `Verification code sent`,
+          description: `We've sent a verification code to your ${result.identifierType || (isEmail ? 'email' : 'phone')}.`
         });
         setStep(2);
       } else {
-        throw new Error(result.message || "Email verification failed");
+        throw new Error(result.message || "Verification failed");
       }
     } catch (error) {
       toast({
@@ -210,11 +240,15 @@ const Signup = () => {
         throw new Error("Please accept the Terms of Use and Privacy Policy");
       }
       
+      // Update userData with the form values
+      // If email was verified, update phone from form (or keep empty)
+      // If phone was verified, update email from form (or keep empty)
       setUserData(prev => ({
         ...prev,
         firstName: data.firstName,
         lastName: data.lastName,
-        phone: data.phone,
+        email: identifierType === 'email' ? prev.email : (data.email || ''),
+        phone: identifierType === 'phone' ? prev.phone : (data.phone || ''),
         password: data.password,
         detailsConfirmed: data.detailsConfirmed,
         termsAccepted: data.termsAccepted
@@ -241,15 +275,31 @@ const Signup = () => {
         throw new Error("Please complete the security verification");
       }
       
-      // First, verify OTP and create account (without document)
-      const response = await apiRequest('POST', '/api/users/verify-otp', {
-        email: userData.email,
+      // Prepare request body based on identifier type
+      const requestBody = {
         name: `${userData.firstName} ${userData.lastName}`,
-        phone: userData.phone,
         password: userData.password,
         otp: data.otp,
         turnstileToken: turnstileToken
-      });
+      };
+      
+      // Add email or phone based on what was verified
+      if (identifierType === 'email') {
+        requestBody.email = userData.email;
+        // Phone is optional in this case, add if provided in step 2
+        if (userData.phone) {
+          requestBody.phone = userData.phone;
+        }
+      } else {
+        requestBody.phone = userData.phone;
+        // Email is optional in this case, add if provided in step 2
+        if (userData.email) {
+          requestBody.email = userData.email;
+        }
+      }
+      
+      // First, verify OTP and create account (without document)
+      const response = await apiRequest('POST', '/api/users/verify-otp', requestBody);
       
       const result = await response.json();
       
@@ -323,35 +373,44 @@ const Signup = () => {
     }
   };
 
-  // Render email form (Step 1)
-  const renderEmailForm = () => (
-    <form className="space-y-6" onSubmit={handleEmailSubmit(onEmailSubmit)}>
+  // Render identifier (email or phone) form (Step 1)
+  const renderIdentifierForm = () => (
+    <form className="space-y-6" onSubmit={handleIdentifierSubmit(onIdentifierSubmit)}>
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Email address
+        <label htmlFor="identifier" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          Email or Phone Number
         </label>
         <div className="mt-1">
           <input
-            id="email"
-            type="email"
-            autoComplete="email"
+            id="identifier"
+            type="text"
+            autoComplete="email tel"
             className={`${formInputClasses} ${
-              emailErrors.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+              identifierErrors.identifier ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
             }`}
-            placeholder="you@example.com"
-            {...registerEmail("email", { 
-              required: "Email is required", 
-              pattern: {
-                value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                message: "Please enter a valid email address"
+            placeholder="you@example.com or 9876543210"
+            {...registerIdentifier("identifier", { 
+              required: "Email or phone number is required",
+              validate: (value) => {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                const phoneRegex = /^[0-9]{10,15}$/;
+                const cleanValue = value.replace(/[\s\-\+]/g, '');
+                
+                if (emailRegex.test(value) || phoneRegex.test(cleanValue)) {
+                  return true;
+                }
+                return "Please enter a valid email address or phone number";
               }
             })}
           />
-          {emailErrors.email && (
+          {identifierErrors.identifier && (
             <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-              {emailErrors.email.message}
+              {identifierErrors.identifier.message}
             </p>
           )}
+          <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+            Enter your email address or phone number to receive a verification code
+          </p>
         </div>
       </div>
 
@@ -422,44 +481,108 @@ const Signup = () => {
         </div>
       </div>
 
-      <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Email address
-        </label>
-        <div className="mt-1">
-          <input
-            id="email"
-            type="email"
-            value={userData.email}
-            className="appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 sm:text-sm"
-            readOnly
-            disabled
-          />
-        </div>
-      </div>
+      {/* Conditionally render locked email or phone field based on what was verified */}
+      {identifierType === 'email' ? (
+        <>
+          {/* Email field - locked and verified */}
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Email address
+              <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
+                Verified
+              </span>
+            </label>
+            <div className="mt-1">
+              <input
+                id="email"
+                type="email"
+                value={userData.email}
+                className="appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 sm:text-sm"
+                readOnly
+                disabled
+              />
+            </div>
+          </div>
 
-      <div>
-        <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Phone Number
-        </label>
-        <div className="mt-1">
-          <input
-            id="phone"
-            type="tel"
-            autoComplete="tel"
-            className={`${formInputClasses} ${
-              userDetailsErrors.phone ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-            }`}
-            placeholder="+977 9810000000"
-            {...registerUserDetails("phone", { required: "Phone number is required" })}
-          />
-          {userDetailsErrors.phone && (
-            <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-              {userDetailsErrors.phone.message}
-            </p>
-          )}
-        </div>
-      </div>
+          {/* Phone field - optional */}
+          <div>
+            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Phone Number
+              <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">(Optional)</span>
+            </label>
+            <div className="mt-1">
+              <input
+                id="phone"
+                type="tel"
+                autoComplete="tel"
+                className={`${formInputClasses} ${
+                  userDetailsErrors.phone ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                }`}
+                placeholder="+977 9810000000"
+                {...registerUserDetails("phone", { required: false })}
+              />
+              {userDetailsErrors.phone && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                  {userDetailsErrors.phone.message}
+                </p>
+              )}
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          {/* Phone field - locked and verified */}
+          <div>
+            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Phone Number
+              <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
+                Verified
+              </span>
+            </label>
+            <div className="mt-1">
+              <input
+                id="phone"
+                type="tel"
+                value={userData.phone}
+                className="appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 sm:text-sm"
+                readOnly
+                disabled
+              />
+            </div>
+          </div>
+
+          {/* Email field - optional */}
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Email address
+              <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">(Optional)</span>
+            </label>
+            <div className="mt-1">
+              <input
+                id="email"
+                type="email"
+                autoComplete="email"
+                className={`${formInputClasses} ${
+                  userDetailsErrors.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                }`}
+                placeholder="you@example.com"
+                {...registerUserDetails("email", { 
+                  required: false,
+                  pattern: {
+                    value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                    message: "Please enter a valid email address"
+                  }
+                })}
+              />
+              {userDetailsErrors.email && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                  {userDetailsErrors.email.message}
+                </p>
+              )}
+            </div>
+          </div>
+        </>
+      )}
 
       <div>
         <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -1068,7 +1191,7 @@ const Signup = () => {
             transition={{ duration: 0.4 }}
           >
             <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-2xl shadow-xl py-8 px-4 sm:px-10 border border-white/20 dark:border-gray-700/30">
-              {step === 1 && renderEmailForm()}
+              {step === 1 && renderIdentifierForm()}
               {step === 2 && renderUserDetailsForm()}
               {step === 3 && renderDocumentUploadForm()}
               {step === 4 && renderOtpForm()}

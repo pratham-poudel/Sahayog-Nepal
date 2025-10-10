@@ -10,11 +10,12 @@ import {
   Search, Filter, ChevronDown, RefreshCw, Calendar,
   CheckCircle, XCircle, Clock, AlertTriangle, Star,
   FileText, Activity, CreditCard, UserCheck, MoreVertical,
-  Edit3, Trash2, Flag, Ban, Check, Shield, ShieldX
+  Edit3, Trash2, Flag, Ban, Check, Shield, ShieldX, Building2
 } from 'lucide-react';
 import VerifyBank from './admin/VerifyBank';
 import WithdrawalManagement from './admin/WithdrawalManagement';
 import AdminAnalytics from './admin/AdminAnalytics';
+import EmployeeManagement from '../components/admin/EmployeeManagement';
 
 const AdminDashboard = () => {
   const [location, setLocation] = useLocation();
@@ -35,7 +36,8 @@ const AdminDashboard = () => {
     payments: false,
     analytics: false,
     verifybank: false,
-    withdrawals: false
+    withdrawals: false,
+    employees: false
   });
 
   // Individual loading states for each tab
@@ -46,7 +48,8 @@ const AdminDashboard = () => {
     payments: false,
     analytics: false,
     verifybank: false,
-    withdrawals: false
+    withdrawals: false,
+    employees: false
   });
 
   // Filters and search states
@@ -846,6 +849,7 @@ const AdminDashboard = () => {
               { id: 'payments', label: 'Payments', icon: CreditCard },
               { id: 'withdrawals', label: 'Withdrawals', icon: DollarSign },
               { id: 'verifybank', label: 'Verify Bank', icon: CheckCircle },
+              { id: 'employees', label: 'Employees', icon: Building2 },
               { id: 'analytics', label: 'Analytics', icon: TrendingUp }
             ].map(tab => {
               const Icon = tab.icon;
@@ -1609,6 +1613,11 @@ const AdminDashboard = () => {
         {/* Withdrawals Tab */}
         {activeTab === 'withdrawals' && (
           <WithdrawalManagement />
+        )}
+
+        {/* Employees Tab */}
+        {activeTab === 'employees' && (
+          <EmployeeManagement />
         )}
       </main>
     </div>
