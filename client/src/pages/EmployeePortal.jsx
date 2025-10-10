@@ -124,7 +124,7 @@ const EmployeePortal = () => {
             setLocation('/employee/transaction-management');
             break;
           case 'LEGAL_AUTHORITY_DEPARTMENT':
-            setLocation('/employee/legal-compliance');
+            setLocation('/employee/legal-authority');
             break;
           default:
             console.error('Unknown department:', department);

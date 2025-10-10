@@ -7,6 +7,9 @@ const User = require('../models/User');
 const WithdrawalRequest = require('../models/WithdrawalRequest');
 const BankAccount = require('../models/BankAccount');
 const Campaign = require('../models/Campaign');
+const Alert = require('../models/Alert');
+const Donation = require('../models/Donation');
+const Payment = require('../models/Payment');
 const { employeeAuth, restrictToDepartment } = require('../middleware/employeeAuth');
 const { sendSmsOtp } = require('../utils/sendSmsOtp');
 const { sendWithdrawStatusEmail } = require('../utils/SendWithDrawEmail');
@@ -2407,6 +2410,530 @@ router.get(
             res.status(500).json({
                 success: false,
                 message: 'Failed to fetch statistics'
+            });
+        }
+    }
+);
+
+// ============================================
+// LEGAL AUTHORITY DEPARTMENT ROUTES
+// ============================================
+
+/**
+ * Get all alerts for legal review with comprehensive filtering
+ * Department: LEGAL_AUTHORITY_DEPARTMENT
+ * 
+ * Query Parameters:
+ * - page: Page number (default: 1)
+ * - limit: Items per page (default: 20)
+ * - reviewed: Filter by reviewed status (all, reviewed, unreviewed)
+ * - outcome: Filter by outcome (all, reported, dismissed, under_review, none)
+ * - reportType: Filter by report type (all, STR, TTR, none)
+ * - minRiskScore: Minimum risk score (0-100)
+ * - maxRiskScore: Maximum risk score (0-100)
+ * - search: Search in user details, campaign title, transaction reference
+ * - reviewedBy: Filter by employee who reviewed (employee ID)
+ * - sortBy: Sort by field (default: riskScore)
+ * - sortOrder: asc or desc (default: desc)
+ */
+router.get(
+    '/legal/alerts',
+    employeeAuth,
+    restrictToDepartment('LEGAL_AUTHORITY_DEPARTMENT'),
+    async (req, res) => {
+        try {
+            const {
+                page = 1,
+                limit = 20,
+                reviewed = 'all',
+                outcome = 'all',
+                reportType = 'all',
+                minRiskScore,
+                maxRiskScore,
+                search = '',
+                reviewedBy,
+                sortBy = 'riskScore',
+                sortOrder = 'desc'
+            } = req.query;
+
+            const skip = (parseInt(page) - 1) * parseInt(limit);
+            
+            // Build query
+            const query = {};
+
+            // Filter by reviewed status
+            if (reviewed === 'reviewed') {
+                query.reviewed = true;
+            } else if (reviewed === 'unreviewed') {
+                query.reviewed = false;
+            }
+
+            // Filter by outcome
+            if (outcome !== 'all') {
+                query.outcome = outcome;
+            }
+
+            // Filter by report type
+            if (reportType !== 'all') {
+                query.reportType = reportType;
+            }
+
+            // Filter by risk score range
+            if (minRiskScore !== undefined || maxRiskScore !== undefined) {
+                query.riskScore = {};
+                if (minRiskScore !== undefined) query.riskScore.$gte = parseFloat(minRiskScore);
+                if (maxRiskScore !== undefined) query.riskScore.$lte = parseFloat(maxRiskScore);
+            }
+
+            // Filter by reviewing employee
+            if (reviewedBy) {
+                query['metadata.reviewedBy.employeeId'] = reviewedBy;
+            }
+
+            // Build sort object
+            const sortOptions = {};
+            sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
+
+            // First, get alerts with basic query
+            let alertsQuery = Alert.find(query)
+                .populate('userId', 'name email phone profilePictureUrl kycVerified country riskScore')
+                .populate({
+                    path: 'donationId',
+                    select: 'amount donorName donorEmail campaignId createdAt',
+                    populate: {
+                        path: 'campaignId',
+                        select: 'title creator status',
+                        populate: {
+                            path: 'creator',
+                            select: 'name email kycVerified'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'paymentId',
+                    select: 'amount donorInfo campaignId status createdAt transactionId'
+                })
+                .sort(sortOptions)
+                .skip(skip)
+                .limit(parseInt(limit))
+                .lean();
+
+            // If search term provided, we need to search in populated fields
+            // This requires a different approach - get all, then filter
+            let alerts;
+            let total;
+
+            if (search && search.trim()) {
+                // Get all matching alerts (without pagination first)
+                const allAlerts = await Alert.find(query)
+                    .populate('userId', 'name email phone profilePictureUrl kycVerified country riskScore')
+                    .populate({
+                        path: 'donationId',
+                        select: 'amount donorName donorEmail campaignId createdAt',
+                        populate: {
+                            path: 'campaignId',
+                            select: 'title creator status',
+                            populate: {
+                                path: 'creator',
+                                select: 'name email kycVerified'
+                            }
+                        }
+                    })
+                    .populate({
+                        path: 'paymentId',
+                        select: 'amount donorInfo campaignId status createdAt transactionId'
+                    })
+                    .sort(sortOptions)
+                    .lean();
+
+                // Filter by search term in populated fields
+                const searchLower = search.trim().toLowerCase();
+                const filtered = allAlerts.filter(alert => {
+                    const userMatch = alert.userId && (
+                        alert.userId.name?.toLowerCase().includes(searchLower) ||
+                        alert.userId.email?.toLowerCase().includes(searchLower) ||
+                        alert.userId.phone?.includes(searchLower)
+                    );
+                    
+                    const donationMatch = alert.donationId && (
+                        alert.donationId.donorName?.toLowerCase().includes(searchLower) ||
+                        alert.donationId.donorEmail?.toLowerCase().includes(searchLower) ||
+                        alert.donationId.campaignId?.title?.toLowerCase().includes(searchLower)
+                    );
+                    
+                    const paymentMatch = alert.paymentId && (
+                        alert.paymentId.donorInfo?.name?.toLowerCase().includes(searchLower) ||
+                        alert.paymentId.donorInfo?.email?.toLowerCase().includes(searchLower) ||
+                        alert.paymentId.transactionId?.toLowerCase().includes(searchLower)
+                    );
+
+                    const indicatorMatch = alert.indicators.some(ind => 
+                        ind.toLowerCase().includes(searchLower)
+                    );
+
+                    return userMatch || donationMatch || paymentMatch || indicatorMatch;
+                });
+
+                total = filtered.length;
+                alerts = filtered.slice(skip, skip + parseInt(limit));
+            } else {
+                // No search - use normal pagination
+                alerts = await alertsQuery;
+                total = await Alert.countDocuments(query);
+            }
+
+            res.json({
+                success: true,
+                data: alerts,
+                pagination: {
+                    total,
+                    page: parseInt(page),
+                    limit: parseInt(limit),
+                    totalPages: Math.ceil(total / parseInt(limit)),
+                    hasMore: skip + alerts.length < total
+                }
+            });
+
+        } catch (error) {
+            console.error('Error fetching alerts for legal review:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to fetch alerts'
+            });
+        }
+    }
+);
+
+/**
+ * Get detailed alert information
+ * Department: LEGAL_AUTHORITY_DEPARTMENT
+ */
+router.get(
+    '/legal/alerts/:id',
+    employeeAuth,
+    restrictToDepartment('LEGAL_AUTHORITY_DEPARTMENT'),
+    async (req, res) => {
+        try {
+            const { id } = req.params;
+
+            const alert = await Alert.findById(id)
+                .populate('userId', 'name email phone profilePictureUrl kycVerified country countryCode riskScore createdAt')
+                .populate({
+                    path: 'donationId',
+                    select: 'amount donorName donorEmail donorPhone campaignId paymentMethod createdAt',
+                    populate: {
+                        path: 'campaignId',
+                        select: 'title description creator status goalAmount raisedAmount coverImage',
+                        populate: {
+                            path: 'creator',
+                            select: 'name email phone kycVerified profilePictureUrl country'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'paymentId',
+                    select: 'amount donorInfo campaignId paymentMethod status createdAt transactionId metadata'
+                })
+                .lean();
+
+            if (!alert) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Alert not found'
+                });
+            }
+
+            res.json({
+                success: true,
+                data: alert
+            });
+
+        } catch (error) {
+            console.error('Error fetching alert details:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to fetch alert details'
+            });
+        }
+    }
+);
+
+/**
+ * Review alert and update outcome
+ * Department: LEGAL_AUTHORITY_DEPARTMENT
+ * 
+ * Body:
+ * - outcome: Required (reported, dismissed, under_review)
+ * - reportType: Optional (STR, TTR, none) - Required if outcome is 'reported'
+ * - notes: Optional review notes
+ */
+router.post(
+    '/legal/alerts/:id/review',
+    employeeAuth,
+    restrictToDepartment('LEGAL_AUTHORITY_DEPARTMENT'),
+    async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { outcome, reportType = 'none', notes = '' } = req.body;
+
+            // Validate outcome
+            if (!['reported', 'dismissed', 'under_review'].includes(outcome)) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid outcome. Must be: reported, dismissed, or under_review'
+                });
+            }
+
+            // Validate report type if outcome is reported
+            if (outcome === 'reported' && !['STR', 'TTR'].includes(reportType)) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Report type required when outcome is reported. Must be: STR or TTR'
+                });
+            }
+
+            const alert = await Alert.findById(id);
+
+            if (!alert) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Alert not found'
+                });
+            }
+
+            // Update alert
+            alert.reviewed = true;
+            alert.outcome = outcome;
+            alert.reportType = outcome === 'reported' ? reportType : 'none';
+            alert.metadata = {
+                ...alert.metadata,
+                reviewedBy: {
+                    employeeId: req.employee._id,
+                    employeeName: req.employee.name,
+                    designationNumber: req.employee.designationNumber
+                },
+                reviewedAt: new Date(),
+                reviewNotes: notes
+            };
+
+            await alert.save();
+
+            // Update employee statistics
+            await Employee.findByIdAndUpdate(req.employee._id, {
+                $inc: { 'statistics.totalLegalCasesHandled': 1 }
+            });
+
+            console.log(`[LEGAL REVIEW] Alert ${id} reviewed as ${outcome} by ${req.employee.designationNumber}`);
+
+            // Populate for response
+            const populatedAlert = await Alert.findById(id)
+                .populate('userId', 'name email')
+                .populate({
+                    path: 'donationId',
+                    select: 'amount campaignId',
+                    populate: { path: 'campaignId', select: 'title' }
+                })
+                .lean();
+
+            res.json({
+                success: true,
+                message: 'Alert reviewed successfully',
+                data: populatedAlert
+            });
+
+        } catch (error) {
+            console.error('Error reviewing alert:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to review alert'
+            });
+        }
+    }
+);
+
+/**
+ * Get legal department statistics overview
+ * Department: LEGAL_AUTHORITY_DEPARTMENT
+ */
+router.get(
+    '/legal/statistics',
+    employeeAuth,
+    restrictToDepartment('LEGAL_AUTHORITY_DEPARTMENT'),
+    async (req, res) => {
+        try {
+            // Get total alerts by status
+            const [
+                totalAlerts,
+                reviewedAlerts,
+                unreviewedAlerts,
+                reportedAlerts,
+                dismissedAlerts,
+                underReviewAlerts,
+                highRiskAlerts,
+                strReports,
+                ttrReports,
+                myReviews,
+                recentAlerts24h
+            ] = await Promise.all([
+                Alert.countDocuments(),
+                Alert.countDocuments({ reviewed: true }),
+                Alert.countDocuments({ reviewed: false }),
+                Alert.countDocuments({ outcome: 'reported' }),
+                Alert.countDocuments({ outcome: 'dismissed' }),
+                Alert.countDocuments({ outcome: 'under_review' }),
+                Alert.countDocuments({ riskScore: { $gte: 70 } }),
+                Alert.countDocuments({ reportType: 'STR' }),
+                Alert.countDocuments({ reportType: 'TTR' }),
+                Alert.countDocuments({ 'metadata.reviewedBy.employeeId': req.employee._id }),
+                Alert.countDocuments({ 
+                    createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }
+                })
+            ]);
+
+            // Get risk score distribution
+            const riskDistribution = await Alert.aggregate([
+                {
+                    $bucket: {
+                        groupBy: '$riskScore',
+                        boundaries: [0, 30, 50, 70, 85, 100],
+                        default: 'Other',
+                        output: {
+                            count: { $sum: 1 }
+                        }
+                    }
+                }
+            ]);
+
+            // Get top indicators
+            const topIndicators = await Alert.aggregate([
+                { $unwind: '$indicators' },
+                { 
+                    $group: {
+                        _id: '$indicators',
+                        count: { $sum: 1 }
+                    }
+                },
+                { $sort: { count: -1 } },
+                { $limit: 10 }
+            ]);
+
+            res.json({
+                success: true,
+                statistics: {
+                    overview: {
+                        total: totalAlerts,
+                        reviewed: reviewedAlerts,
+                        unreviewed: unreviewedAlerts,
+                        pendingReview: unreviewedAlerts,
+                        highRisk: highRiskAlerts
+                    },
+                    outcomes: {
+                        reported: reportedAlerts,
+                        dismissed: dismissedAlerts,
+                        underReview: underReviewAlerts
+                    },
+                    reports: {
+                        str: strReports,
+                        ttr: ttrReports,
+                        total: strReports + ttrReports
+                    },
+                    myActivity: {
+                        totalReviewed: myReviews
+                    },
+                    recent: {
+                        alerts24h: recentAlerts24h
+                    },
+                    riskDistribution,
+                    topIndicators
+                }
+            });
+
+        } catch (error) {
+            console.error('Error fetching legal statistics:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to fetch statistics'
+            });
+        }
+    }
+);
+
+/**
+ * Bulk review alerts
+ * Department: LEGAL_AUTHORITY_DEPARTMENT
+ * 
+ * Body:
+ * - alertIds: Array of alert IDs
+ * - outcome: Required (reported, dismissed, under_review)
+ * - reportType: Optional (STR, TTR, none)
+ * - notes: Optional review notes
+ */
+router.post(
+    '/legal/alerts/bulk-review',
+    employeeAuth,
+    restrictToDepartment('LEGAL_AUTHORITY_DEPARTMENT'),
+    async (req, res) => {
+        try {
+            const { alertIds, outcome, reportType = 'none', notes = '' } = req.body;
+
+            if (!alertIds || !Array.isArray(alertIds) || alertIds.length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Alert IDs array is required'
+                });
+            }
+
+            if (!['reported', 'dismissed', 'under_review'].includes(outcome)) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid outcome'
+                });
+            }
+
+            if (outcome === 'reported' && !['STR', 'TTR'].includes(reportType)) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Valid report type required when outcome is reported'
+                });
+            }
+
+            // Update all alerts
+            const updateResult = await Alert.updateMany(
+                { _id: { $in: alertIds } },
+                {
+                    $set: {
+                        reviewed: true,
+                        outcome: outcome,
+                        reportType: outcome === 'reported' ? reportType : 'none',
+                        'metadata.reviewedBy': {
+                            employeeId: req.employee._id,
+                            employeeName: req.employee.name,
+                            designationNumber: req.employee.designationNumber
+                        },
+                        'metadata.reviewedAt': new Date(),
+                        'metadata.reviewNotes': notes
+                    }
+                }
+            );
+
+            // Update employee statistics
+            await Employee.findByIdAndUpdate(req.employee._id, {
+                $inc: { 'statistics.totalLegalCasesHandled': updateResult.modifiedCount }
+            });
+
+            console.log(`[LEGAL BULK REVIEW] ${updateResult.modifiedCount} alerts reviewed by ${req.employee.designationNumber}`);
+
+            res.json({
+                success: true,
+                message: `${updateResult.modifiedCount} alerts reviewed successfully`,
+                modifiedCount: updateResult.modifiedCount
+            });
+
+        } catch (error) {
+            console.error('Error bulk reviewing alerts:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to bulk review alerts'
             });
         }
     }

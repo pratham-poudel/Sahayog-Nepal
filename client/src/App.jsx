@@ -52,6 +52,7 @@ import KYCVerifierDashboard from "./pages/KYCVerifierDashboard";
 import CampaignVerifierDashboard from "./pages/CampaignVerifierDashboard";
 import WithdrawalProcessorDashboard from "./pages/WithdrawalProcessorDashboard";
 import TransactionManagementDashboard from "./pages/TransactionManagementDashboard";
+import LegalDashboard from "./pages/LegalDashboard";
 
 // App wrapper to use auth context
 function AppContent() {
@@ -185,6 +186,7 @@ function AppContent() {
               <Route path="/employee/campaign-verifier" component={CampaignVerifierDashboard} />
               <Route path="/employee/withdrawal-processor" component={WithdrawalProcessorDashboard} />
               <Route path="/employee/transaction-management" component={TransactionManagementDashboard} />
+              <Route path="/employee/legal-authority" component={LegalDashboard} />
               <Route path="/payment/success" component={PaymentSuccess} />
               <Route path="/payment/cancel" component={PaymentCancel} />
               <Route path="/payment/error">
