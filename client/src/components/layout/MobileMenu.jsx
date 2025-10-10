@@ -3,6 +3,7 @@ import { Link, useLocation } from 'wouter';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { API_BASE_URL } from '../../config/index.js';
+import Logo from '../ui/Logo';
 
 const MobileMenu = ({ isOpen, onClose }) => {
   const { isAuthenticated, user, logoutAndRedirect } = useAuthContext();
@@ -29,6 +30,11 @@ const MobileMenu = ({ isOpen, onClose }) => {
     >
       <div className="bg-white dark:bg-gray-800 shadow-lg border-t border-gray-200 dark:border-gray-700">
         <div className="px-4 py-3 space-y-2">
+          {/* Mobile Menu Logo */}
+          <div className="flex justify-center py-3 border-b border-gray-200 dark:border-gray-700 mb-2">
+            <Logo size="medium" onClick={handleLinkClick} />
+          </div>
+          
           <Link href="/" onClick={handleLinkClick}>
             <div className="block py-3 px-4 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors font-medium">
               Home

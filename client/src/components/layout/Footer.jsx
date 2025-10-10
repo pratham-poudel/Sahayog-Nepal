@@ -2,6 +2,7 @@ import { Link } from 'wouter';
 import { motion } from 'framer-motion';
 import { useTheme } from '../../contexts/ThemeContext';
 import ThemeToggle from '../ui/ThemeToggle';
+import Logo from '../ui/Logo';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -15,14 +16,7 @@ const Footer = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
           {/* Logo & Tagline */}
           <div className="col-span-2 md:col-span-1">
-            <div className="flex items-center mb-3">
-              <div className="h-8 w-8 flex items-center justify-center bg-[#8B2325] rounded-full mr-2">
-                <span className="text-white font-bold text-lg">S</span>
-              </div>
-              <div className="text-xl font-poppins font-bold">
-                <span className="text-gray-800 dark:text-white">Sahayog</span><span className="text-[#D5A021]">Nepal</span>
-              </div>
-            </div>
+            <Logo size="medium" className="mb-3" />
             <p className="text-gray-600 dark:text-gray-400 text-sm mb-3">{tagline}</p>
             <div className="flex space-x-3">
               <a href="#" className="text-gray-500 hover:text-[#8B2325] dark:text-gray-400 dark:hover:text-white transition-colors" aria-label="Facebook">

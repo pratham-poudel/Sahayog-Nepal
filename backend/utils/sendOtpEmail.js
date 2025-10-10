@@ -24,9 +24,7 @@ const sendOtpEmail = async (email, otp) => {
     htmlbody: `<div style="font-family: 'Segoe UI', sans-serif; background-color: #fff; color: #333; max-width: 500px; margin: auto; padding: 24px; border: 1px solid #eee; border-radius: 10px;">
   <!-- Header / Logo -->
   <div style="text-align: center; margin-bottom: 20px;">
-    <h1 style="margin: 0; font-size: 26px; font-weight: bold;">
-      <span style="color: #8B2325;">Sahayog</span><span style="color: #D5A021;">Nepal</span>
-    </h1>
+    <img src="https://filesatsahayognepal.dallytech.com/misc/SahayogNepal%20(1).png" alt="Sahayog Nepal" style="height: 70px; width: auto; max-width: 100%; margin-bottom: 10px;" />
     <p style="font-size: 14px; color: #666;">Secure OTP Verification</p>
   </div>
 

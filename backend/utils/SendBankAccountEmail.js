@@ -25,9 +25,7 @@ const sendBankAccountEmail = async (email, data) => {
   <!-- Header -->
   <div style="border-bottom: 2px solid #8B2325; padding-bottom: 20px; margin-bottom: 30px; position: relative;">
     <div style="float: left; width: 60%;">
-      <h1 style="margin: 0; font-size: 24px; font-weight: normal; color: #333333;">
-        <span style="color: #8B2325;">SAHAYOG</span> <span style="color: #D5A021;">NEPAL</span>
-      </h1>
+      <img src="https://filesatsahayognepal.dallytech.com/misc/SahayogNepal%20(1).png" alt="Sahayog Nepal" style="height: 60px; width: auto; max-width: 100%;" />
       <p style="margin: 5px 0 0 0; font-size: 14px; color: #666666;">Bank Account Verification</p>
     </div>
     <div style="float: right; width: 35%; text-align: right;">
@@ -215,9 +213,7 @@ const sendBankAccountStatusEmail = async (email, statusData) => {
   <!-- Header -->
   <div style="border-bottom: 2px solid #8B2325; padding-bottom: 20px; margin-bottom: 30px; position: relative;">
     <div style="float: left; width: 60%;">
-      <h1 style="margin: 0; font-size: 24px; font-weight: normal; color: #333333;">
-        <span style="color: #8B2325;">SAHAYOG</span> <span style="color: #D5A021;">NEPAL</span>
-      </h1>
+      <img src="https://filesatsahayognepal.dallytech.com/misc/SahayogNepal%20(1).png" alt="Sahayog Nepal" style="height: 60px; width: auto; max-width: 100%;" />
       <p style="margin: 5px 0 0 0; font-size: 14px; color: #666666;">Bank Account Verification Update</p>
     </div>
     <div style="float: right; width: 35%; text-align: right;">

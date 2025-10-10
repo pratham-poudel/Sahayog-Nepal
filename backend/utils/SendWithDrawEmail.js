@@ -36,10 +36,8 @@ const sendWithdrawalRequestEmail = async (email, withdrawalData) => {
   <!-- Header -->
   <div style="border-bottom: 2px solid #8B2325; padding-bottom: 20px; margin-bottom: 30px; position: relative;">
     <div style="float: left; width: 60%;">
-      <h1 style="margin: 0; font-size: 24px; font-weight: normal; color: #333333;">
-        <span style="color: #8B2325;">SAHAYOG</span> <span style="color: #D5A021;">NEPAL</span>
-      </h1>
-      <p style="margin: 5px 0 0 0; font-size: 14px; color: #666666;">Withdrawal Request Confirmation</p>
+      <img src="https://filesatsahayognepal.dallytech.com/misc/SahayogNepal%20(1).png" alt="Sahayog Nepal" style="height: 60px; width: auto; max-width: 100%;" />
+      <p style="margin: 5px 0 0 0; font-size: 14px; color: #666666;">Withdrawal Status Update</p>
     </div>
     <div style="float: right; width: 35%; text-align: right;">
       <img src="https://barcode.tec-it.com/barcode.ashx?data=${withdrawalData.withdrawalId}&code=Code128&multiplebarcodes=false&translate-esc=false&unit=Fit&dpi=96&imagetype=Gif&rotation=0&color=%23000000&bgcolor=%23ffffff&codepage=&qunit=Mm&quiet=0&width=150&height=40" 
@@ -191,10 +189,8 @@ const sendWithdrawStatusEmail = async (email, statusData) => {
   <!-- Header -->
   <div style="border-bottom: 2px solid #8B2325; padding-bottom: 20px; margin-bottom: 30px; position: relative;">
     <div style="float: left; width: 60%;">
-      <h1 style="margin: 0; font-size: 24px; font-weight: normal; color: #333333;">
-        <span style="color: #8B2325;">SAHAYOG</span> <span style="color: #D5A021;">NEPAL</span>
-      </h1>
-      <p style="margin: 5px 0 0 0; font-size: 14px; color: #666666;">Withdrawal Status Update</p>
+      <img src="https://filesatsahayognepal.dallytech.com/misc/SahayogNepal%20(1).png" alt="Sahayog Nepal" style="height: 60px; width: auto; max-width: 100%;" />
+      <p style="margin: 5px 0 0 0; font-size: 14px; color: #666666;">Withdrawal Request</p>
     </div>
     <div style="float: right; width: 35%; text-align: right;">
       <img src="https://barcode.tec-it.com/barcode.ashx?data=${withdrawalId}&code=Code128&multiplebarcodes=false&translate-esc=false&unit=Fit&dpi=96&imagetype=Gif&rotation=0&color=%23000000&bgcolor=%23ffffff&codepage=&qunit=Mm&quiet=0&width=150&height=40" 

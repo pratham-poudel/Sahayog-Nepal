@@ -25,9 +25,7 @@ const sendAdminOtpEmail = async (email, otp) => {
         
         <!-- Header -->
         <div style="text-align: center; margin-bottom: 28px;">
-          <h1 style="margin: 0; font-size: 24px; font-weight: 600;">
-            <span style="color: #8B2325;">Sahayog</span><span style="color: #D5A021;">Nepal</span>
-          </h1>
+          <img src="https://filesatsahayognepal.dallytech.com/misc/SahayogNepal%20(1).png" alt="Sahayog Nepal" style="height: 70px; width: auto; max-width: 100%; margin-bottom: 10px;" />
           <p style="font-size: 14px; color: #6b7280;">Admin Authentication Portal</p>
         </div>
 

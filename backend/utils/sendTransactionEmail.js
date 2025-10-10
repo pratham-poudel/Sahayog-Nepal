@@ -55,9 +55,7 @@ export const sendTransactionEmail = async (email, payment, ipAddress = null) => 
         <!-- Header -->
         <div style="background-color: #ffffff; padding: 40px 40px 20px 40px; border-bottom: 1px solid #e9ecef;">
             <div style="text-align: center;">
-                <h1 style="margin: 0; font-size: 32px; font-weight: 600; color: #2c3e50; letter-spacing: -0.5px;">
-                    Sahayog<span style="color: #e67e22;">Nepal</span>
-                </h1>
+                <img src="https://filesatsahayognepal.dallytech.com/misc/SahayogNepal%20(1).png" alt="Sahayog Nepal" style="height: 80px; width: auto; max-width: 100%; margin-bottom: 12px;" />
                 <p style="margin: 8px 0 0 0; color: #6c757d; font-size: 14px; font-weight: 400;">
                     Building stronger communities together
                 </p>

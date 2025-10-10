@@ -4,6 +4,7 @@ import { useAuthContext } from '../../contexts/AuthContext';
 import Navbar from './Navbar';
 import MobileMenu from './MobileMenu';
 import ThemeToggle from '../ui/ThemeToggle';
+import Logo from '../ui/Logo';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Header = () => {
@@ -89,16 +90,7 @@ const Header = () => {
     >
       <div className="container mx-auto px-4 md:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 md:h-20">
-          <div className="flex items-center">
-            <Link href="/" className="flex items-center">
-              <div className="h-8 w-8 md:h-10 md:w-10 flex items-center justify-center bg-[#8B2325] rounded-full mr-2 shadow-md">
-                <span className="text-white font-bold text-lg md:text-xl">S</span>
-              </div>
-              <div className="text-xl md:text-2xl font-poppins font-bold">
-                <span className="text-[#8B2325] dark:text-[#a32729]">Sahayog</span><span className="text-[#D5A021] dark:text-[#e5b43c]">Nepal</span>
-              </div>
-            </Link>
-          </div>
+          <Logo size="large" />
           
           <Navbar />
           

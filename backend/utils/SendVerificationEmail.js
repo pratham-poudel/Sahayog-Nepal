@@ -100,6 +100,12 @@ const sendVerificationEmail = async (email, name, ipAddress = null) => {
                             z-index: 2;
                         }
                         
+                        .logo img {
+                            height: 80px;
+                            width: auto;
+                            max-width: 100%;
+                        }
+                        
                         .verification-badge { 
                             display: inline-flex;
                             align-items: center;
@@ -294,7 +300,7 @@ const sendVerificationEmail = async (email, name, ipAddress = null) => {
                             .benefits { padding: 30px 20px; }
                             .benefit-item { padding: 15px; }
                             .footer { padding: 30px 20px; }
-                            .logo { font-size: 28px; }
+                            .logo img { height: 60px; }
                         }
                     </style>
                 </head>
@@ -302,7 +308,9 @@ const sendVerificationEmail = async (email, name, ipAddress = null) => {
                     <div class="email-container">
                         <!-- Header Section -->
                         <div class="header">
-                            <div class="logo">Sahayog Nepal</div>
+                            <div class="logo">
+                                <img src="https://filesatsahayognepal.dallytech.com/misc/SahayogNepal%20(1).png" alt="Sahayog Nepal" />
+                            </div>
                             <div class="verification-badge">
                                 <svg width="40" height="40" viewBox="0 0 24 24" fill="#3b82f6">
                                     <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
