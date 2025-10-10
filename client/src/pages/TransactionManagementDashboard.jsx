@@ -42,6 +42,91 @@ const TransactionManagementDashboard = () => {
   const searchTimeoutRef = useRef(null);
   const fetchInProgressRef = useRef(false); // Prevent duplicate fetches
 
+  // Memoized fetch function to prevent recreating on every render
+  const fetchTransactions = useCallback(async (pageNum, reset) => {
+    // Prevent duplicate concurrent requests
+    if (fetchInProgressRef.current && !reset) {
+      console.log('⏸️ Fetch already in progress, skipping...');
+      return;
+    }
+
+    fetchInProgressRef.current = true;
+
+    if (reset) {
+      setLoading(true);
+    }
+
+    try {
+      const token = localStorage.getItem('employeeToken');
+      const params = new URLSearchParams({
+        page: pageNum,
+        limit: 20,
+        status: statusFilter,
+        ...(searchTerm.trim() && { search: searchTerm.trim() })
+      });
+
+      const response = await fetch(`${API_BASE_URL}/api/employee/transactions?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        credentials: 'include'
+      });
+
+      if (!response.ok) throw new Error('Failed to fetch transactions');
+
+      const data = await response.json();
+
+      if (reset) {
+        setTransactions(data.data);
+      } else {
+        // Use functional update to avoid stale state
+        setTransactions(prev => {
+          // Prevent duplicate entries
+          const existingIds = new Set(prev.map(t => t._id));
+          const newTransactions = data.data.filter(t => !existingIds.has(t._id));
+          return [...prev, ...newTransactions];
+        });
+      }
+
+      setHasMore(data.pagination.hasMore);
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+      toast({
+        title: "Error Loading Transactions",
+        description: "Failed to load transaction list. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+      setSearching(false);
+      fetchInProgressRef.current = false;
+    }
+  }, [statusFilter, searchTerm, toast]); // Dependencies for useCallback
+
+  const fetchStatistics = async () => {
+    try {
+      const token = localStorage.getItem('employeeToken');
+      const response = await fetch(`${API_BASE_URL}/api/employee/transactions-stats/overview`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        credentials: 'include'
+      });
+
+      if (!response.ok) throw new Error('Failed to fetch statistics');
+
+      const data = await response.json();
+      setStatistics(data.statistics);
+    } catch (error) {
+      console.error('Error fetching statistics:', error);
+      toast({
+        title: "Error Loading Statistics",
+        description: "Failed to load dashboard statistics. Please refresh the page.",
+        variant: "destructive"
+      });
+    }
+  };
+
   // Check authentication
   useEffect(() => {
     checkAuth();
@@ -154,91 +239,6 @@ const TransactionManagementDashboard = () => {
       setLocation('/employee');
     }
   };
-
-  const fetchStatistics = async () => {
-    try {
-      const token = localStorage.getItem('employeeToken');
-      const response = await fetch(`${API_BASE_URL}/api/employee/transactions-stats/overview`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        credentials: 'include'
-      });
-
-      if (!response.ok) throw new Error('Failed to fetch statistics');
-
-      const data = await response.json();
-      setStatistics(data.statistics);
-    } catch (error) {
-      console.error('Error fetching statistics:', error);
-      toast({
-        title: "Error Loading Statistics",
-        description: "Failed to load dashboard statistics. Please refresh the page.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  // Memoized fetch function to prevent recreating on every render
-  const fetchTransactions = useCallback(async (pageNum, reset) => {
-    // Prevent duplicate concurrent requests
-    if (fetchInProgressRef.current && !reset) {
-      console.log('⏸️ Fetch already in progress, skipping...');
-      return;
-    }
-
-    fetchInProgressRef.current = true;
-
-    if (reset) {
-      setLoading(true);
-    }
-
-    try {
-      const token = localStorage.getItem('employeeToken');
-      const params = new URLSearchParams({
-        page: pageNum,
-        limit: 20,
-        status: statusFilter,
-        ...(searchTerm.trim() && { search: searchTerm.trim() })
-      });
-
-      const response = await fetch(`${API_BASE_URL}/api/employee/transactions?${params}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        credentials: 'include'
-      });
-
-      if (!response.ok) throw new Error('Failed to fetch transactions');
-
-      const data = await response.json();
-
-      if (reset) {
-        setTransactions(data.data);
-      } else {
-        // Use functional update to avoid stale state
-        setTransactions(prev => {
-          // Prevent duplicate entries
-          const existingIds = new Set(prev.map(t => t._id));
-          const newTransactions = data.data.filter(t => !existingIds.has(t._id));
-          return [...prev, ...newTransactions];
-        });
-      }
-
-      setHasMore(data.pagination.hasMore);
-    } catch (error) {
-      console.error('Error fetching transactions:', error);
-      toast({
-        title: "Error Loading Transactions",
-        description: "Failed to load transaction list. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-      setSearching(false);
-      fetchInProgressRef.current = false;
-    }
-  }, [statusFilter, searchTerm, toast]); // Dependencies for useCallback
 
   const handleViewTransaction = async (transactionId) => {
     try {
