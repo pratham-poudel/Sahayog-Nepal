@@ -104,9 +104,20 @@ exports.getTopDonors = async (req, res) => {
                     donor: {
                         $cond: [
                             { $eq: ['$donorType', 'registered'] },
-                            { $arrayElemAt: ['$userInfo', 0] },
                             {
-                                name: '$donorName',
+                                $ifNull: [
+                                    { $arrayElemAt: ['$userInfo', 0] },
+                                    {
+                                        name: { $ifNull: ['$donorName', 'Anonymous Donor'] },
+                                        profilePictureUrl: null,
+                                        bio: null,
+                                        createdAt: null,
+                                        isGuest: true
+                                    }
+                                ]
+                            },
+                            {
+                                name: { $ifNull: ['$donorName', 'Anonymous Donor'] },
                                 profilePictureUrl: null,
                                 bio: null,
                                 createdAt: null,
@@ -114,6 +125,12 @@ exports.getTopDonors = async (req, res) => {
                             }
                         ]
                     }
+                }
+            },
+            // Filter out any documents where donor is still null (shouldn't happen but safety check)
+            {
+                $match: {
+                    donor: { $ne: null }
                 }
             }
         ];

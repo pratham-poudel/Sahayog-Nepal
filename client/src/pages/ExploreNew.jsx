@@ -271,10 +271,11 @@ const Explore = () => {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [isSearching, setIsSearching] = useState(false); // For debounced search loading
+  const [isLoadingMore, setIsLoadingMore] = useState(false); // Track infinite scroll loading
   
   // Refs for infinite scroll and debouncing
   const observerTarget = useRef(null);
-  const isLoadingMore = useRef(false);
+  const isLoadingMoreRef = useRef(false);
   const searchDebounceTimer = useRef(null);
   const sortDropdownRef = useRef(null);
 
@@ -315,10 +316,11 @@ const Explore = () => {
 
   // Fetch campaigns
   const fetchCampaigns = useCallback(async (pageNum, append = false) => {
-    if (isLoadingMore.current && append) return;
+    if (isLoadingMoreRef.current && append) return;
     
     if (append) {
-      isLoadingMore.current = true;
+      isLoadingMoreRef.current = true;
+      setIsLoadingMore(true);
     }
 
     try {
@@ -337,6 +339,12 @@ const Explore = () => {
       if (result.campaigns) {
         if (append) {
           setCampaigns(prev => [...prev, ...result.campaigns]);
+          // Keep skeleton visible for a brief moment to ensure smooth transition
+          // Wait for React to render the new campaigns before hiding skeleton
+          setTimeout(() => {
+            isLoadingMoreRef.current = false;
+            setIsLoadingMore(false);
+          }, 100);
         } else {
           setCampaigns(result.campaigns);
         }
@@ -346,11 +354,14 @@ const Explore = () => {
       }
     } catch (error) {
       console.error('Error fetching campaigns:', error);
-    } finally {
       if (append) {
-        isLoadingMore.current = false;
+        isLoadingMoreRef.current = false;
+        setIsLoadingMore(false);
       }
-      setIsInitialLoad(false);
+    } finally {
+      if (!append) {
+        setIsInitialLoad(false);
+      }
     }
   }, [activeTab, activeCategory, searchTerm, sortBy, getRegularCampaigns, getUrgentCampaigns]);
 
@@ -367,7 +378,7 @@ const Explore = () => {
   useEffect(() => {
     const observer = new IntersectionObserver(
       entries => {
-        if (entries[0].isIntersecting && hasMore && !loading && !isLoadingMore.current) {
+        if (entries[0].isIntersecting && hasMore && !loading && !isLoadingMoreRef.current) {
           const nextPage = page + 1;
           setPage(nextPage);
           fetchCampaigns(nextPage, true);
@@ -687,31 +698,43 @@ const Explore = () => {
               </p>
             </motion.div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <motion.div 
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+              layout
+            >
               {campaigns.map((campaign, index) => (
                 <motion.div
                   key={`${campaign._id}-${index}`}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                  transition={{ duration: 0.3, delay: Math.min(index * 0.05, 0.3) }}
+                  layout
                 >
                   <CampaignCard campaign={campaign} />
                 </motion.div>
               ))}
-            </div>
+            </motion.div>
           )}
         </AnimatePresence>
 
         {/* Loading More Indicator */}
         {!isInitialLoad && campaigns.length > 0 && (
           <div ref={observerTarget} className="mt-8">
-            {hasMore && loading && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[...Array(3)].map((_, i) => (
-                  <CampaignCardSkeleton key={`skeleton-${i}`} />
-                ))}
-              </div>
-            )}
+            <AnimatePresence mode="wait">
+              {hasMore && isLoadingMore && (
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                >
+                  {[...Array(3)].map((_, i) => (
+                    <CampaignCardSkeleton key={`skeleton-${i}`} />
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
             {!hasMore && (
               <div className="text-center py-8 text-gray-500">
                 <p>You've reached the end of the list</p>

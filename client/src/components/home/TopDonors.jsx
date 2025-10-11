@@ -75,6 +75,13 @@ const DonorCard = React.memo(({ donor, index }) => {
     return { icon: '⭐', color: 'bg-[#8B2325]', label: 'Valued Supporter' };
   }, []);
 
+  // Handle edge case where donor data might be missing or undefined
+  if (!donor || !donor.donor) {
+    return null;
+  }
+
+  const donorInfo = donor.donor;
+  const donorName = donorInfo.name || 'Anonymous Donor';
   const badge = getRankBadge(donor.rank);
 
   return (
@@ -97,18 +104,18 @@ const DonorCard = React.memo(({ donor, index }) => {
           
           <div className="mb-3">
             <img
-              src={donor.donor.profilePictureUrl || getDefaultAvatar(donor.donor.name)}
-              alt={donor.donor.name}
+              src={donorInfo.profilePictureUrl || getDefaultAvatar(donorName)}
+              alt={donorName}
               className="w-20 h-20 rounded-full mx-auto border-3 border-white shadow-xl object-cover"
               onError={(e) => {
-                e.target.src = getDefaultAvatar(donor.donor.name);
+                e.target.src = getDefaultAvatar(donorName);
               }}
               loading="lazy"
             />
           </div>
           
           <h3 className="text-white font-bold text-lg mb-1 truncate">
-            {donor.donor.name}
+            {donorName}
           </h3>
           
           <div className="bg-white/20 backdrop-blur-sm rounded-full px-3 py-1 inline-block">
@@ -137,10 +144,10 @@ const DonorCard = React.memo(({ donor, index }) => {
           </div>
 
           {/* Bio */}
-          {donor.donor.bio ? (
+          {donorInfo.bio ? (
             <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-3 mb-3">
               <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed line-clamp-3">
-                {donor.donor.bio}
+                {donorInfo.bio}
               </p>
             </div>
           ) : (
@@ -155,7 +162,12 @@ const DonorCard = React.memo(({ donor, index }) => {
           <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
             <div className="flex items-center gap-1">
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span>Since {new Date(donor.donor.createdAt).getFullYear()}</span>
+              <span>
+                {donorInfo.createdAt 
+                  ? `Since ${new Date(donorInfo.createdAt).getFullYear()}`
+                  : 'Valued Member'
+                }
+              </span>
             </div>
             <span>
               {new Date(donor.lastDonation).toLocaleDateString('en-GB', { 
@@ -309,9 +321,11 @@ const TopDonors = () => {
               WebkitOverflowScrolling: 'touch' 
             }}
           >
-            {donors.map((donor, index) => (
-              <DonorCard key={donor._id} donor={donor} index={index} />
-            ))}
+            {donors
+              .filter(donor => donor && donor.donor) // Filter out invalid donors
+              .map((donor, index) => (
+                <DonorCard key={donor._id} donor={donor} index={index} />
+              ))}
           </div>
 
           {/* Fade effects */}

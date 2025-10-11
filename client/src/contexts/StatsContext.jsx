@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { useLocation } from 'wouter';
 import { getHomeStats, getLiveImpactStats, formatStatsForDisplay, formatLiveImpactStats } from '../services/statsService';
 
 const StatsContext = createContext();
@@ -12,6 +13,7 @@ export const useStats = () => {
 };
 
 export const StatsProvider = ({ children }) => {
+  const [location] = useLocation();
   const [homeStats, setHomeStats] = useState(null);
   const [liveStats, setLiveStats] = useState(null);
   const [formattedHomeStats, setFormattedHomeStats] = useState(null);
@@ -19,12 +21,32 @@ export const StatsProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Fetch stats once when the provider mounts
+  // Check if current route should load stats
+  const shouldLoadStats = () => {
+    // Don't load stats for admin/employee routes
+    if (location.startsWith('/admin') || 
+        location.startsWith('/helloadmin') || 
+        location.startsWith('/employee')) {
+      return false;
+    }
+    return true;
+  };
+
+  // Fetch stats once when the provider mounts (only for public routes)
   useEffect(() => {
+    // Skip fetching if we're on an admin/employee route
+    if (!shouldLoadStats()) {
+      console.log('🚫 Skipping stats fetch for admin/employee route:', location);
+      setLoading(false);
+      return;
+    }
+
     const fetchAllStats = async () => {
       try {
         setLoading(true);
         setError(null);
+        
+        console.log('📊 Fetching stats for public route:', location);
         
         // Fetch both home stats and live stats in parallel
         const [rawHomeStats, rawLiveStats] = await Promise.all([
@@ -88,7 +110,7 @@ export const StatsProvider = ({ children }) => {
     };
 
     fetchAllStats();
-  }, []);
+  }, [location]); // Re-run when location changes
 
   // Method to refresh stats if needed
   const refreshStats = async () => {
