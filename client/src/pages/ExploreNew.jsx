@@ -272,6 +272,7 @@ const Explore = () => {
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [isSearching, setIsSearching] = useState(false); // For debounced search loading
   const [isLoadingMore, setIsLoadingMore] = useState(false); // Track infinite scroll loading
+  const [isFilterLoading, setIsFilterLoading] = useState(false); // Track filter change loading
   
   // Refs for infinite scroll and debouncing
   const observerTarget = useRef(null);
@@ -321,6 +322,9 @@ const Explore = () => {
     if (append) {
       isLoadingMoreRef.current = true;
       setIsLoadingMore(true);
+    } else {
+      // Set filter loading for non-append fetches (tab/category/sort changes)
+      setIsFilterLoading(true);
     }
 
     try {
@@ -361,6 +365,7 @@ const Explore = () => {
     } finally {
       if (!append) {
         setIsInitialLoad(false);
+        setIsFilterLoading(false);
       }
     }
   }, [activeTab, activeCategory, searchTerm, sortBy, getRegularCampaigns, getUrgentCampaigns]);
@@ -672,7 +677,7 @@ const Explore = () => {
 
         {/* Campaigns Grid */}
         <AnimatePresence mode="wait">
-          {isInitialLoad && loading ? (
+          {(isInitialLoad && loading) || isFilterLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[...Array(6)].map((_, i) => (
                 <CampaignCardSkeleton key={i} />
