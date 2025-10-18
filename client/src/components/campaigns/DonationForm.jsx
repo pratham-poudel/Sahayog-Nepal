@@ -208,10 +208,13 @@ const DonationForm = ({ campaignId, campaignTitle = "This Campaign" }) => {
   const predefinedAmounts = ['1000', '2000', '5000', '10000'];
   const quickPresetAmounts = ['100', '500', '1000', '2500'];
 
-  // Auto-fill user information when authenticated
+  // Track if user info has been auto-filled to prevent refilling
+  const [hasAutoFilled, setHasAutoFilled] = useState(false);
+
+  // Auto-fill user information when authenticated (only once)
   useEffect(() => {
-    if (isAuthenticated && user) {
-      // Auto-fill name and email if user is logged in
+    if (isAuthenticated && user && !hasAutoFilled) {
+      // Auto-fill name, email, and phone if user is logged in and fields are empty
       if (user.name && !name) {
         setName(user.name);
       }
@@ -221,8 +224,10 @@ const DonationForm = ({ campaignId, campaignTitle = "This Campaign" }) => {
       if (user.phone && !phone) {
         setPhone(user.phone);
       }
+      // Mark as auto-filled so it doesn't happen again
+      setHasAutoFilled(true);
     }
-  }, [isAuthenticated, user, name, email, phone]);
+  }, [isAuthenticated, user, hasAutoFilled, name, email, phone]);
 
   // Cleanup for websocket and intervals
   useEffect(() => {
@@ -362,6 +367,19 @@ const DonationForm = ({ campaignId, campaignTitle = "This Campaign" }) => {
     setProcessingPayment(true);
     
     try {
+      // Validate campaignId is provided
+      if (!campaignId) {
+        console.error('Campaign ID is missing!');
+        toast({
+          title: "Error",
+          description: "Campaign ID is missing. Please refresh the page and try again.",
+          variant: "destructive"
+        });
+        setIsLoading(false);
+        setProcessingPayment(false);
+        return;
+      }
+      
       // Prepare payment data
       const donationAmount = amount === 'custom' ? parseInt(customAmount) : parseInt(amount);
       
@@ -391,7 +409,25 @@ const DonationForm = ({ campaignId, campaignTitle = "This Campaign" }) => {
         userId: isAuthenticated && user ? user._id : null // Include user ID if user is logged in
       };
 
-      console.log('Payment Data:', paymentData);
+      console.log('=== Payment Data Debug ===');
+      console.log('Campaign ID:', campaignId);
+      console.log('Amount (NPR):', donationAmount);
+      console.log('Amount (Paisa):', donationAmount * 100);
+      console.log('Platform Fee (%):', platformFee);
+      console.log('Platform Fee Amount (NPR):', calculationSummary.platformFeeAmount);
+      console.log('Platform Fee Amount (Paisa):', Math.round(calculationSummary.platformFeeAmount * 100));
+      console.log('Total Amount (NPR):', calculationSummary.totalAmount);
+      console.log('Total Amount (Paisa):', Math.round(calculationSummary.totalAmount * 100));
+      console.log('Donor Name:', isAnonymous ? 'Anonymous' : name);
+      console.log('Donor Email:', email);
+      console.log('Donor Phone:', phone);
+      console.log('Donor Message:', message);
+      console.log('Is Anonymous:', isAnonymous);
+      console.log('User ID:', isAuthenticated && user ? user._id : null);
+      console.log('Payment Method:', paymentMethod);
+      console.log('Mobile Payment Method:', mobilePaymentMethod);
+      console.log('Full Payment Data:', paymentData);
+      console.log('========================');
 
       // Choose payment processor based on payment method
       if (paymentMethod === 'mobileBanking') {

@@ -395,7 +395,7 @@ const CampaignDetail = ({ campaign }) => {
             </div> */}
             {/* <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Supporters</h3> */}
           </div>
-          <RecentDonations campaignId={campaign.id} />
+          <RecentDonations campaignId={campaign._id || campaign.id} />
         </div>
       </div>
     ),
@@ -961,7 +961,7 @@ const CampaignDetail = ({ campaign }) => {
               </p>
             </div>
           ) : (
-            <DonationForm campaignId={campaign.id} />
+            <DonationForm campaignId={campaign._id || campaign.id} campaignTitle={campaign.title} />
           )}
           
           <div className="mt-6">

@@ -525,15 +525,7 @@ const StartCampaign = () => {
         return;
       }
 
-      // Validate LAP letter
-      if (!selectedLapLetter) {
-        toast({
-          title: "LAP Letter required",
-          description: "Please upload the Local Authority Permission (LAP) Letter",
-          variant: "destructive"
-        });
-        return;
-      }
+      // LAP letter is now optional - no validation needed
     }
     
     if (isStepValid) {
@@ -671,14 +663,7 @@ const StartCampaign = () => {
       return;
     }
 
-    if (!selectedLapLetter) {
-      toast({
-        title: "LAP Letter required",
-        description: "Please upload the Local Authority Permission (LAP) Letter.",
-        variant: "destructive"
-      });
-      return;
-    }
+    // LAP letter is now optional - no validation needed
     
     try {
       setIsLoading(true);
@@ -695,12 +680,15 @@ const StartCampaign = () => {
         progress: 0
       });
 
-      stages.push({
-        id: 'lap',
-        name: 'Uploading LAP Letter...',
-        status: 'pending',
-        progress: 0
-      });
+      // Only add LAP letter stage if LAP letter is selected
+      if (selectedLapLetter) {
+        stages.push({
+          id: 'lap',
+          name: 'Uploading LAP Letter...',
+          status: 'pending',
+          progress: 0
+        });
+      }
 
       if (selectedAdditionalImages.length > 0) {
         stages.push({
@@ -762,33 +750,35 @@ const StartCampaign = () => {
         throw new Error(`Cover image upload failed: ${error.message}`);
       }
 
-      // Stage 2: Upload LAP Letter
-      setCurrentUploadStage('Uploading LAP Letter...');
-      setUploadStages(prev => prev.map(stage => 
-        stage.id === 'lap' ? { ...stage, status: 'uploading' } : stage
-      ));
-
-      try {
-        uploadedLapLetter = await uploadService.uploadFile(
-          selectedLapLetter, 
-          { fileType: 'document-lap' }, 
-          (progress) => {
-            setUploadStages(prev => prev.map(stage => 
-              stage.id === 'lap' ? { ...stage, progress } : stage
-            ));
-          }
-        );
-
+      // Stage 2: Upload LAP Letter (if provided)
+      if (selectedLapLetter) {
+        setCurrentUploadStage('Uploading LAP Letter...');
         setUploadStages(prev => prev.map(stage => 
-          stage.id === 'lap' ? { ...stage, status: 'completed', progress: 100 } : stage
+          stage.id === 'lap' ? { ...stage, status: 'uploading' } : stage
         ));
-        completedStages++;
-        setOverallProgress((completedStages / totalStages) * 100);
-      } catch (error) {
-        setUploadStages(prev => prev.map(stage => 
-          stage.id === 'lap' ? { ...stage, status: 'error', error: error.message } : stage
-        ));
-        throw new Error(`LAP Letter upload failed: ${error.message}`);
+
+        try {
+          uploadedLapLetter = await uploadService.uploadFile(
+            selectedLapLetter, 
+            { fileType: 'document-lap' }, 
+            (progress) => {
+              setUploadStages(prev => prev.map(stage => 
+                stage.id === 'lap' ? { ...stage, progress } : stage
+              ));
+            }
+          );
+
+          setUploadStages(prev => prev.map(stage => 
+            stage.id === 'lap' ? { ...stage, status: 'completed', progress: 100 } : stage
+          ));
+          completedStages++;
+          setOverallProgress((completedStages / totalStages) * 100);
+        } catch (error) {
+          setUploadStages(prev => prev.map(stage => 
+            stage.id === 'lap' ? { ...stage, status: 'error', error: error.message } : stage
+          ));
+          throw new Error(`LAP Letter upload failed: ${error.message}`);
+        }
       }
 
       // Stage 3: Upload additional images (if any)
@@ -1158,37 +1148,6 @@ const StartCampaign = () => {
                         </h3>
                         
                         <div className="grid gap-4">
-                          {/* LAP Letter */}
-                          <div className="bg-white dark:bg-gray-700 border-2 border-[#8B2325]/30 dark:border-[#a02729]/30 rounded-lg p-5">
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center mb-2">
-                                  <FileText className="w-5 h-5 text-[#8B2325] mr-2" />
-                                  <h4 className="font-semibold text-gray-800 dark:text-white">
-                                    Local Authority Permission (LAP) Letter
-                                  </h4>
-                                  <span className="ml-2 px-2 py-1 bg-[#8B2325] text-white text-xs font-semibold rounded">
-                                    REQUIRED
-                                  </span>
-                                </div>
-                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                                  Official permission letter from your local authority (Ward Office/Municipality). 
-                                  This document verifies your identity and campaign purpose.
-                                </p>
-                                <a 
-                                  href="https://filesatsahayognepal.dallytech.com/misc/user-68c82061d9d8e9b1dc00f30c-1759723042157-f0f5d5c3.pdf"
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  download="LAP_Letter_Template.pdf"
-                                  className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-[#8B2325] to-[#a02729] text-white font-medium rounded-lg hover:from-[#7a1f21] hover:to-[#8f2326] transition-all duration-300 shadow-md hover:shadow-lg"
-                                >
-                                  <Download className="w-4 h-4 mr-2" />
-                                  Download Template
-                                </a>
-                              </div>
-                            </div>
-                          </div>
-
                           {/* Cover Image */}
                           <div className="bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg p-5">
                             <div className="flex items-center mb-2">
@@ -1232,6 +1191,37 @@ const StartCampaign = () => {
                         </h3>
                         
                         <div className="grid gap-4">
+                          {/* LAP Letter - Now Optional */}
+                          <div className="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-800 rounded-lg p-5">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center mb-2">
+                                  <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400 mr-2" />
+                                  <h4 className="font-semibold text-gray-800 dark:text-white">
+                                    Local Authority Permission (LAP) Letter
+                                  </h4>
+                                  <span className="ml-2 px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs font-semibold rounded">
+                                    OPTIONAL
+                                  </span>
+                                </div>
+                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                                  Official permission letter from your local authority (Ward Office/Municipality). 
+                                  While optional, this document can increase your campaign's credibility and verification speed.
+                                </p>
+                                <a 
+                                  href="https://filesatsahayognepal.dallytech.com/misc/user-68c82061d9d8e9b1dc00f30c-1759723042157-f0f5d5c3.pdf"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  download="LAP_Letter_Template.pdf"
+                                  className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-300 shadow-md hover:shadow-lg"
+                                >
+                                  <Download className="w-4 h-4 mr-2" />
+                                  Download Template
+                                </a>
+                              </div>
+                            </div>
+                          </div>
+                          
                           {/* Supporting Documents */}
                           <div className="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-800 rounded-lg p-5">
                             <div className="flex items-center mb-2">
@@ -1275,10 +1265,11 @@ const StartCampaign = () => {
                             </h4>
                             <ul className="text-sm text-amber-700 dark:text-amber-300 space-y-1 list-disc ml-4">
                               <li>All documents must be clear and legible</li>
-                              <li>LAP Letter must have official seal/stamp from local authority</li>
+                              <li>If providing LAP Letter, it must have official seal/stamp from local authority</li>
                               <li>Providing accurate information is mandatory</li>
                               <li>Campaign will be reviewed by our team before going live</li>
                               <li>False information may lead to campaign rejection</li>
+                              <li>Supporting documents can speed up the verification process</li>
                             </ul>
                           </div>
                         </div>
@@ -1543,30 +1534,30 @@ const StartCampaign = () => {
                       
                       <div className="group">
                         <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                          <span className="flex-1">Local Authority Permission (LAP) Letter*</span>
-                          <span className="px-3 py-1 bg-[#8B2325] text-white text-xs font-semibold rounded-full">
-                            REQUIRED
+                          <span className="flex-1">Local Authority Permission (LAP) Letter</span>
+                          <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs font-semibold rounded-full">
+                            OPTIONAL
                           </span>
                         </label>
-                        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mb-3">
+                        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-3">
                           <div className="flex items-start space-x-3">
                             <div className="flex-shrink-0">
-                              <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5" />
+                              <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
                             </div>
                             <div className="flex-1">
-                              <h4 className="text-sm font-semibold text-amber-800 dark:text-amber-200 mb-1">
-                                Official Document Required
+                              <h4 className="text-sm font-semibold text-blue-800 dark:text-blue-200 mb-1">
+                                Recommended for Verification
                               </h4>
-                              <p className="text-sm text-amber-700 dark:text-amber-300 mb-3">
+                              <p className="text-sm text-blue-700 dark:text-blue-300 mb-3">
                                 Upload the signed and stamped Local Authority Permission Letter from your ward office or municipality. 
-                                This document is mandatory for campaign verification.
+                                While optional, this document increases campaign credibility and speeds up verification.
                               </p>
                               <a 
                                 href="https://filesatsahayognepal.dallytech.com/misc/user-68c82061d9d8e9b1dc00f30c-1759723042157-f0f5d5c3.pdf"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 download="LAP_Letter_Template.pdf"
-                                className="inline-flex items-center px-3 py-1.5 bg-white dark:bg-gray-700 border border-amber-300 dark:border-amber-600 text-amber-700 dark:text-amber-300 text-sm font-medium rounded-md hover:bg-amber-50 dark:hover:bg-gray-600 transition-colors"
+                                className="inline-flex items-center px-3 py-1.5 bg-white dark:bg-gray-700 border border-blue-300 dark:border-blue-600 text-blue-700 dark:text-blue-300 text-sm font-medium rounded-md hover:bg-blue-50 dark:hover:bg-gray-600 transition-colors"
                               >
                                 <Download className="w-4 h-4 mr-2" />
                                 Download Template
@@ -1590,7 +1581,7 @@ const StartCampaign = () => {
                           </div>
                         </FileSelector>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                          The document must have official seal/stamp from local authority
+                          If provided, the document must have official seal/stamp from local authority
                         </p>
                       </div>
                       

@@ -96,8 +96,9 @@ const campaignSchema = new Schema({
   },
   lapLetter: {
     type: String,
-    required: [true, 'Local Authority Permission (LAP) Letter is required'],
-    description: 'Local Authority Permission Letter - Required document for campaign verification'
+    required: false,
+    default: null,
+    description: 'Local Authority Permission Letter - Optional document for campaign verification (previously required for PVT LTD approach)'
   },
   donations: [{
     type: Schema.Types.ObjectId,

@@ -13,6 +13,7 @@ const Payment = require('../models/Payment');
 const { employeeAuth, restrictToDepartment } = require('../middleware/employeeAuth');
 const { sendSmsOtp } = require('../utils/sendSmsOtp');
 const { sendWithdrawStatusEmail } = require('../utils/SendWithDrawEmail');
+const { sendCampaignVerificationEmail } = require('../utils/sendCampaignVerificationEmail');
 const { clearSpecificCampaignCache } = require('../utils/cacheUtils');
 const redis = require('../utils/RedisClient');
 const { strictAuthLimiter } = require('../middlewares/advancedRateLimiter');
@@ -838,8 +839,28 @@ router.post('/campaigns/:campaignId/verify',
                 $inc: { 'statistics.totalCampaignsVerified': 1 }
             });
 
-            // TODO: Send notification email to campaign creator
-            console.log(`[CAMPAIGN VERIFIED] ID: ${campaign._id} by Employee: ${req.employee.designationNumber}`);
+            // Send verification email to campaign creator
+            try {
+                // Populate creator details if not already populated
+                const campaignWithCreator = await Campaign.findById(campaign._id).populate('creator', 'name email');
+                
+                if (campaignWithCreator && campaignWithCreator.creator) {
+                    await sendCampaignVerificationEmail(
+                        campaignWithCreator.creator.email,
+                        campaignWithCreator.creator.name,
+                        campaignWithCreator.title,
+                        campaignWithCreator._id.toString(),
+                        verificationNotes,
+                        req.ip
+                    );
+                    console.log(`[CAMPAIGN VERIFIED] ID: ${campaign._id} by Employee: ${req.employee.designationNumber} - Verification email sent to ${campaignWithCreator.creator.email}`);
+                } else {
+                    console.log(`[CAMPAIGN VERIFIED] ID: ${campaign._id} by Employee: ${req.employee.designationNumber} - Email not sent (creator details missing)`);
+                }
+            } catch (emailError) {
+                console.error('[CAMPAIGN VERIFIED] Email send failed but campaign verified:', emailError.message);
+                // Don't fail the verification if email fails
+            }
 
             res.json({
                 success: true,
