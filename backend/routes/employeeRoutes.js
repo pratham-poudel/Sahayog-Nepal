@@ -280,7 +280,7 @@ router.get('/kyc/users',
             // Execute query with pagination
             const [users, total] = await Promise.all([
                 User.find(query)
-                    .select('name email phone profilePictureUrl bio isPremiumAndVerified kycVerified personalVerificationDocument country riskScore kycVerifiedBy kycVerifiedAt kycVerificationNotes createdAt')
+                    .select('name email phone profilePictureUrl bio isPremiumAndVerified kycVerified personalVerificationDocument country riskScore kycVerifiedBy kycVerifiedAt kycVerificationNotes isBanned banReason bannedBy bannedAt createdAt')
                     .sort(sortOptions)
                     .skip(skip)
                     .limit(parseInt(limit))
@@ -319,7 +319,7 @@ router.get('/kyc/users/:userId',
             const { userId } = req.params;
 
             const user = await User.findById(userId)
-                .select('name email phone profilePictureUrl bio isPremiumAndVerified kycVerified personalVerificationDocument country countryCode riskScore kycVerifiedBy kycVerifiedAt kycVerificationNotes campaigns createdAt updatedAt')
+                .select('name email phone profilePictureUrl bio isPremiumAndVerified kycVerified personalVerificationDocument country countryCode riskScore kycVerifiedBy kycVerifiedAt kycVerificationNotes isBanned banReason bannedBy bannedAt campaigns createdAt updatedAt')
                 .populate('campaigns', 'title status goalAmount raisedAmount')
                 .lean();
 
@@ -471,6 +471,156 @@ router.put('/kyc/update-status/:userId',
     }
 );
 
+// Ban user
+router.post('/kyc/ban-user/:userId',
+    employeeAuth,
+    restrictToDepartment('USER_KYC_VERIFIER'),
+    async (req, res) => {
+        try {
+            const { userId } = req.params;
+            const { banReason } = req.body;
+
+            // Validate ban reason
+            if (!banReason || banReason.trim().length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Ban reason is required'
+                });
+            }
+
+            if (banReason.trim().length < 10) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Ban reason must be at least 10 characters long'
+                });
+            }
+
+            const user = await User.findById(userId);
+
+            if (!user) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'User not found'
+                });
+            }
+
+            // Check if user is already banned
+            if (user.isBanned) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'User is already banned'
+                });
+            }
+
+            // Ban the user
+            user.isBanned = true;
+            user.banReason = banReason.trim();
+            user.bannedBy = {
+                employeeId: req.employee._id,
+                employeeName: req.employee.name,
+                designationNumber: req.employee.designationNumber
+            };
+            user.bannedAt = new Date();
+
+            await user.save();
+
+            // Update employee statistics
+            await Employee.findByIdAndUpdate(req.employee._id, {
+                $inc: { 'statistics.totalUsersBanned': 1 }
+            });
+
+            // Log the ban action
+            console.log(`[USER BANNED] User: ${user.email || user.phone} by Employee: ${req.employee.designationNumber}`);
+            console.log(`Ban Reason: ${banReason}`);
+
+            res.json({
+                success: true,
+                message: 'User has been banned successfully',
+                user: {
+                    id: user._id,
+                    name: user.name,
+                    email: user.email,
+                    isBanned: user.isBanned,
+                    banReason: user.banReason,
+                    bannedAt: user.bannedAt
+                }
+            });
+
+        } catch (error) {
+            console.error('Error banning user:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to ban user'
+            });
+        }
+    }
+);
+
+// Unban user
+router.post('/kyc/unban-user/:userId',
+    employeeAuth,
+    restrictToDepartment('USER_KYC_VERIFIER'),
+    async (req, res) => {
+        try {
+            const { userId } = req.params;
+            const { unbanReason = '' } = req.body;
+
+            const user = await User.findById(userId);
+
+            if (!user) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'User not found'
+                });
+            }
+
+            // Check if user is banned
+            if (!user.isBanned) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'User is not currently banned'
+                });
+            }
+
+            // Unban the user
+            user.isBanned = false;
+            user.banReason = null;
+            user.bannedBy = {
+                employeeId: null,
+                employeeName: null,
+                designationNumber: null
+            };
+            user.bannedAt = null;
+
+            await user.save();
+
+            // Log the unban action
+            console.log(`[USER UNBANNED] User: ${user.email || user.phone} by Employee: ${req.employee.designationNumber}`);
+            if (unbanReason) {
+                console.log(`Unban Reason: ${unbanReason}`);
+            }
+
+            res.json({
+                success: true,
+                message: 'User has been unbanned successfully',
+                user: {
+                    id: user._id,
+                    name: user.name,
+                    email: user.email,
+                    isBanned: user.isBanned
+                }
+            });
+
+        } catch (error) {
+            console.error('Error unbanning user:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to unban user'
+            });
+        }
+    }
+);
+
 // Get KYC verification statistics for employee dashboard
 router.get('/kyc/statistics',
     employeeAuth,
@@ -482,12 +632,14 @@ router.get('/kyc/statistics',
                 verifiedUsers,
                 unverifiedUsers,
                 premiumUsers,
+                bannedUsers,
                 myVerifications
             ] = await Promise.all([
                 User.countDocuments(),
                 User.countDocuments({ kycVerified: true }),
                 User.countDocuments({ kycVerified: false }),
                 User.countDocuments({ isPremiumAndVerified: true }),
+                User.countDocuments({ isBanned: true }),
                 User.countDocuments({ 'kycVerifiedBy.employeeId': req.employee._id })
             ]);
 
@@ -498,6 +650,7 @@ router.get('/kyc/statistics',
                     verifiedUsers,
                     unverifiedUsers,
                     premiumUsers,
+                    bannedUsers,
                     myVerifications,
                     pendingVerifications: unverifiedUsers
                 }

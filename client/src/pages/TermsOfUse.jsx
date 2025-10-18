@@ -21,17 +21,28 @@ const TermsOfUse = () => {
           heading: "1. About SahayogNepal",
           content: `This document is an electronic record in terms of Information Technology Act, 2000 and rules thereunder as applicable. This document is published in accordance with the provisions of applicable laws in Nepal.
 
-SahayogNepal, a platform operated by Dallytech Pvt Ltd, promotes crowdfunding for medical, social, and charitable causes in Nepal. The domain name www.sahayognepal.org (hereinafter referred to as "Website") and mobile application (hereinafter referred to as "Application") is owned and operated by Dallytech Pvt Ltd, a company duly registered under the laws of Nepal.
+SahayogNepal is a registered Non-Governmental Organization (NGO) dedicated to facilitating crowdfunding for medical, social, and charitable causes in Nepal. As Nepal does not yet have specific government regulations for crowdfunding platforms, Sahayog Nepal operates under the Social Welfare Act, 2049 (1992) and relevant charitable organization regulations.
 
-Your use of the Website and Application and tools are governed by the following terms and conditions ("Terms of Use / Terms") as mentioned herein. By mere use of the Website or Application, you shall be contracting with SahayogNepal and these terms and conditions constitute your binding obligations.`
+The online platform, including the domain name www.sahayognepal.org (hereinafter referred to as "Website") and mobile application (hereinafter referred to as "Application"), is owned and operated by SahayogNepal NGO, a registered non-profit organization under Nepali law.
+
+Your use of the Website and Application and tools are governed by the following terms and conditions ("Terms of Use / Terms") as mentioned herein. By mere use of the Website or Application, you shall be contracting with SahayogNepal NGO and these terms and conditions constitute your binding obligations.`
         },
         {
-          heading: "2. Services of SahayogNepal",
-          content: `SahayogNepal is a marketing service provider and the Website or Application merely provides a platform with features which can be utilized by Users to reach a larger base of people, organizations and causes. SahayogNepal is only providing a platform for publication and it is agreed that the transactions taking place on the Website or Application are gratuitous and bipartite between the Donor/Contributor and the Campaigner.
+          heading: "2. Services of SahayogNepal and Campaign Verification",
+          content: `SahayogNepal is a registered Non-Governmental Organization providing a crowdfunding platform for medical, social, and charitable causes in Nepal. The Website and Application allow users to reach a larger base of donors and supporters for legitimate charitable purposes.
 
-The Website provides services to allow Campaigners to post fundraising campaigns to accept monetary donations. Although there are no fees to set up a Campaign, a percentage of each donation will be charged as fees for our Services. SahayogNepal is not a broker, financial institution, creditor or charitable institution - we are an administrative platform only.
+IMPORTANT - Campaign Verification and NGO Responsibility:
+All campaigns posted on SahayogNepal undergo strict verification by our NGO team before being displayed on the main page. Once a campaign is verified and published on our platform:
+• The campaign becomes an OFFICIAL CAMPAIGN of SahayogNepal NGO
+• SahayogNepal NGO takes responsibility for the authenticity and legitimacy of the campaign
+• We verify documents, beneficiary details, and the genuine need for funds
+• Only campaigns meeting our strict verification criteria are shown to donors
 
-We do not guarantee that a Campaign will obtain a certain amount of donations. We do not personally endorse any Campaign or Campaigner. We expressly disclaim any liability for the success of any Campaign or the outcome of any fundraising purpose.`
+The Website provides services to allow verified Campaigners to post fundraising campaigns to accept monetary donations. Although there are no fees to set up a Campaign, operational costs are deducted from donations as per our fee policy.
+
+CRITICAL - We do NOT provide any financial returns: We do not provide any financial return in any form whatsoever, including but not limited to financial securities (debt or equity), interest, dividend, profit share, rewards in cash or cash equivalents, to persons who contribute on sahayognepal.org. All contributions are purely charitable donations.
+
+We do not guarantee that a Campaign will obtain a certain amount of donations. However, by verifying and publishing campaigns, we stand behind their authenticity and charitable purpose.`
         },
         {
           heading: "3. Eligibility of the User",
@@ -45,7 +56,34 @@ SahayogNepal reserves the right to terminate your membership and refuse to provi
 
 You shall ensure that documents and information submitted are true, correct, up to date, and do not infringe upon intellectual property or other rights of third parties. You must comply with all applicable Nepali laws including tax regulations, foreign contribution regulations, and information technology laws.
 
-You shall withdraw/utilize funds raised on our platform within 45 days from campaign end. SahayogNepal reserves the right to refund or make payout to beneficiaries if campaigners do not withdraw funds within 45 days.
+CRITICAL - One-Year Fund Withdrawal Policy:
+
+Campaigners MUST withdraw raised funds within ONE (1) YEAR from the campaign end date.
+
+If funds are NOT withdrawn within this 1-year period:
+• Funds will be automatically transferred to another verified needy campaign on the platform (prioritized to similar category campaigns)
+• If no suitable active campaign is identified, funds will be transferred to Sahayog Nepal's main charitable fund "DHUKUTI"
+• Campaigners will receive email notifications at 9 months, 11 months, and a final notice before the 1-year deadline
+• This policy ensures donated funds reach beneficiaries promptly and are not left unused
+• NO refunds will be made to donors after the 1-year period expires
+• Once funds are reallocated, they CANNOT be reclaimed by the original campaigner
+
+Reason for This Policy:
+As Nepal does not yet have specific government regulations for crowdfunding platforms, Sahayog Nepal has established this policy as an NGO to ensure:
+- Charitable donations serve their intended purpose promptly
+- Unused funds continue helping those in need
+- Transparency and accountability in fund management
+- Alignment with our charitable mission
+
+About DHUKUTI Fund:
+DHUKUTI is Sahayog Nepal's main charitable relief fund used for:
+- Emergency disaster response
+- Supporting campaigns that fall short of their targets
+- Urgent medical cases requiring immediate intervention
+- Community development projects
+- Administered transparently by Sahayog Nepal's board of directors with quarterly public reports
+
+By creating a campaign, you explicitly agree to this 1-year withdrawal deadline and fund reallocation policy.
 
 Ethical Image Posting: You must obtain permission from people depicted in images. For minors, obtain permission from parents/guardians. Show authentic and accurate portrayals. Do not manipulate images or manufacture fake vulnerability. Respect child protection and privacy standards.`
         },
@@ -57,17 +95,40 @@ SahayogNepal only enables the flow of funds from Donors to Campaigners and is no
 
 While making a donation, the Donor should conduct independent due diligence regarding the Campaign. SahayogNepal shall not be responsible for any misrepresentation or false information listed on the Website.
 
-If a Campaign terminates prematurely, SahayogNepal reserves the right to divert unutilized donations to another active Campaign or refund to Donors within 45 days.`
+Important Notice - Fund Reallocation Policy:
+Donors should be aware that if a campaign creator does not withdraw the raised funds within 1 YEAR of the campaign end date, those funds will be:
+1. Transferred to another verified needy campaign on the platform (prioritized), OR
+2. Transferred to Sahayog Nepal's main charitable fund "DHUKUTI"
+
+This ensures your donation continues to serve charitable purposes even if the original campaign creator does not claim the funds. All donations are FINAL and non-refundable after this 1-year period. Donors can track fund reallocation through the platform's transparency reports.
+
+If a Campaign terminates prematurely for reasons of fraud or misrepresentation, SahayogNepal reserves the right to refund donations to Donors or redirect them to DHUKUTI fund or another suitable campaign.`
         },
         {
-          heading: "6. Payment and Financial Transactions",
+          heading: "6. Payment, Fund Disbursement and Verification",
           content: `All payments must be made in Nepali Rupees (NPR) for Nepali nationals using local payment gateways. Foreign contributions must be made through approved foreign payment gateways in accordance with Nepali foreign exchange regulations.
 
-You authorize SahayogNepal and its service providers to collect, process, facilitate and remit payments electronically. The payment facility is merely a facilitator using existing authorized banking infrastructure.
+You authorize SahayogNepal NGO to collect, process, facilitate and remit payments electronically. The payment facility is merely a facilitator using existing authorized banking infrastructure.
+
+STRICT FUND DISBURSEMENT VERIFICATION:
+Before transferring raised funds to campaigners, SahayogNepal NGO conducts rigorous verification:
+• Complete document verification (identity, bank details, medical reports, etc.)
+• Physical verification of beneficiary and need (when required)
+• For large amounts (cash or cheque transfers), a representative from SahayogNepal NGO may be present during fund handover
+• Video/photo documentation of fund transfer for transparency
+• Signed acknowledgement receipts from beneficiaries
+
+FRAUD DETECTION AND FUND PROTECTION:
+If any scam, fraud, or fraudulent activity is detected at any stage:
+• ALL funds raised for that campaign will be IMMEDIATELY frozen
+• After investigation, if fraud is confirmed, the ENTIRE fund amount will be transferred to SahayogNepal's main charitable fund "DHUKUTI"
+• These funds will be used for genuine social and charitable purposes
+• The fraudulent campaigner will be permanently banned and legal action will be pursued
+• Donors will be notified about the fraud detection and fund reallocation
 
 SahayogNepal reserves the right to refuse questionable transactions, delay payment confirmation for suspicious transactions, and may inform law enforcement if illegal activity is suspected.
 
-Funds will be transferred to Campaigners net of platform fees, payment gateway charges, and applicable taxes within 15 days of campaign completion or upon withdrawal request.`
+Funds will be transferred to verified Campaigners net of platform fees, payment gateway charges, and applicable taxes within 15 days of campaign completion or upon withdrawal request, subject to successful verification.`
         },
         {
           heading: "7. Platform Charges and Fees",
@@ -99,11 +160,11 @@ SahayogNepal reserves the right to remove content, suspend accounts, and take le
         },
         {
           heading: "9. Intellectual Property Rights",
-          content: `All content on the Website, including text, graphics, logos, and software, is protected by copyright and intellectual property laws. You may not copy, reproduce, or distribute Website content without express written permission from SahayogNepal.
+          content: `All content on the Website, including text, graphics, logos, and software, is protected by copyright and intellectual property laws. You may not copy, reproduce, or distribute Website content without express written permission from SahayogNepal NGO.
 
 By uploading User Content, you grant SahayogNepal a non-exclusive, worldwide, royalty-free, perpetual license to use, display, and distribute your content in connection with platform operations and marketing.
 
-The SahayogNepal name and logo are trademarks of Dallytech Pvt Ltd. Unauthorized use of our trademarks is strictly prohibited.`
+The SahayogNepal name and logo are trademarks of SahayogNepal NGO. Unauthorized use of our trademarks is strictly prohibited.`
         },
         {
           heading: "10. Privacy and Data Protection",
@@ -134,8 +195,15 @@ IN NO EVENT SHALL SAHAYOGNEPAL BE LIABLE FOR ANY INDIRECT, INCIDENTAL, CONSEQUEN
 - Information Technology Act
 - Anti-Money Laundering regulations
 - Consumer Protection laws
+- Social Welfare Act, 2049 (1992)
+- Association Registration Act, 2034 (1977)
 
-Campaigners must obtain necessary licenses and approvals for receiving donations and carrying out campaign activities. Failure to comply may result in campaign suspension and legal consequences.`
+Important Note on Regulatory Framework:
+As crowdfunding-specific regulations are still emerging in Nepal, Sahayog Nepal operates as a registered NGO under the Social Welfare Act and relevant charitable organization regulations. We have established self-governance policies, including the 1-year fund withdrawal deadline, to ensure transparency, accountability, and alignment with international best practices for charitable crowdfunding.
+
+Campaigners must obtain necessary licenses and approvals for receiving donations and carrying out campaign activities. Failure to comply may result in campaign suspension and legal consequences.
+
+All funds managed through the platform, including those transferred to DHUKUTI fund, are subject to NGO financial reporting requirements and public disclosure norms as per Nepali law.`
         },
         {
           heading: "13. Dispute Resolution and Jurisdiction",
@@ -167,17 +235,21 @@ Continued use of the Website after changes constitutes acceptance of modified Te
           heading: "16. Contact Information",
           content: `For questions or concerns regarding these Terms of Use, please contact:
 
-SahayogNepal
-Operated by: Dallytech Pvt Ltd
+Sahayog Nepal (NGO)
+Main Charitable Fund: DHUKUTI
 Address: Thamel, Kathmandu, Nepal
 Phone: +977 1 4123456
 Email: info@sahayognepal.org
+Website: www.sahayognepal.org
 
 Grievance Officer:
-For complaints or grievances, please write to our Grievance Officer at the above address or email.`
+For complaints or grievances, please write to our Grievance Officer at the above address or email.
+
+About Our Organization:
+Sahayog Nepal is a registered Non-Governmental Organization dedicated to facilitating transparent and effective crowdfunding for social causes in Nepal. We are committed to verifying every campaign, ensuring fund safety, and maintaining the highest standards of accountability and transparency in charitable giving.`
         }
       ],
-      companyInfo: "Platform operated by Dallytech Pvt Ltd",
+      companyInfo: "Registered Non-Governmental Organization (NGO)",
       website: "www.sahayognepal.org"
     },
     nepali: {
@@ -190,17 +262,28 @@ For complaints or grievances, please write to our Grievance Officer at the above
           heading: "१. सहयोगनेपाल बारे",
           content: `यो कागजात सूचना प्रविधि ऐन, २०००० र त्यस अन्तर्गतका नियमहरू अनुसार इलेक्ट्रोनिक रेकर्ड हो। यो कागजात नेपालका लागू कानूनहरूको प्रावधान अनुसार प्रकाशित गरिएको हो।
 
-सहयोगनेपाल, Dallytech Pvt Ltd द्वारा संचालित एक प्लेटफर्म हो, जसले नेपालमा चिकित्सा, सामाजिक र परोपकारी उद्देश्यका लागि क्राउडफन्डिङ प्रवर्द्धन गर्दछ। डोमेन नाम www.sahayognepal.org (यसपछि "वेबसाइट" भनिने) र मोबाइल एप्लिकेसन (यसपछि "एप्लिकेसन" भनिने) Dallytech Pvt Ltd को स्वामित्व र संचालनमा छ।
+सहयोगनेपाल नेपालमा चिकित्सा, सामाजिक र परोपकारी उद्देश्यका लागि क्राउडफन्डिङ सुविधा प्रदान गर्न समर्पित दर्ता गरिएको गैर-सरकारी संस्था (NGO) हो। नेपालमा अझै क्राउडफन्डिङ प्लेटफर्महरूका लागि विशेष सरकारी नियमहरू नभएकोले, सहयोग नेपाल समाज कल्याण ऐन, २०४९ (१९९२) र सम्बन्धित परोपकारी संस्था नियमहरू अन्तर्गत सञ्चालन हुन्छ।
 
-तपाईंको वेबसाइट र एप्लिकेसन प्रयोग निम्न सर्त र शर्तहरू ("उपयोगका सर्तहरू") द्वारा शासित छ। वेबसाइट वा एप्लिकेसन प्रयोग गरेर, तपाईं सहयोगनेपालसँग सम्झौता गर्दै हुनुहुन्छ।`
+अनलाइन प्लेटफर्म, डोमेन नाम www.sahayognepal.org (यसपछि "वेबसाइट" भनिने) र मोबाइल एप्लिकेसन (यसपछि "एप्लिकेसन" भनिने) सहित, सहयोगनेपाल NGO को स्वामित्व र सञ्चालनमा छ, जुन नेपाली कानून अन्तर्गत दर्ता गरिएको गैर-नाफामूलक संस्था हो।
+
+तपाईंको वेबसाइट र एप्लिकेसन प्रयोग निम्न सर्त र शर्तहरू ("उपयोगका सर्तहरू") द्वारा शासित छ। वेबसाइट वा एप्लिकेसन प्रयोग गरेर, तपाईं सहयोगनेपाल NGO सँग सम्झौता गर्दै हुनुहुन्छ।`
         },
         {
-          heading: "२. सहयोगनेपालको सेवाहरू",
-          content: `सहयोगनेपाल एक मार्केटिङ सेवा प्रदायक हो र वेबसाइट वा एप्लिकेसनले प्रयोगकर्ताहरूलाई ठूलो संख्यामा मानिसहरू, संस्थाहरू र उद्देश्यहरूसम्म पुग्न मद्दत गर्ने प्लेटफर्म मात्र प्रदान गर्दछ।
+          heading: "२. सहयोगनेपालको सेवाहरू र अभियान प्रमाणीकरण",
+          content: `सहयोगनेपाल नेपालमा चिकित्सा, सामाजिक र परोपकारी कारणहरूका लागि क्राउडफन्डिङ प्लेटफर्म प्रदान गर्ने दर्ता गरिएको गैर-सरकारी संस्था हो। वेबसाइट र एप्लिकेसनले प्रयोगकर्ताहरूलाई वैध परोपकारी उद्देश्यका लागि दाताहरू र समर्थकहरूको ठूलो आधारमा पुग्न अनुमति दिन्छ।
 
-वेबसाइटले अभियान सञ्चालकहरूलाई आर्थिक दान स्वीकार गर्न अभियानहरू पोस्ट गर्न अनुमति दिन्छ। अभियान सिर्जना गर्न कुनै शुल्क छैन, तर प्रत्येक दानको एक प्रतिशत हाम्रो सेवाको शुल्कको रूपमा लिइन्छ।
+महत्त्वपूर्ण - अभियान प्रमाणीकरण र NGO जिम्मेवारी:
+सहयोगनेपालमा पोस्ट गरिएका सबै अभियानहरू मुख्य पृष्ठमा प्रदर्शन गर्नु अघि हाम्रो NGO टोलीद्वारा कडा प्रमाणीकरण गरिन्छ। एक पटक अभियान प्रमाणित र हाम्रो प्लेटफर्ममा प्रकाशित भएपछि:
+• अभियान सहयोगनेपाल NGO को आधिकारिक अभियान बन्छ
+• सहयोगनेपाल NGO ले अभियानको प्रामाणिकता र वैधताको जिम्मेवारी लिन्छ
+• हामी कागजातहरू, लाभार्थी विवरण र कोषको वास्तविक आवश्यकता प्रमाणित गर्छौं
+• हाम्रो कडा प्रमाणीकरण मापदण्ड पूरा गर्ने अभियानहरू मात्र दाताहरूलाई देखाइन्छ
 
-हामी कुनै अभियानले निश्चित रकम प्राप्त गर्ने ग्यारेन्टी गर्दैनौं। हामी कुनै पनि अभियान वा अभियान सञ्चालकलाई व्यक्तिगत रूपमा समर्थन गर्दैनौं।`
+वेबसाइटले प्रमाणित अभियान सञ्चालकहरूलाई आर्थिक दान स्वीकार गर्न अभियानहरू पोस्ट गर्न अनुमति दिन्छ। अभियान सिर्जना गर्न कुनै शुल्क छैन, तर हाम्रो शुल्क नीति अनुसार परिचालन लागत दानबाट कटौती गरिन्छ।
+
+महत्त्वपूर्ण - हामी कुनै पनि वित्तीय प्रतिफल प्रदान गर्दैनौं: हामी sahayognepal.org मा योगदान गर्ने व्यक्तिहरूलाई वित्तीय धितोपत्र (ऋण वा इक्विटी), ब्याज, लाभांश, नाफा साझेदारी, नगद वा नगद समकक्षमा पुरस्कार सहित कुनै पनि प्रकारको वित्तीय प्रतिफल प्रदान गर्दैनौं। सबै योगदानहरू विशुद्ध परोपकारी दान हुन्।
+
+हामी कुनै अभियानले निश्चित रकम प्राप्त गर्ने ग्यारेन्टी गर्दैनौं। तर, अभियानहरू प्रमाणित र प्रकाशित गरेर, हामी तिनीहरूको प्रामाणिकता र परोपकारी उद्देश्यको पछाडि उभिन्छौं।`
         },
         {
           heading: "३. प्रयोगकर्ताको योग्यता",
@@ -214,7 +297,9 @@ For complaints or grievances, please write to our Grievance Officer at the above
 
 तपाईंले पेश गरेको कागजात र जानकारी सत्य, सही, अद्यावधिक छ र तेस्रो पक्षको बौद्धिक सम्पत्ति वा अन्य अधिकारहरू उल्लङ्घन गर्दैन भन्ने सुनिश्चित गर्नुपर्छ।
 
-तपाईंले अभियान समाप्त भएको ४५ दिन भित्र हाम्रो प्लेटफर्ममा उठाइएको रकम फिर्ता लिनुपर्छ। यदि ४५ दिन भित्र रकम फिर्ता लिनुभएन भने, सहयोगनेपालले फिर्ता वा लाभार्थीलाई भुक्तानी गर्ने अधिकार सुरक्षित गर्दछ।`
+१-वर्ष निकासी समयसीमा: यदि अभियान सञ्चालक वा प्राप्तकर्ताले अभियान समाप्त भएको मितिले १ वर्षभित्र निकासी अनुरोध नगरेमा, तब सबै कोष सहयोग नेपाल NGO को सामान्य कोष (DHUKUTI) मा स्थानान्तरण हुनेछ, जसलाई अन्य आवश्यक अभियानहरूलाई वितरण गर्न वा संस्थाको परोपकारी गतिविधिहरूलाई सहयोग गर्न प्रयोग गरिनेछ। यो अप्रयोग गरिएको कोषको कुशल उपयोग सुनिश्चित गर्न गरिन्छ। निकासी समयसीमा अभियानको समाप्ति मितिबाट शुरू हुन्छ।
+
+तपाईंले नियमित रूपमा दाताहरूलाई अभियान प्रगति बारे अपडेट गर्नुपर्छ र लागू नेपाली कानून र हाम्रो अभियान दिशानिर्देशहरू पालना गर्नुपर्छ।`
         },
         {
           heading: "५. दाताको जिम्मेवारीहरू",
@@ -222,17 +307,35 @@ For complaints or grievances, please write to our Grievance Officer at the above
 
 सहयोगनेपालले दाताहरूबाट अभियान सञ्चालकहरूमा कोषको प्रवाह सक्षम पार्छ र कोषको अन्तिम प्राप्तकर्ता होइन। हामी केही शुल्क कटौती गरी अभियान सञ्चालकलाई शुद्ध रकम स्थानान्तरण गर्छौं।
 
+महत्त्वपूर्ण नोट - कोष स्थानान्तरण नीति: यदि अभियान सञ्चालकले अभियान समाप्त भएको १ वर्षभित्र निकासी अनुरोध नगरेमा, प्रयोग नभएका दानहरू DHUKUTI कोष वा अन्य सक्रिय अभियानहरूमा स्थानान्तरित हुनेछन्। यसले प्रयोग नभएका कोषहरू राम्ररी प्रयोग गरिने र अन्य आवश्यकताहरूलाई मद्दत गरिने सुनिश्चित गर्छ।
+
 दान गर्दा, दाताले अभियान सम्बन्धी स्वतन्त्र सावधानी गर्नुपर्छ। भ्रामक वा झूटा जानकारीको लागि सहयोगनेपाल जिम्मेवार हुने छैन।`
         },
         {
-          heading: "६. भुक्तानी र वित्तीय कारोबारहरू",
+          heading: "६. भुक्तानी, कोष वितरण र प्रमाणीकरण",
           content: `नेपाली नागरिकहरूले स्थानीय भुक्तानी गेटवे प्रयोग गरेर नेपाली रुपैयाँ (NPR) मा सबै भुक्तानीहरू गर्नुपर्छ। विदेशी योगदान नेपाली विदेशी मुद्रा नियमहरू अनुसार स्वीकृत विदेशी भुक्तानी गेटवे मार्फत गरिनुपर्छ।
 
-तपाईंले सहयोगनेपाल र यसका सेवा प्रदायकहरूलाई इलेक्ट्रोनिक रूपमा भुक्तानीहरू सङ्कलन, प्रशोधन र रेमिट गर्न अधिकृत गर्नुहुन्छ।
+तपाईंले सहयोगनेपाल NGO लाई इलेक्ट्रोनिक रूपमा भुक्तानीहरू सङ्कलन, प्रशोधन र रेमिट गर्न अधिकृत गर्नुहुन्छ।
+
+कडा कोष वितरण प्रमाणीकरण:
+अभियान सञ्चालकहरूलाई उठाइएको कोष स्थानान्तरण गर्नु अघि, सहयोगनेपाल NGO ले कठोर प्रमाणीकरण गर्दछ:
+• पूर्ण कागजात प्रमाणीकरण (परिचय, बैंक विवरण, चिकित्सा रिपोर्ट, आदि)
+• लाभार्थी र आवश्यकताको भौतिक प्रमाणीकरण (आवश्यक भएमा)
+• ठूलो रकम (नगद वा चेक स्थानान्तरण) को लागि, कोष हस्तान्तरणको समयमा सहयोगनेपाल NGO को प्रतिनिधि उपस्थित हुन सक्छ
+• पारदर्शिताको लागि कोष स्थानान्तरणको भिडियो/फोटो दस्तावेज
+• लाभार्थीहरूबाट हस्ताक्षरित स्वीकृति रसिदहरू
+
+धोखाधडी पत्ता लगाउने र कोष संरक्षण:
+यदि कुनै पनि चरणमा कुनै घोटाला, धोखाधडी, वा जालसाजी गतिविधि पत्ता लाग्यो भने:
+• त्यो अभियानको लागि उठाइएको सबै कोष तुरुन्तै रोकिनेछ
+• अनुसन्धान पछि, यदि धोखाधडी पुष्टि भयो भने, सम्पूर्ण कोष रकम सहयोगनेपालको मुख्य परोपकारी कोष "DHUKUTI" मा स्थानान्तरण गरिनेछ
+• यी कोषहरू वास्तविक सामाजिक र परोपकारी उद्देश्यका लागि प्रयोग गरिनेछ
+• जालसाजी अभियान सञ्चालकलाई स्थायी रूपमा प्रतिबन्धित गरिनेछ र कानूनी कारबाही गरिनेछ
+• दाताहरूलाई धोखाधडी पत्ता लगाउने र कोष पुनः आवंटनको बारेमा सूचित गरिनेछ
 
 सहयोगनेपालले संदिग्ध कारोबारहरू अस्वीकार गर्ने, संदिग्ध कारोबारहरूको लागि भुक्तानी पुष्टि ढिलाइ गर्ने अधिकार सुरक्षित गर्दछ।
 
-प्लेटफर्म शुल्क, भुक्तानी गेटवे शुल्क र लागू करहरू कटौती गरेर अभियान समाप्त भएको १५ दिन भित्र वा निकासी अनुरोधमा अभियान सञ्चालकहरूलाई रकम स्थानान्तरण गरिनेछ।`
+प्लेटफर्म शुल्क, भुक्तानी गेटवे शुल्क र लागू करहरू कटौती गरेर अभियान समाप्त भएको १५ दिन भित्र वा निकासी अनुरोधमा प्रमाणित अभियान सञ्चालकहरूलाई रकम स्थानान्तरण गरिनेछ, सफल प्रमाणीकरणको अधीनमा।`
         },
         {
           heading: "७. प्लेटफर्म शुल्क र दस्तुरहरू",
@@ -296,8 +399,15 @@ For complaints or grievances, please write to our Grievance Officer at the above
 - सूचना प्रविधि ऐन
 - मनी लाउन्डरिङ विरुद्धको नियमहरू
 - उपभोक्ता संरक्षण कानूनहरू
+- समाज कल्याण ऐन, २०४९ (१९९२)
+- संस्था दर्ता ऐन, २०३४ (१९७७)
 
-अभियान सञ्चालकहरूले दान प्राप्त गर्न र अभियान गतिविधिहरू सञ्चालन गर्नको लागि आवश्यक इजाजतपत्र र स्वीकृतिहरू प्राप्त गर्नुपर्छ।`
+महत्त्वपूर्ण नोट - नियामक ढाँचाबारे:
+नेपालमा क्राउडफन्डिङका लागि विशेष नियमहरू अझै विकास भइरहेको हुनाले, सहयोग नेपाल समाज कल्याण ऐन र सम्बन्धित परोपकारी संस्था नियमहरू अन्तर्गत दर्ता गरिएको NGO को रूपमा सञ्चालन हुन्छ। हामीले पारदर्शिता, जवाफदेहीता र अन्तर्राष्ट्रिय परोपकारी क्राउडफन्डिङ सर्वोत्तम अभ्यासहरूसँग मिल्ने सुनिश्चित गर्न १-वर्ष कोष निकासी समयसीमा सहित स्व-शासन नीतिहरू स्थापना गरेका छौं।
+
+अभियान सञ्चालकहरूले दान प्राप्त गर्न र अभियान गतिविधिहरू सञ्चालन गर्नको लागि आवश्यक इजाजतपत्र र स्वीकृतिहरू प्राप्त गर्नुपर्छ। पालना नगरेमा अभियान निलम्बन र कानूनी परिणामहरू हुन सक्छ।
+
+DHUKUTI कोषमा स्थानान्तरित गरिएका कोषहरू सहित प्लेटफर्म मार्फत व्यवस्थित सबै कोषहरू नेपाली कानून अनुसार NGO वित्तीय रिपोर्टिङ आवश्यकताहरू र सार्वजनिक खुलासा मानदण्डहरूको अधीनमा छन्।`
         },
         {
           heading: "१३. विवाद समाधान र अधिकार क्षेत्र",
@@ -325,17 +435,21 @@ For complaints or grievances, please write to our Grievance Officer at the above
           heading: "१६. सम्पर्क जानकारी",
           content: `उपयोगका यी सर्तहरू सम्बन्धी प्रश्न वा चिन्ताहरूको लागि, कृपया सम्पर्क गर्नुहोस्:
 
-सहयोगनेपाल
-सञ्चालित: Dallytech Pvt Ltd
+सहयोग नेपाल (NGO)
+मुख्य परोपकारी कोष: DHUKUTI
 ठेगाना: थमेल, काठमाडौं, नेपाल
 फोन: +९७७ १ ४१२३४५६
 इमेल: info@sahayognepal.org
+वेबसाइट: www.sahayognepal.org
 
 गुनासो अधिकारी:
-गुनासो वा उजुरीहरूको लागि, कृपया माथिको ठेगाना वा इमेलमा हाम्रो गुनासो अधिकारीलाई लेख्नुहोस्।`
+गुनासो वा उजुरीहरूको लागि, कृपया माथिको ठेगाना वा इमेलमा हाम्रो गुनासो अधिकारीलाई लेख्नुहोस्।
+
+हाम्रो संगठनबारे:
+सहयोग नेपाल नेपालमा सामाजिक कारणहरूका लागि पारदर्शी र प्रभावकारी क्राउडफन्डिङ सुविधा प्रदान गर्न समर्पित दर्ता गरिएको गैर-सरकारी संस्था हो। हामी प्रत्येक अभियान प्रमाणित गर्न, कोष सुरक्षा सुनिश्चित गर्न, र परोपकारी दानमा जवाफदेहीता र पारदर्शिताको उच्चतम मापदण्ड कायम राख्न प्रतिबद्ध छौं।`
         }
       ],
-      companyInfo: "Dallytech Pvt Ltd द्वारा संचालित प्लेटफर्म",
+      companyInfo: "दर्ता गरिएको गैर-सरकारी संस्था (NGO)",
       website: "www.sahayognepal.org"
     }
   };

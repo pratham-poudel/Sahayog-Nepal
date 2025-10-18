@@ -14,7 +14,10 @@ import {
     Eye,
     Calendar,
     AlertCircle,
-    Loader2
+    Loader2,
+    Ban,
+    ShieldAlert,
+    Unlock
 } from 'lucide-react';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
@@ -29,6 +32,7 @@ const KYCVerifierDashboard = () => {
     const [statistics, setStatistics] = useState(null);
     const [selectedUser, setSelectedUser] = useState(null);
     const [showModal, setShowModal] = useState(false);
+    const [showBanModal, setShowBanModal] = useState(false);
     
     // Filters
     const [searchTerm, setSearchTerm] = useState('');
@@ -41,6 +45,10 @@ const KYCVerifierDashboard = () => {
     const [verifying, setVerifying] = useState(false);
     const [verificationNotes, setVerificationNotes] = useState('');
     const [isPremium, setIsPremium] = useState(false);
+    
+    // Ban states
+    const [banning, setBanning] = useState(false);
+    const [banReason, setBanReason] = useState('');
 
     const observerTarget = useRef(null);
     const searchDebounceTimer = useRef(null);
@@ -289,6 +297,96 @@ const KYCVerifierDashboard = () => {
         }
     };
 
+    const handleBanUser = async () => {
+        if (!selectedUser || !banReason.trim()) {
+            alert('Please provide a reason for banning this user');
+            return;
+        }
+
+        if (banReason.trim().length < 10) {
+            alert('Ban reason must be at least 10 characters long');
+            return;
+        }
+        
+        setBanning(true);
+        try {
+            const response = await fetch(
+                `${API_BASE_URL}/api/employee/kyc/ban-user/${selectedUser._id}`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ banReason: banReason.trim() })
+                }
+            );
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Update local state
+                setUsers(prev => prev.map(u => 
+                    u._id === selectedUser._id 
+                        ? { ...u, isBanned: true, banReason: banReason.trim() }
+                        : u
+                ));
+                setShowBanModal(false);
+                setShowModal(false);
+                setSelectedUser(null);
+                setBanReason('');
+                fetchStatistics();
+                alert('User has been banned successfully');
+            } else {
+                alert(data.message || 'Failed to ban user');
+            }
+        } catch (error) {
+            console.error('Ban failed:', error);
+            alert('Failed to ban user');
+        } finally {
+            setBanning(false);
+        }
+    };
+
+    const handleUnbanUser = async () => {
+        if (!selectedUser) return;
+        
+        if (!confirm('Are you sure you want to unban this user?')) return;
+        
+        setBanning(true);
+        try {
+            const response = await fetch(
+                `${API_BASE_URL}/api/employee/kyc/unban-user/${selectedUser._id}`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ unbanReason: 'Unbanned by employee' })
+                }
+            );
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Update local state
+                setUsers(prev => prev.map(u => 
+                    u._id === selectedUser._id 
+                        ? { ...u, isBanned: false, banReason: null }
+                        : u
+                ));
+                setShowModal(false);
+                setSelectedUser(null);
+                fetchStatistics();
+                alert('User has been unbanned successfully');
+            } else {
+                alert(data.message || 'Failed to unban user');
+            }
+        } catch (error) {
+            console.error('Unban failed:', error);
+            alert('Failed to unban user');
+        } finally {
+            setBanning(false);
+        }
+    };
+
     const handleLogout = async () => {
         try {
             await fetch(`${API_BASE_URL}/api/employee/logout`, {
@@ -341,7 +439,7 @@ const KYCVerifierDashboard = () => {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {/* Statistics */}
                 {statistics && (
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
                         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
                             <div className="flex items-center justify-between">
                                 <div>
@@ -367,6 +465,15 @@ const KYCVerifierDashboard = () => {
                                     <p className="text-3xl font-bold text-orange-600">{statistics.pendingVerifications}</p>
                                 </div>
                                 <AlertCircle className="w-10 h-10 text-orange-600 opacity-80" />
+                            </div>
+                        </div>
+                        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm text-gray-600 mb-1">Banned</p>
+                                    <p className="text-3xl font-bold text-red-600">{statistics.bannedUsers || 0}</p>
+                                </div>
+                                <Ban className="w-10 h-10 text-red-600 opacity-80" />
                             </div>
                         </div>
                         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
@@ -427,14 +534,14 @@ const KYCVerifierDashboard = () => {
                                 <tr>
                                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">User</th>
                                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Contact</th>
-                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">KYC Status</th>
+                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
                                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Premium</th>
                                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200">
                                 {users.map((user) => (
-                                    <tr key={user._id} className="hover:bg-gray-50 transition-colors">
+                                    <tr key={user._id} className={`hover:bg-gray-50 transition-colors ${user.isBanned ? 'bg-red-50' : ''}`}>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
                                                 {user.profilePictureUrl ? (
@@ -456,17 +563,24 @@ const KYCVerifierDashboard = () => {
                                         </td>
                                         <td className="px-6 py-4 text-gray-700">{user.phone}</td>
                                         <td className="px-6 py-4">
-                                            {user.kycVerified ? (
-                                                <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
-                                                    <CheckCircle className="w-4 h-4" />
-                                                    Verified
-                                                </span>
-                                            ) : (
-                                                <span className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-medium">
-                                                    <AlertCircle className="w-4 h-4" />
-                                                    Pending
-                                                </span>
-                                            )}
+                                            <div className="flex flex-col gap-1">
+                                                {user.isBanned ? (
+                                                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-medium w-fit">
+                                                        <Ban className="w-4 h-4" />
+                                                        Banned
+                                                    </span>
+                                                ) : user.kycVerified ? (
+                                                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium w-fit">
+                                                        <CheckCircle className="w-4 h-4" />
+                                                        Verified
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-medium w-fit">
+                                                        <AlertCircle className="w-4 h-4" />
+                                                        Pending
+                                                    </span>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4">
                                             {user.isPremiumAndVerified ? (
@@ -562,6 +676,31 @@ const KYCVerifierDashboard = () => {
                                 </div>
                             </div>
 
+                            {/* Ban Status Warning */}
+                            {selectedUser.isBanned && (
+                                <div className="p-4 bg-red-50 rounded-lg border-2 border-red-200">
+                                    <div className="flex items-start gap-3">
+                                        <ShieldAlert className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
+                                        <div className="flex-1">
+                                            <p className="font-semibold text-red-900 mb-1">⚠️ User is Banned</p>
+                                            <p className="text-sm text-red-800 mb-2">
+                                                <strong>Reason:</strong> {selectedUser.banReason}
+                                            </p>
+                                            {selectedUser.bannedBy?.employeeName && (
+                                                <p className="text-sm text-red-700">
+                                                    Banned by: {selectedUser.bannedBy.employeeName} ({selectedUser.bannedBy.designationNumber})
+                                                </p>
+                                            )}
+                                            {selectedUser.bannedAt && (
+                                                <p className="text-sm text-red-700">
+                                                    Date: {new Date(selectedUser.bannedAt).toLocaleDateString()}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Documents */}
                             {selectedUser.personalVerificationDocument && (
                                 <div>
@@ -629,53 +768,181 @@ const KYCVerifierDashboard = () => {
                             </div>
                         </div>
 
+                        <div className="p-6 border-t border-gray-200 flex flex-col gap-4">
+                            {/* Ban/Unban Section */}
+                            <div className="flex gap-3">
+                                {selectedUser.isBanned ? (
+                                    <button
+                                        onClick={handleUnbanUser}
+                                        disabled={banning}
+                                        className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                                    >
+                                        {banning ? (
+                                            <>
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                Unbanning...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Unlock className="w-4 h-4" />
+                                                Unban User
+                                            </>
+                                        )}
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => setShowBanModal(true)}
+                                        className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors flex items-center gap-2"
+                                    >
+                                        <Ban className="w-4 h-4" />
+                                        Ban User
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Main Actions */}
+                            <div className="flex gap-4">
+                                <button
+                                    onClick={() => {
+                                        setShowModal(false);
+                                        setSelectedUser(null);
+                                    }}
+                                    className="flex-1 px-6 py-3 border border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                
+                                {!selectedUser.kycVerified ? (
+                                    <button
+                                        onClick={handleVerifyUser}
+                                        disabled={verifying || selectedUser.isBanned}
+                                        className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                                    >
+                                        {verifying ? (
+                                            <>
+                                                <Loader2 className="w-5 h-5 animate-spin" />
+                                                Verifying...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <CheckCircle className="w-5 h-5" />
+                                                Verify User
+                                            </>
+                                        )}
+                                    </button>
+                                ) : (
+                                    <>
+                                        <button
+                                            onClick={() => handleUpdateStatus(false)}
+                                            disabled={verifying || selectedUser.isBanned}
+                                            className="flex-1 px-6 py-3 bg-orange-600 text-white rounded-lg font-semibold hover:bg-orange-700 transition-colors disabled:opacity-50"
+                                        >
+                                            Revoke
+                                        </button>
+                                        <button
+                                            onClick={() => handleUpdateStatus(true)}
+                                            disabled={verifying || selectedUser.isBanned}
+                                            className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50"
+                                        >
+                                            Update
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Ban User Modal */}
+            {showBanModal && selectedUser && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-2xl max-w-md w-full">
+                        <div className="p-6 border-b border-gray-200">
+                            <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+                                    <ShieldAlert className="w-6 h-6 text-red-600" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-bold text-gray-900">Ban User Account</h2>
+                                    <p className="text-sm text-gray-600">This action will restrict user access</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="p-6 space-y-4">
+                            <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+                                <p className="text-sm text-red-800">
+                                    <strong>Warning:</strong> Banning this user will immediately revoke all access to their account. 
+                                    They will not be able to login or use any platform features. A professional notice will be 
+                                    displayed stating their account has been flagged for investigation by authorities.
+                                </p>
+                            </div>
+
+                            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                                {selectedUser.profilePictureUrl ? (
+                                    <img 
+                                        src={selectedUser.profilePictureUrl} 
+                                        alt={selectedUser.name}
+                                        className="w-12 h-12 rounded-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-lg font-semibold">
+                                        {selectedUser.name.charAt(0).toUpperCase()}
+                                    </div>
+                                )}
+                                <div>
+                                    <p className="font-semibold text-gray-900">{selectedUser.name}</p>
+                                    <p className="text-sm text-gray-600">{selectedUser.email}</p>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Ban Reason <span className="text-red-600">*</span>
+                                </label>
+                                <textarea
+                                    value={banReason}
+                                    onChange={(e) => setBanReason(e.target.value)}
+                                    placeholder="Provide a detailed reason for banning this user (minimum 10 characters)..."
+                                    rows={4}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                                    required
+                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                    {banReason.length}/10 characters minimum
+                                </p>
+                            </div>
+                        </div>
+
                         <div className="p-6 border-t border-gray-200 flex gap-4">
                             <button
                                 onClick={() => {
-                                    setShowModal(false);
-                                    setSelectedUser(null);
+                                    setShowBanModal(false);
+                                    setBanReason('');
                                 }}
-                                className="flex-1 px-6 py-3 border border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                                disabled={banning}
+                                className="flex-1 px-6 py-3 border border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
                             >
                                 Cancel
                             </button>
-                            
-                            {!selectedUser.kycVerified ? (
-                                <button
-                                    onClick={handleVerifyUser}
-                                    disabled={verifying}
-                                    className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                                >
-                                    {verifying ? (
-                                        <>
-                                            <Loader2 className="w-5 h-5 animate-spin" />
-                                            Verifying...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <CheckCircle className="w-5 h-5" />
-                                            Verify User
-                                        </>
-                                    )}
-                                </button>
-                            ) : (
-                                <>
-                                    <button
-                                        onClick={() => handleUpdateStatus(false)}
-                                        disabled={verifying}
-                                        className="flex-1 px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
-                                    >
-                                        Revoke
-                                    </button>
-                                    <button
-                                        onClick={() => handleUpdateStatus(true)}
-                                        disabled={verifying}
-                                        className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50"
-                                    >
-                                        Update
-                                    </button>
-                                </>
-                            )}
+                            <button
+                                onClick={handleBanUser}
+                                disabled={banning || banReason.trim().length < 10}
+                                className="flex-1 px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                {banning ? (
+                                    <>
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                        Banning User...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Ban className="w-5 h-5" />
+                                        Confirm Ban
+                                    </>
+                                )}
+                            </button>
                         </div>
                     </div>
                 </div>

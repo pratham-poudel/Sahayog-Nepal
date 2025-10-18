@@ -18,7 +18,7 @@ const {
     getCategoryHierarchy,
     getCampaignsByHierarchicalCategory
 } = require('../controllers/campaignController');
-const { protect, admin } = require('../middlewares/authMiddleware');
+const { protect, admin, checkBanStatus } = require('../middlewares/authMiddleware');
 const { turnstileMiddleware } = require('../middlewares/turnstileMiddleware');
 const { 
     campaignCreationLimiter, 
@@ -63,16 +63,16 @@ router.get('/category/:category',cacheMiddleware((req) => `categoryCampaigns:${r
 router.get('/search/:searchTerm', searchLimiter, searchCampaigns);
 router.get('/:id', publicReadLimiter, cacheMiddleware((req) => `campaignById:${req.params.id}`) ,getCampaignById);
 
-// Protected routes for campaign creators
-router.post('/', protect, campaignCreationLimiter, turnstileMiddleware, createCampaign);
-router.put('/:id', protect, turnstileMiddleware, updateCampaign);
+// Protected routes for campaign creators - Apply ban check
+router.post('/', protect, checkBanStatus, campaignCreationLimiter, turnstileMiddleware, createCampaign);
+router.put('/:id', protect, checkBanStatus, turnstileMiddleware, updateCampaign);
 
-router.get('/user/campaigns', protect,getUserCampaigns);
-router.post('/:id/updates', protect, addCampaignUpdate);
-router.delete('/:id', protect, deleteCampaign);
+router.get('/user/campaigns', protect, checkBanStatus, getUserCampaigns);
+router.post('/:id/updates', protect, checkBanStatus, addCampaignUpdate);
+router.delete('/:id', protect, checkBanStatus, deleteCampaign);
 
 // Admin routes
-router.patch('/:id/status', protect, updateCampaignStatus);
-router.patch('/:id/tags', protect, admin, addCampaignTags);
+router.patch('/:id/status', protect, checkBanStatus, updateCampaignStatus);
+router.patch('/:id/tags', protect, checkBanStatus, admin, addCampaignTags);
 
 module.exports = router; 

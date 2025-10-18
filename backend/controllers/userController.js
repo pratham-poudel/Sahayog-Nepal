@@ -489,6 +489,20 @@ exports.loginUser = async (req, res) => {
             });
         }
 
+        // Check if user is banned
+        if (user.isBanned) {
+            return res.status(403).json({
+                success: false,
+                isBanned: true,
+                message: 'Account Access Suspended',
+                banDetails: {
+                    reason: user.banReason || 'Your account has been suspended due to violations of our terms of service.',
+                    bannedAt: user.bannedAt,
+                    notice: 'Your account has been flagged and reported to the relevant authorities for investigation. If you believe this is an error, please contact our support team with your account details.'
+                }
+            });
+        }
+
         // Check if password is correct
         const isPasswordCorrect = await user.comparePassword(password);
         if (!isPasswordCorrect) {

@@ -942,7 +942,27 @@ const CampaignDetail = ({ campaign }) => {
             </Link>
           </div>
           
-          <DonationForm campaignId={campaign.id} />
+          {/* Donation Form - Locked if creator is banned */}
+          {campaign.creatorBanned || campaign.creator?.isBanned ? (
+            <div className="bg-red-50 border-2 border-red-300 rounded-xl p-6">
+              <div className="flex items-center justify-center mb-3">
+                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                  <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
+              </div>
+              <h3 className="text-center font-bold text-red-900 mb-2">
+                🔒 Donations Locked
+              </h3>
+              <p className="text-center text-sm text-red-800">
+                This campaign is currently unavailable for donations due to the creator's account suspension. 
+                The account has been flagged for investigation by relevant authorities.
+              </p>
+            </div>
+          ) : (
+            <DonationForm campaignId={campaign.id} />
+          )}
           
           <div className="mt-6">
             <h3 className="font-semibold mb-2 text-sm md:text-base">Share this campaign</h3>

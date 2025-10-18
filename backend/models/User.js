@@ -88,7 +88,30 @@ const userSchema = new mongoose.Schema({
         designationNumber: { type: String, default: null }
     },
     kycVerifiedAt: { type: Date, default: null },
-    kycVerificationNotes: { type: String, default: null }
+    kycVerificationNotes: { type: String, default: null },
+
+    // Ban Management
+    isBanned: {
+        type: Boolean,
+        default: false
+    },
+    banReason: {
+        type: String,
+        default: null
+    },
+    bannedBy: {
+        employeeId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Employee',
+            default: null
+        },
+        employeeName: { type: String, default: null },
+        designationNumber: { type: String, default: null }
+    },
+    bannedAt: {
+        type: Date,
+        default: null
+    }
 
 }, {
     timestamps: true
@@ -145,6 +168,10 @@ userSchema.index({
 userSchema.index({ kycVerified: 1 });
 userSchema.index({ isPremiumAndVerified: 1 });
 userSchema.index({ kycVerified: 1, createdAt: -1 });
+
+// Ban management indexes
+userSchema.index({ isBanned: 1 });
+userSchema.index({ isBanned: 1, bannedAt: -1 });
 
 const User = mongoose.model('User', userSchema);
 

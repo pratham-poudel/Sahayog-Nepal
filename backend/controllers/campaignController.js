@@ -201,9 +201,9 @@ exports.getAllCampaigns = async (req, res) => {
                         {
                             $project: {
                                 name: 1,
-                                email: 1,
                                 profilePicture: 1,
-                                isPremiumAndVerified: 1
+                                isPremiumAndVerified: 1,
+                                isBanned: 1
                             }
                         }
                     ]
@@ -356,7 +356,7 @@ const formatCampaignWithUrls = (campaign) => {
 exports.getCampaignById = async (req, res) => {
     try {
         const campaign = await Campaign.findById(req.params.id)
-            .populate('creator', 'name email profilePicture isPremiumAndVerified');
+            .populate('creator', 'name profilePicture isPremiumAndVerified isBanned banReason');
         
         if (!campaign) {
             return res.status(404).json({
@@ -364,10 +364,55 @@ exports.getCampaignById = async (req, res) => {
                 message: 'Campaign not found'
             });
         }
+
+        // Create a clean response object without sensitive data
+        const cleanCampaign = {
+            _id: campaign._id,
+            title: campaign.title,
+            shortDescription: campaign.shortDescription,
+            story: campaign.story,
+            category: campaign.category,
+            subcategory: campaign.subcategory,
+            tags: campaign.tags,
+            featured: campaign.featured,
+            targetAmount: campaign.targetAmount,
+            amountRaised: campaign.amountRaised,
+            amountWithdrawn: campaign.amountWithdrawn,
+            pendingWithdrawals: campaign.pendingWithdrawals,
+            donors: campaign.donors,
+            endDate: campaign.endDate,
+            startDate: campaign.startDate,
+            coverImage: campaign.coverImage,
+            images: campaign.images,
+            status: campaign.status,
+            updates: campaign.updates,
+            createdAt: campaign.createdAt,
+            updatedAt: campaign.updatedAt,
+            percentageRaised: campaign.percentageRaised,
+            availableForWithdrawal: campaign.availableForWithdrawal,
+            isCampaignEnded: campaign.isCampaignEnded,
+            isWithdrawalEligible: campaign.isWithdrawalEligible,
+            withdrawalPercentage: campaign.withdrawalPercentage,
+            daysLeft: campaign.daysLeft,
+            // Creator info (public only)
+            creator: {
+                _id: campaign.creator._id,
+                name: campaign.creator.name,
+                profilePicture: campaign.creator.profilePicture,
+                isPremiumAndVerified: campaign.creator.isPremiumAndVerified,
+                isBanned: campaign.creator.isBanned || false
+            }
+        };
+
+        // Add ban warning if creator is banned
+        if (campaign.creator.isBanned) {
+            cleanCampaign.creatorBanned = true;
+            cleanCampaign.banWarning = 'The creator of this campaign has been suspended from the platform. Donations are currently disabled for this campaign.';
+        }
         
         res.status(200).json({
             success: true,
-            campaign
+            campaign: cleanCampaign
         });
     } catch (error) {
         res.status(500).json({

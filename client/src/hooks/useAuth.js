@@ -28,6 +28,24 @@ const useAuth = () => {
       // Verify token with backend
       const response = await apiRequest('GET', `${API_URL}/profile`);
       if (!response.ok) {
+        const errorData = await response.json();
+        
+        // Check if user is banned
+        if (response.status === 403 && errorData.isBanned) {
+          localStorage.removeItem('token');
+          setUser(null);
+          setIsAuthenticated(false);
+          
+          toast({
+            variant: "destructive",
+            title: "⛔ Account Access Suspended",
+            description: errorData.banDetails?.notice || "Your account has been suspended. Please contact support.",
+            duration: 10000
+          });
+          
+          return false;
+        }
+        
         throw new Error('Failed to verify token');
       }
       
@@ -113,6 +131,25 @@ const useAuth = () => {
       
       if (!response.ok) {
         const errorData = await response.json();
+        
+        // Check if user is banned
+        if (response.status === 403 && errorData.isBanned) {
+          toast({
+            variant: "destructive",
+            title: "⛔ Account Access Suspended",
+            description: errorData.banDetails?.notice || "Your account has been suspended and flagged for investigation.",
+            duration: 10000
+          });
+          
+          // Show detailed ban reason in console for user reference
+          console.error('Account Banned:', {
+            reason: errorData.banDetails?.reason,
+            bannedAt: errorData.banDetails?.bannedAt
+          });
+          
+          return false;
+        }
+        
         throw new Error(errorData.message || 'Invalid credentials');
       }
       

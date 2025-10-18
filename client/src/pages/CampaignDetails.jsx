@@ -17,6 +17,7 @@ const CampaignDetails = () => {
   const [campaign, setCampaign] = useState(null);
   const [relatedCampaigns, setRelatedCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showBanWarning, setShowBanWarning] = useState(false);
   const { toast } = useToast();
   const { getRelatedCampaigns } = useCampaigns();
 
@@ -33,6 +34,11 @@ const CampaignDetails = () => {
         if (campaignRes.data.success) {
           const campaignData = campaignRes.data.campaign;
           setCampaign(campaignData);
+          
+          // Check if creator is banned
+          if (campaignData.creatorBanned || campaignData.creator?.isBanned) {
+            setShowBanWarning(true);
+          }
           
           // Fetch related campaigns in the same category
           if (campaignData.category) {
@@ -114,6 +120,37 @@ const CampaignDetails = () => {
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5 }}
             >
+              {/* Ban Warning Overlay */}
+              {showBanWarning && (
+                <div className="mb-8 bg-red-50 border-2 border-red-500 rounded-xl p-6 shadow-lg">
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0">
+                      <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                        <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-bold text-red-900 mb-2">
+                        ⚠️ Campaign Creator Suspended
+                      </h3>
+                      <p className="text-red-800 mb-3">
+                        {campaign.banWarning || 'The creator of this campaign has been suspended from the platform. Donations are currently disabled for this campaign.'}
+                      </p>
+                      <div className="bg-red-100 border border-red-300 rounded-lg p-4">
+                        <p className="text-sm text-red-900 font-semibold mb-1">
+                          🔒 Donations Locked
+                        </p>
+                        <p className="text-sm text-red-800">
+                          This campaign is under review due to the creator's account suspension. All donation functionality has been disabled to protect donors. The account has been flagged and reported to relevant authorities for investigation.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <h1 className="text-3xl md:text-4xl font-poppins font-bold mb-6 text-center md:text-left" style={{
                 wordWrap: 'break-word',
                 overflowWrap: 'break-word',
@@ -136,11 +173,13 @@ const CampaignDetails = () => {
                 longDescription: campaign.story,
                 verificationDocuments: campaign.verificationDocuments || [],
                 lapLetter: campaign.lapLetter || null,
+                creatorBanned: campaign.creatorBanned || false,
                 creator: {
                   _id: campaign.creator?._id,
                   name: campaign.creator?.name || 'Anonymous',
                   image: campaign.creator ? getProfilePictureUrl(campaign.creator) : 'https://ui-avatars.com/api/?name=Anonymous&background=random',
-                  isPremiumAndVerified: campaign.creator?.isPremiumAndVerified || false
+                  isPremiumAndVerified: campaign.creator?.isPremiumAndVerified || false,
+                  isBanned: campaign.creator?.isBanned || false
                 }
               }} />
               

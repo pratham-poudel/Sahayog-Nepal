@@ -44,6 +44,42 @@ exports.protect = async (req, res, next) => {
     }
 };
 
+// Check if user is banned
+exports.checkBanStatus = async (req, res, next) => {
+    try {
+        // Get user from request (should be set by protect middleware)
+        const user = req.user;
+
+        if (!user) {
+            return res.status(401).json({
+                success: false,
+                message: 'Authentication required'
+            });
+        }
+
+        // Check if user is banned
+        if (user.isBanned) {
+            return res.status(403).json({
+                success: false,
+                isBanned: true,
+                message: 'Account Access Suspended',
+                banDetails: {
+                    reason: user.banReason || 'Your account has been suspended due to violations of our terms of service.',
+                    bannedAt: user.bannedAt,
+                    notice: 'Your account has been flagged and reported to the relevant authorities for investigation. If you believe this is an error, please contact our support team with your account details.'
+                }
+            });
+        }
+
+        next();
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: 'Error checking account status'
+        });
+    }
+};
+
 // Role based access control
 exports.restrictTo = (...roles) => {
     return (req, res, next) => {

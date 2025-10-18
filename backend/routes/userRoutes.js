@@ -42,7 +42,7 @@ const {
     getUserCampaigns
 
 } = require('../controllers/userController');
-const { protect } = require('../middlewares/authMiddleware');
+const { protect, checkBanStatus } = require('../middlewares/authMiddleware');
 const upload = require('../middlewares/uploadMiddleware');
 
 // Public routes
@@ -106,13 +106,13 @@ router.post('/resend-otp',
     sendEmailOtp
 );
 
-// Protected routes
-router.get('/profile', protect,cacheMiddleware((req) => `profile:${req.user._id}`), getUserProfile);
-router.put('/profile', protect, updateUserProfile);
-router.post('/profile-picture', protect, upload.single('profilePicture'), uploadProfilePicture);
-router.put('/change-password', protect, changePassword);
-router.put('/notification-settings', protect, updateNotificationSettings);
-router.get('/mydonation/:id', protect, getMydonation);
+// Protected routes - Apply ban check to all protected routes
+router.get('/profile', protect, checkBanStatus, cacheMiddleware((req) => `profile:${req.user._id}`), getUserProfile);
+router.put('/profile', protect, checkBanStatus, updateUserProfile);
+router.post('/profile-picture', protect, checkBanStatus, upload.single('profilePicture'), uploadProfilePicture);
+router.put('/change-password', protect, checkBanStatus, changePassword);
+router.put('/notification-settings', protect, checkBanStatus, updateNotificationSettings);
+router.get('/mydonation/:id', protect, checkBanStatus, getMydonation);
 
 // Public profile routes with rate limiting and caching
 router.get('/:id/profile', 

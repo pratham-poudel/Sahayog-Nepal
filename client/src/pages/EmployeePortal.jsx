@@ -358,7 +358,7 @@ const EmployeePortal = () => {
 
       {/* FOOTER */}
       <footer className="text-center text-sm text-gray-600 border-t border-gray-300 py-6 mt-12">
-        © {new Date().getFullYear()} Government of Nepal | Sahayog Nepal System
+        © {new Date().getFullYear()}  Sahayog Nepal crowdfunding  System
       </footer>
     </div>
   );
