@@ -44,10 +44,8 @@ const Logo = ({
   }
 
   return (
-    <Link href={linkTo}>
-      <a className="focus:outline-none">
-        <LogoContent />
-      </a>
+    <Link href={linkTo} className="focus:outline-none">
+      <LogoContent />
     </Link>
   );
 };

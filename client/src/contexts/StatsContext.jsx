@@ -23,20 +23,18 @@ export const StatsProvider = ({ children }) => {
 
   // Check if current route should load stats
   const shouldLoadStats = () => {
-    // Don't load stats for admin/employee routes
-    if (location.startsWith('/admin') || 
-        location.startsWith('/helloadmin') || 
-        location.startsWith('/employee')) {
-      return false;
+    // Only load stats for the home page
+    if (location === '/') {
+      return true;
     }
-    return true;
+    return false;
   };
 
-  // Fetch stats once when the provider mounts (only for public routes)
+  // Fetch stats once when the provider mounts (only for home page)
   useEffect(() => {
-    // Skip fetching if we're on an admin/employee route
+    // Skip fetching if we're not on the home page
     if (!shouldLoadStats()) {
-      console.log('🚫 Skipping stats fetch for admin/employee route:', location);
+      console.log('🚫 Skipping stats fetch for route:', location);
       setLoading(false);
       return;
     }
@@ -46,7 +44,7 @@ export const StatsProvider = ({ children }) => {
         setLoading(true);
         setError(null);
         
-        console.log('📊 Fetching stats for public route:', location);
+        console.log('📊 Fetching stats for home page:', location);
         
         // Fetch both home stats and live stats in parallel
         const [rawHomeStats, rawLiveStats] = await Promise.all([

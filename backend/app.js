@@ -41,12 +41,20 @@ const { createBullBoard } = require('@bull-board/api');
 const { BullMQAdapter } = require('@bull-board/api/bullMQAdapter');
 const { ExpressAdapter } = require('@bull-board/express');
 const amlQueue = require('./queues/amlqueue');
+const campaignCompletionQueue = require('./queues/campaignCompletionQueue');
+const withdrawalReminderQueue = require('./queues/withdrawalReminderQueue');
+const dailyReportQueue = require('./queues/dailyReportQueue');
 
 const serverAdapter = new ExpressAdapter();
 serverAdapter.setBasePath('/admin/queues');
 
 createBullBoard({
-  queues: [new BullMQAdapter(amlQueue)],
+  queues: [
+    new BullMQAdapter(amlQueue),
+    new BullMQAdapter(campaignCompletionQueue),
+    new BullMQAdapter(withdrawalReminderQueue),
+    new BullMQAdapter(dailyReportQueue)
+  ],
   serverAdapter: serverAdapter,
 });
 

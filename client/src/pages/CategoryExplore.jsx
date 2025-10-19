@@ -1,14 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from 'wouter';
 import SEO from '../utils/seo.jsx';
 import CampaignList from '../components/campaigns/CampaignList';
 import useCampaigns from '../hooks/useCampaigns';
-import Pagination from '../components/ui/Pagination';
 import { 
   ArrowRight,
   ChevronRight,
-  ChevronLeft
+  ChevronLeft,
+  Loader2
 } from 'lucide-react';
 
 // Professional category configurations
@@ -136,14 +136,14 @@ const CategoryExplore = ({ subcategory }) => {
   const { getAllCampaigns, loading } = useCampaigns();
   const [allCampaigns, setAllCampaigns] = useState([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 12,
-    totalPages: 1,
-    hasNextPage: false,
-    hasPrevPage: false
-  });
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(1);
   const [totalCampaigns, setTotalCampaigns] = useState(0);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+  
+  // Ref for infinite scroll observer
+  const observerTarget = useRef(null);
+  const LIMIT = 12; // Items per page
 
   // Get configuration for this subcategory
   const config = CATEGORY_CONFIGS[subcategory];
@@ -182,61 +182,133 @@ const CategoryExplore = ({ subcategory }) => {
 
     return () => clearInterval(interval);
   }, [config.carouselImages.length]);
-  // Fetch campaigns combining featured and regular campaigns
+
+  // Reset state when subcategory changes
   useEffect(() => {
-    const fetchCampaigns = async () => {
-      try {
-        // Fetch featured campaigns first
-        const featuredResult = await getAllCampaigns({
-          page: 1,
-          limit: 50, // Get all featured campaigns
-          category: config.category,
-          subcategory: config.subcategory,
-          featured: true,
-          sortBy: 'createdAt',
-          sortOrder: 'desc'
-        });
+    setAllCampaigns([]);
+    setPage(1);
+    setHasMore(true);
+    setTotalCampaigns(0);
+  }, [subcategory]);
 
-        // Fetch all campaigns (including featured) to get total count
-        const allResult = await getAllCampaigns({
-          page: pagination.page,
-          limit: pagination.limit,
-          category: config.category,
-          subcategory: config.subcategory,
-          sortBy: 'createdAt',
-          sortOrder: 'desc'
-        });
+  // Fetch campaigns function
+  const fetchCampaigns = useCallback(async (pageNum, append = false) => {
+    // Prevent multiple simultaneous calls
+    if (loading || (append && isFetchingMore)) {
+      return;
+    }
 
-        const featuredCampaigns = featuredResult?.campaigns || [];
-        const allCampaigns = allResult?.campaigns || [];
-        
-        // Create a Set of featured campaign IDs to avoid duplicates
-        const featuredIds = new Set(featuredCampaigns.map(campaign => campaign._id));
-        
-        // Filter out featured campaigns from all campaigns to get non-featured ones
-        const nonFeaturedCampaigns = allCampaigns.filter(campaign => !featuredIds.has(campaign._id));
-        
-        // Combine featured campaigns first, then non-featured campaigns
-        const combinedCampaigns = [...featuredCampaigns, ...nonFeaturedCampaigns];
-        
-        setAllCampaigns(combinedCampaigns);
-        setTotalCampaigns(allResult?.total || 0);
-        
-        if (allResult?.pagination) {
-          setPagination(allResult.pagination);
+    if (!append) {
+      // Initial load - not fetching more
+      setIsFetchingMore(false);
+    } else {
+      setIsFetchingMore(true);
+    }
+
+    try {
+      const result = await getAllCampaigns({
+        page: pageNum,
+        limit: LIMIT,
+        category: config.category,
+        subcategory: config.subcategory,
+        sortBy: 'createdAt',
+        sortOrder: 'desc'
+      });
+
+      const newCampaigns = result?.campaigns || [];
+      const total = result?.total || 0;
+      const pagination = result?.pagination || {};
+
+      setTotalCampaigns(total);
+
+      if (append) {
+        // Append new campaigns to existing ones
+        setAllCampaigns(prev => {
+          // Filter out duplicates
+          const existingIds = new Set(prev.map(c => c._id));
+          const uniqueNew = newCampaigns.filter(c => !existingIds.has(c._id));
+          return [...prev, ...uniqueNew];
+        });
+      } else {
+        // Replace campaigns (initial load)
+        setAllCampaigns(newCampaigns);
+      }
+
+      // Check if there are more pages
+      setHasMore(pagination.hasNextPage || false);
+    } catch (error) {
+      console.error('Error fetching campaigns:', error);
+      setHasMore(false);
+    } finally {
+      setIsFetchingMore(false);
+    }
+  }, [config.category, config.subcategory, getAllCampaigns, loading, isFetchingMore, LIMIT]);
+
+  // Initial fetch - only when subcategory changes
+  useEffect(() => {
+    fetchCampaigns(1, false);
+  }, [subcategory]); // Only depend on subcategory, not fetchCampaigns
+
+  // Infinite scroll observer
+  useEffect(() => {
+    // Don't set up observer if we're still on initial load or no campaigns yet
+    if (loading || allCampaigns.length === 0) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // When the sentinel element is visible and we have more data
+        if (entries[0].isIntersecting && hasMore && !loading && !isFetchingMore) {
+          const nextPage = page + 1;
+          setPage(nextPage);
+          
+          // Call fetchCampaigns directly instead of through dependency
+          getAllCampaigns({
+            page: nextPage,
+            limit: LIMIT,
+            category: config.category,
+            subcategory: config.subcategory,
+            sortBy: 'createdAt',
+            sortOrder: 'desc'
+          }).then(result => {
+            const newCampaigns = result?.campaigns || [];
+            const pagination = result?.pagination || {};
+            
+            // Append new campaigns
+            setAllCampaigns(prev => {
+              const existingIds = new Set(prev.map(c => c._id));
+              const uniqueNew = newCampaigns.filter(c => !existingIds.has(c._id));
+              return [...prev, ...uniqueNew];
+            });
+            
+            // Update hasMore state
+            setHasMore(pagination.hasNextPage || false);
+            setIsFetchingMore(false);
+          }).catch(error => {
+            console.error('Error fetching more campaigns:', error);
+            setHasMore(false);
+            setIsFetchingMore(false);
+          });
         }
-      } catch (error) {
-        console.error('Error fetching campaigns:', error);
-        setAllCampaigns([]);
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '100px' // Start loading a bit before reaching the bottom
+      }
+    );
+
+    const currentTarget = observerTarget.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
+    }
+
+    return () => {
+      if (currentTarget) {
+        observer.unobserve(currentTarget);
       }
     };
-
-    fetchCampaigns();
-  }, [pagination.page, config.category, config.subcategory]);
-  // Handle page change
-  const handlePageChange = (newPage) => {
-    setPagination(prev => ({ ...prev, page: newPage }));
-  };
+  }, [hasMore, loading, isFetchingMore, page, allCampaigns.length, getAllCampaigns, config.category, config.subcategory, LIMIT]);
 
   const nextImage = () => {
     setCurrentImageIndex((prevIndex) => 
@@ -454,24 +526,52 @@ const CategoryExplore = ({ subcategory }) => {
               viewport={{ once: true }}
               variants={fadeInUp}
             >
-              <CampaignList campaigns={allCampaigns} loading={loading} />
+              <CampaignList campaigns={allCampaigns} loading={loading && page === 1} />
             </motion.div>
 
-            {/* Pagination */}
-            {!loading && allCampaigns.length > 0 && pagination.totalPages > 1 && (
-              <motion.div 
-                className="mt-16 flex justify-center"
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                variants={fadeInUp}
-              >
-                <Pagination 
-                  currentPage={pagination.page} 
-                  totalPages={pagination.totalPages}
-                  onPageChange={handlePageChange}
-                />
-              </motion.div>
+            {/* Infinite Scroll Sentinel & Loading Indicator */}
+            {allCampaigns.length > 0 && (
+              <div className="mt-12">
+                {/* Sentinel element for infinite scroll */}
+                <div ref={observerTarget} className="h-10" />
+                
+                {/* Loading indicator for infinite scroll */}
+                {isFetchingMore && (
+                  <motion.div 
+                    className="flex flex-col items-center justify-center py-8"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                  >
+                    <Loader2 className="w-8 h-8 text-[#8B2325] dark:text-red-400 animate-spin mb-3" />
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Loading more campaigns...
+                    </p>
+                  </motion.div>
+                )}
+                
+                {/* End of results indicator */}
+                {!hasMore && allCampaigns.length > 0 && (
+                  <motion.div 
+                    className="flex flex-col items-center justify-center py-8 text-center"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-3">
+                      <svg className="w-6 h-6 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                      You've reached the end
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                      {totalCampaigns} {totalCampaigns === 1 ? 'campaign' : 'campaigns'} loaded
+                    </p>
+                  </motion.div>
+                )}
+              </div>
             )}
 
             {/* Professional Empty State */}

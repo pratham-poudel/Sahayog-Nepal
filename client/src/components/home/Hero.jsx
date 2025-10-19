@@ -412,225 +412,319 @@ const Hero = () => {
             animate={{ opacity: isVisible ? 1 : 0, scale: isVisible ? 1 : 0.9 }}
             transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
           >
-            {/* Professional Live Impact Dashboard */}
-            <div className="bg-gradient-to-br from-white/90 via-white/80 to-gray-50/90 dark:from-gray-800/90 dark:via-gray-800/80 dark:to-gray-900/90 backdrop-blur-2xl rounded-3xl shadow-2xl overflow-hidden border border-white/30 dark:border-gray-700/30 max-w-lg mx-auto">
+            {/* GoFundMe-Inspired Hero Section */}
+            <div className="relative max-w-2xl mx-auto">
+              {/* Main Heading - Professional & Clean */}
               
-              {/* Premium Header with Glass Effect */}
-              <div className="relative px-6 py-5 bg-gradient-to-r from-[#8B2325]/10 via-blue-500/10 to-[#8B2325]/10 border-b border-white/30 dark:border-gray-700/30">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="relative">
-                        <div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></div>
-                        <div className="absolute inset-0 w-2.5 h-2.5 bg-green-500 rounded-full animate-ping opacity-75"></div>
-                      </div>
-                      <h3 className="text-lg font-bold text-gray-900 dark:text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                        Live Impact
-                      </h3>
-                    </div>
-                    <p className="text-xs text-gray-600 dark:text-gray-400" style={{ fontFamily: 'Inter, sans-serif' }}>
-                      Updated moments ago
-                    </p>
-                  </div>
-                  <div className="bg-white/60 dark:bg-gray-700/60 backdrop-blur-sm rounded-full px-3 py-1.5 border border-white/40">
-                    <span className="text-xs font-semibold text-[#8B2325] dark:text-red-400 uppercase tracking-wide" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                      Real-time
-                    </span>
-                  </div>
-                </div>
-                
-                {/* Decorative gradient line */}
-                <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#8B2325]/30 to-transparent"></div>
-              </div>
-              
-              {/* Enhanced Image Showcase with Parallax */}
-              <div className="relative h-56 overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800">
-                  {impactImages.map((image, index) => (
-                    <motion.div 
-                      key={index}
-                      className="absolute inset-0 w-full h-full"
-                      initial={{ opacity: 0, scale: 1.1 }}
-                      animate={{ 
-                        opacity: index === activeImageIndex ? 1 : 0,
-                        scale: index === activeImageIndex ? 1 : 1.1
-                      }}
-                      transition={{ duration: 1, ease: "easeInOut" }}
-                    >
-                      <img 
-                        src={image.src} 
-                        alt={`Impact story from ${image.location}, Nepal`}
-                        className="w-full h-full object-cover"
-                        loading={index === 0 ? "eager" : "lazy"}
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                      
-                      {/* Professional overlay badge */}
-                      <div className="absolute bottom-4 left-4 right-4">
-                        <motion.div
-                          initial={{ y: 20, opacity: 0 }}
-                          animate={{ y: 0, opacity: 1 }}
-                          transition={{ delay: 0.3 }}
-                          className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-md rounded-2xl px-5 py-3 border border-white/40 shadow-xl"
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="text-xs font-semibold text-[#8B2325] dark:text-red-400 uppercase tracking-wide" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                                  {image.category}
-                                </span>
-                                <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
-                                <span className="text-xs text-gray-500 dark:text-gray-400" style={{ fontFamily: 'Inter, sans-serif' }}>
-                                  {image.location}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <svg className="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                </svg>
-                                <p className="text-xs font-medium text-gray-700 dark:text-gray-300" style={{ fontFamily: 'Inter, sans-serif' }}>
-                                  Active campaign
-                                </p>
-                              </div>
-                            </div>
-                            <div className="w-2 h-2 bg-green-500 rounded-full shadow-lg shadow-green-500/50"></div>
-                          </div>
-                        </motion.div>
-                      </div>
-                    </motion.div>
-                  ))}
+
+              {/* Circular Category Grid - GoFundMe Style */}
+              <div className="relative">
+                {/* Connection Wires/Lines - SVG */}
+                <svg 
+                  className="absolute inset-0 w-full h-full pointer-events-none z-0" 
+                  style={{ top: '0', left: '0' }}
+                  viewBox="0 0 600 600"
+                  preserveAspectRatio="xMidYMid meet"
+                >
+                  <defs>
+                    {/* Gradient for the wires */}
+                    <linearGradient id="wireGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#10b981" stopOpacity="0.3" />
+                      <stop offset="50%" stopColor="#14b8a6" stopOpacity="0.6" />
+                      <stop offset="100%" stopColor="#10b981" stopOpacity="0.3" />
+                    </linearGradient>
+                    {/* Animated gradient */}
+                    <linearGradient id="wireGradientAnimated" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#10b981" stopOpacity="0.2">
+                        <animate attributeName="stopOpacity" values="0.2;0.8;0.2" dur="3s" repeatCount="indefinite" />
+                      </stop>
+                      <stop offset="50%" stopColor="#14b8a6" stopOpacity="0.6">
+                        <animate attributeName="stopOpacity" values="0.6;1;0.6" dur="3s" repeatCount="indefinite" />
+                      </stop>
+                      <stop offset="100%" stopColor="#10b981" stopOpacity="0.2">
+                        <animate attributeName="stopOpacity" values="0.2;0.8;0.2" dur="3s" repeatCount="indefinite" />
+                      </stop>
+                    </linearGradient>
+                  </defs>
                   
-                  {/* Elegant navigation dots */}
-                  <div className="absolute top-4 right-4 flex gap-1.5 bg-black/20 backdrop-blur-sm rounded-full px-2 py-1.5">
-                    {impactImages.map((_, index) => (
-                      <button
-                        key={index}
-                        onClick={() => setActiveImageIndex(index)}
-                        className={`transition-all duration-300 rounded-full ${
-                          index === activeImageIndex 
-                            ? 'w-6 h-2 bg-white shadow-md' 
-                            : 'w-2 h-2 bg-white/50 hover:bg-white/70'
-                        }`}
-                        aria-label={`View image ${index + 1}`}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-              
-              {/* Premium Stats Grid */}
-              <div className="px-6 py-5">
-                {statsLoading ? (
-                  // Elegant loading state
-                  <div className="grid grid-cols-3 gap-4">
-                    {[1, 2, 3].map((_, index) => (
-                      <div key={index} className="text-center">
-                        <div className="animate-pulse">
-                          <div className="h-8 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded-lg mb-2"></div>
-                          <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded mb-1"></div>
-                          <div className="h-3 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded w-3/4 mx-auto"></div>
+                  {/* Center point (Your cause circle center) - approximately at 50%, 48% */}
+                  {/* Lines to top-left (Medical) */}
+                  <motion.line
+                    x1="300" y1="288"
+                    x2="140" y2="120"
+                    stroke="url(#wireGradient)"
+                    strokeWidth="2"
+                    strokeDasharray="8,4"
+                    initial={{ pathLength: 0, opacity: 0 }}
+                    animate={{ pathLength: 1, opacity: 1 }}
+                    transition={{ duration: 1, delay: 0.4, ease: "easeInOut" }}
+                  />
+                  
+                  {/* Line to top-right (Education) */}
+                  <motion.line
+                    x1="300" y1="288"
+                    x2="460" y2="120"
+                    stroke="url(#wireGradient)"
+                    strokeWidth="2"
+                    strokeDasharray="8,4"
+                    initial={{ pathLength: 0, opacity: 0 }}
+                    animate={{ pathLength: 1, opacity: 1 }}
+                    transition={{ duration: 1, delay: 0.5, ease: "easeInOut" }}
+                  />
+                  
+                  {/* Line to bottom-left (Emergency) */}
+                  <motion.line
+                    x1="300" y1="288"
+                    x2="120" y2="480"
+                    stroke="url(#wireGradient)"
+                    strokeWidth="2"
+                    strokeDasharray="8,4"
+                    initial={{ pathLength: 0, opacity: 0 }}
+                    animate={{ pathLength: 1, opacity: 1 }}
+                    transition={{ duration: 1, delay: 0.7, ease: "easeInOut" }}
+                  />
+                  
+                  {/* Line to bottom-center (Animal) */}
+                  <motion.line
+                    x1="300" y1="288"
+                    x2="300" y2="480"
+                    stroke="url(#wireGradient)"
+                    strokeWidth="2"
+                    strokeDasharray="8,4"
+                    initial={{ pathLength: 0, opacity: 0 }}
+                    animate={{ pathLength: 1, opacity: 1 }}
+                    transition={{ duration: 1, delay: 0.8, ease: "easeInOut" }}
+                  />
+                  
+                  {/* Line to bottom-right (Business) */}
+                  <motion.line
+                    x1="300" y1="288"
+                    x2="480" y2="480"
+                    stroke="url(#wireGradient)"
+                    strokeWidth="2"
+                    strokeDasharray="8,4"
+                    initial={{ pathLength: 0, opacity: 0 }}
+                    animate={{ pathLength: 1, opacity: 1 }}
+                    transition={{ duration: 1, delay: 0.9, ease: "easeInOut" }}
+                  />
+                  
+                  {/* Animated pulse circles at center */}
+                  <circle cx="300" cy="288" r="4" fill="#10b981" opacity="0.8">
+                    <animate attributeName="r" values="4;8;4" dur="2s" repeatCount="indefinite" />
+                    <animate attributeName="opacity" values="0.8;0.3;0.8" dur="2s" repeatCount="indefinite" />
+                  </circle>
+                </svg>
+                
+                {/* Center categories in a circular pattern */}
+                <div className="grid grid-cols-2 gap-8 md:gap-12 max-w-xl mx-auto mb-8 relative z-10">
+                  {/* Top Row - 2 circles */}
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.4 }}
+                  >
+                    <Link to="/explore/medical-treatment">
+                      <div className="group relative cursor-pointer">
+                        <div className="relative w-32 h-32 md:w-40 md:h-40 mx-auto">
+                          {/* Circular image container with green border */}
+                          <div className="absolute inset-0 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 p-1.5 shadow-xl group-hover:shadow-2xl transition-all duration-300 group-hover:scale-110">
+                            <div className="w-full h-full rounded-full overflow-hidden bg-white dark:bg-gray-800">
+                              <img 
+                                src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80"
+                                alt="Medical"
+                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                loading="lazy"
+                              />
+                            </div>
+                          </div>
+                          {/* Label badge */}
+                          <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-gray-100 dark:bg-gray-700 px-4 py-1.5 rounded-full shadow-lg border-2 border-white dark:border-gray-800 whitespace-nowrap">
+                            <span className="text-sm font-bold text-gray-700 dark:text-gray-200">Medical</span>
+                          </div>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="text-center group">
-                      <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-2xl p-2.5 mb-2 group-hover:shadow-lg transition-shadow duration-300">
-                        <motion.p 
-                          className="text-lg sm:text-xl md:text-2xl font-black bg-gradient-to-r from-[#8B2325] to-red-600 bg-clip-text text-transparent truncate"
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ duration: 0.5, delay: 1 }}
-                          key={formattedHomeStats?.totalCampaigns}
-                          style={{ fontFamily: 'Poppins, sans-serif' }}
-                        >
-                          {formattedHomeStats?.totalCampaigns?.formatted || "42"}
-                        </motion.p>
+                    </Link>
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.5 }}
+                  >
+                    <Link to="/explore/primary-education">
+                      <div className="group relative cursor-pointer">
+                        <div className="relative w-32 h-32 md:w-40 md:h-40 mx-auto">
+                          <div className="absolute inset-0 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 p-1.5 shadow-xl group-hover:shadow-2xl transition-all duration-300 group-hover:scale-110">
+                            <div className="w-full h-full rounded-full overflow-hidden bg-white dark:bg-gray-800">
+                              <img 
+                                src="https://images.unsplash.com/photo-1497486751825-1233686d5d80?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80"
+                                alt="Education"
+                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                loading="lazy"
+                              />
+                            </div>
+                          </div>
+                          <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-gray-100 dark:bg-gray-700 px-4 py-1.5 rounded-full shadow-lg border-2 border-white dark:border-gray-800 whitespace-nowrap">
+                            <span className="text-sm font-bold text-gray-700 dark:text-gray-200">Education</span>
+                          </div>
+                        </div>
                       </div>
-                      <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1 truncate" style={{ fontFamily: 'Poppins, sans-serif' }}>Stories</p>
-                      <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate" style={{ fontFamily: 'Inter, sans-serif' }}>Live now</p>
+                    </Link>
+                  </motion.div>
+                </div>
+
+                {/* Middle Row - Center circle (larger) */}
+                <div className="flex justify-center mb-8">
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.5, delay: 0.6 }}
+                    className="relative -mt-4"
+                  >
+                    <Link to="/explore">
+                      <div className="group relative cursor-pointer">
+                        <div className="relative w-36 h-36 md:w-44 md:h-44">
+                          <div className="absolute inset-0 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 p-1.5 shadow-xl group-hover:shadow-2xl transition-all duration-300 group-hover:scale-110">
+                            <div className="w-full h-full rounded-full overflow-hidden bg-white dark:bg-gray-800">
+                              <img 
+                                src="https://images.unsplash.com/photo-1559027615-cd4628902d4a?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80"
+                                alt="Your cause"
+                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                loading="lazy"
+                              />
+                            </div>
+                          </div>
+                          <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-gray-100 dark:bg-gray-700 px-4 py-1.5 rounded-full shadow-lg border-2 border-white dark:border-gray-800 whitespace-nowrap">
+                            <span className="text-sm font-bold text-gray-700 dark:text-gray-200">Your cause</span>
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  </motion.div>
+                </div>
+
+                {/* Bottom Row - 3 circles */}
+                <div className="grid grid-cols-3 gap-6 md:gap-10 max-w-2xl mx-auto">
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8, y: -20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.7 }}
+                  >
+                    <Link to="/explore/natural-disaster">
+                      <div className="group relative cursor-pointer">
+                        <div className="relative w-28 h-28 md:w-36 md:h-36 mx-auto">
+                          <div className="absolute inset-0 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 p-1.5 shadow-xl group-hover:shadow-2xl transition-all duration-300 group-hover:scale-110">
+                            <div className="w-full h-full rounded-full overflow-hidden bg-white dark:bg-gray-800">
+                              <img 
+                                src="https://images.unsplash.com/photo-1593113598332-cd288d649433?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80"
+                                alt="Emergency"
+                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                loading="lazy"
+                              />
+                            </div>
+                          </div>
+                          <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full shadow-lg border-2 border-white dark:border-gray-800 whitespace-nowrap">
+                            <span className="text-xs font-bold text-gray-700 dark:text-gray-200">Emergency</span>
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8, y: -20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.8 }}
+                  >
+                    <Link to="/explore/cats">
+                      <div className="group relative cursor-pointer">
+                        <div className="relative w-28 h-28 md:w-36 md:h-36 mx-auto">
+                          <div className="absolute inset-0 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 p-1.5 shadow-xl group-hover:shadow-2xl transition-all duration-300 group-hover:scale-110">
+                            <div className="w-full h-full rounded-full overflow-hidden bg-white dark:bg-gray-800">
+                              <img 
+                                src="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80"
+                                alt="Animal"
+                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                loading="lazy"
+                              />
+                            </div>
+                          </div>
+                          <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full shadow-lg border-2 border-white dark:border-gray-800 whitespace-nowrap">
+                            <span className="text-xs font-bold text-gray-700 dark:text-gray-200">Animal</span>
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8, y: -20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.9 }}
+                  >
+                    <Link to="/explore/startup">
+                      <div className="group relative cursor-pointer">
+                        <div className="relative w-28 h-28 md:w-36 md:h-36 mx-auto">
+                          <div className="absolute inset-0 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 p-1.5 shadow-xl group-hover:shadow-2xl transition-all duration-300 group-hover:scale-110">
+                            <div className="w-full h-full rounded-full overflow-hidden bg-white dark:bg-gray-800">
+                              <img 
+                                src="https://images.unsplash.com/photo-1552664730-d307ca884978?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80"
+                                alt="Business"
+                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                loading="lazy"
+                              />
+                            </div>
+                          </div>
+                          <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full shadow-lg border-2 border-white dark:border-gray-800 whitespace-nowrap">
+                            <span className="text-xs font-bold text-gray-700 dark:text-gray-200">Business</span>
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  </motion.div>
+                </div>
+              </div>
+
+              {/* Bottom Info Section */}
+              <motion.div
+                className="text-center mt-16 space-y-6"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 1.0 }}
+              >
+                {/* <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-white/30 dark:border-gray-700/30 max-w-xl mx-auto">
+                  <h4 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-3" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                    More than {formattedHomeStats?.totalFunds?.formatted || '₹50 million'} is raised every week on GoFundMe.*
+                  </h4>
+                  <p className="text-gray-600 dark:text-gray-300 leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>
+                    Get started in just a few minutes — with helpful new tools, it's easier than ever to pick the perfect title, write a compelling story, and share it with the world.
+                  </p>
+                </div> */}
+
+                {/* Stats Display */}
+                {!statsLoading && (
+                  <div className="grid grid-cols-3 gap-4 max-w-xl mx-auto">
+                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-xl p-4">
+                      <p className="text-2xl md:text-3xl font-black text-blue-600 dark:text-blue-400" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                        {formattedHomeStats?.totalCampaigns?.formatted || "42"}
+                      </p>
+                      <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mt-1">Active Campaigns</p>
                     </div>
-                    
-                    <div className="text-center group">
-                      <div className="bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/30 dark:to-emerald-800/30 rounded-2xl p-2.5 mb-2 group-hover:shadow-lg transition-shadow duration-300">
-                        <motion.p 
-                          className="text-lg sm:text-xl md:text-2xl font-black bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent truncate px-1"
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ duration: 0.5, delay: 1.2 }}
-                          key={liveStats?.totalRaised}
-                          style={{ fontFamily: 'Poppins, sans-serif' }}
-                        >
-                          {liveStats?.formatted?.totalRaised || "₹2.5M"}
-                        </motion.p>
-                      </div>
-                      <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1 truncate" style={{ fontFamily: 'Poppins, sans-serif' }}>Raised</p>
-                      <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate" style={{ fontFamily: 'Inter, sans-serif' }}>Total impact</p>
+                    <div className="bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/30 dark:to-emerald-800/30 rounded-xl p-4">
+                      <p className="text-2xl md:text-3xl font-black text-green-600 dark:text-green-400" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                        {liveStats?.formatted?.totalRaised || "₹2.5M"}
+                      </p>
+                      <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mt-1">Total Raised</p>
                     </div>
-                    
-                    <div className="text-center group">
-                      <div className="bg-gradient-to-br from-purple-50 to-violet-100 dark:from-purple-900/30 dark:to-violet-800/30 rounded-2xl p-2.5 mb-2 group-hover:shadow-lg transition-shadow duration-300">
-                        <motion.p 
-                          className="text-lg sm:text-xl md:text-2xl font-black bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent truncate"
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ duration: 0.5, delay: 1.4 }}
-                          key={liveStats?.recentDonations}
-                          style={{ fontFamily: 'Poppins, sans-serif' }}
-                        >
-                          {liveStats?.recentDonations || "5"}
-                        </motion.p>
-                      </div>
-                      <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1 truncate" style={{ fontFamily: 'Poppins, sans-serif' }}>Today</p>
-                      <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate" style={{ fontFamily: 'Inter, sans-serif' }}>New gifts</p>
+                    <div className="bg-gradient-to-br from-purple-50 to-violet-100 dark:from-purple-900/30 dark:to-violet-800/30 rounded-xl p-4">
+                      <p className="text-2xl md:text-3xl font-black text-purple-600 dark:text-purple-400" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                        {formattedHomeStats?.totalUsers?.formatted || "200+"}
+                      </p>
+                      <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mt-1">Donors</p>
                     </div>
                   </div>
                 )}
-                
-                {/* Professional status indicator */}
-                <div className="flex items-center justify-center mt-5 gap-2 bg-gradient-to-r from-gray-50/80 to-white/80 dark:from-gray-700/50 dark:to-gray-800/50 backdrop-blur-sm rounded-full px-4 py-2 border border-white/40">
-                  <div className={`relative w-2 h-2 rounded-full ${statsError ? 'bg-yellow-500' : 'bg-green-500'}`}>
-                    {!statsLoading && !statsError && (
-                      <div className="absolute inset-0 w-2 h-2 bg-green-500 rounded-full animate-ping opacity-75"></div>
-                    )}
-                  </div>
-                  <span className="text-xs font-medium text-gray-600 dark:text-gray-400" style={{ fontFamily: 'Inter, sans-serif' }}>
-                    {statsLoading ? 'Syncing data...' : statsError ? 'Offline mode' : 'Connected'}
-                  </span>
-                </div>
-              </div>
-              
-              {/* Category Quick Links - Professional Design */}
-              <div className="px-6 pb-6 border-t border-gray-200/50 dark:border-gray-700/50 pt-5">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-sm font-bold text-gray-900 dark:text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                    Explore by Category
-                  </h4>
-                  <Link to="/explore">
-                    <span className="text-xs text-[#8B2325] dark:text-red-400 hover:underline cursor-pointer font-medium">
-                      View all →
-                    </span>
-                  </Link>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {categories.slice(0, 4).map((category, index) => (
-                    <Link key={category.name} to={category.link}>
-                      <motion.div
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-white/90 to-gray-50/90 dark:from-gray-700/90 dark:to-gray-800/90 border border-white/50 dark:border-gray-600/50 hover:border-[#8B2325]/60 dark:hover:border-red-400/60 hover:shadow-md hover:scale-105 backdrop-blur-sm transition-all duration-300 group"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3, delay: 1.6 + (index * 0.1) }}
-                      >
-                        <div className="text-sm group-hover:scale-110 transition-transform duration-300">{category.icon}</div>
-                        <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 group-hover:text-[#8B2325] dark:group-hover:text-red-400 transition-colors" style={{ fontFamily: 'Inter, sans-serif' }}>
-                          {category.name}
-                        </span>
-                      </motion.div>
-                    </Link>
-                  ))}
-                </div>
-              </div>
+              </motion.div>
             </div>
           </motion.div>
         </div>

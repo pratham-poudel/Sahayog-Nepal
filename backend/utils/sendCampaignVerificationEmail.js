@@ -60,284 +60,269 @@ const sendCampaignVerificationEmail = async (email, name, campaignTitle, campaig
                 <head>
                     <meta charset="UTF-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <title>Campaign Verification Receipt</title>
+                    <title>Campaign Verification Confirmation</title>
                     <style>
-                        * { margin: 0; padding: 0; box-sizing: border-box; }
-                        
                         body { 
-                            font-family: 'Courier New', Courier, monospace;
-                            line-height: 1.5; 
-                            color: #000; 
-                            background: #f5f5f5;
+                            font-family: Arial, sans-serif;
+                            line-height: 1.6; 
+                            color: #333; 
+                            background: #f4f4f4;
                             padding: 20px;
+                            margin: 0;
                         }
                         
-                        .receipt { 
+                        .container { 
                             max-width: 600px; 
                             margin: 0 auto; 
-                            background: #fff; 
-                            border: 2px solid #000;
+                            background: #ffffff; 
                             padding: 0;
                         }
                         
                         .header { 
-                            background: #000;
-                            color: #fff;
-                            padding: 20px;
+                            background: #2c3e50;
+                            color: #ffffff;
+                            padding: 30px 20px;
                             text-align: center;
-                            border-bottom: 2px solid #000;
                         }
                         
                         .header h1 {
                             font-size: 24px;
-                            font-weight: bold;
-                            letter-spacing: 2px;
+                            margin: 0 0 10px 0;
                         }
                         
                         .header p {
-                            font-size: 12px;
-                            margin-top: 5px;
+                            font-size: 14px;
+                            margin: 5px 0;
                         }
                         
                         .content { 
-                            padding: 30px;
+                            padding: 30px 20px;
                         }
                         
-                        .receipt-title {
-                            text-align: center;
-                            font-size: 18px;
-                            font-weight: bold;
-                            text-transform: uppercase;
-                            border-bottom: 2px dashed #000;
-                            padding-bottom: 15px;
+                        .greeting {
+                            font-size: 16px;
                             margin-bottom: 20px;
                         }
                         
-                        .field {
-                            display: flex;
-                            padding: 8px 0;
-                            border-bottom: 1px dotted #ccc;
+                        .status-box {
+                            background: #e8f5e9;
+                            border-left: 4px solid #4caf50;
+                            padding: 15px;
+                            margin: 20px 0;
                         }
                         
-                        .field-label {
+                        .status-box strong {
+                            color: #2e7d32;
+                            font-size: 16px;
+                        }
+                        
+                        .info-section {
+                            margin: 25px 0;
+                        }
+                        
+                        .info-title {
                             font-weight: bold;
-                            width: 180px;
-                            flex-shrink: 0;
+                            font-size: 16px;
+                            margin-bottom: 10px;
+                            color: #2c3e50;
                         }
                         
-                        .field-value {
-                            flex: 1;
+                        .info-table {
+                            width: 100%;
+                            margin: 10px 0;
+                        }
+                        
+                        .info-table td {
+                            padding: 8px 0;
+                            border-bottom: 1px solid #e0e0e0;
+                        }
+                        
+                        .info-table td:first-child {
+                            font-weight: 600;
+                            width: 40%;
+                            color: #555;
+                        }
+                        
+                        .notes-box {
+                            background: #fff3cd;
+                            border-left: 4px solid #ffc107;
+                            padding: 15px;
+                            margin: 20px 0;
+                        }
+                        
+                        .notes-box strong {
+                            color: #856404;
+                        }
+                        
+                        .button {
+                            display: inline-block;
+                            background: #2c3e50;
+                            color: #ffffff;
+                            text-align: center;
+                            padding: 12px 30px;
+                            text-decoration: none;
+                            font-weight: bold;
+                            margin: 20px 0;
+                            border-radius: 4px;
+                        }
+                        
+                        .button:hover {
+                            background: #34495e;
                         }
                         
                         .section {
                             margin: 25px 0;
                         }
                         
-                        .section-title {
-                            font-weight: bold;
-                            font-size: 14px;
-                            text-transform: uppercase;
-                            border-bottom: 2px solid #000;
-                            padding-bottom: 5px;
-                            margin-bottom: 15px;
+                        .section ul, .section ol {
+                            margin: 10px 0;
+                            padding-left: 25px;
                         }
                         
-                        .message-box {
-                            background: #f9f9f9;
-                            border: 1px solid #000;
-                            padding: 15px;
-                            margin: 20px 0;
-                        }
-                        
-                        .verification-stamp {
-                            text-align: center;
-                            margin: 30px 0;
-                            padding: 20px;
-                            border: 3px double #000;
-                        }
-                        
-                        .stamp-text {
-                            font-size: 20px;
-                            font-weight: bold;
-                            text-transform: uppercase;
-                        }
-                        
-                        .instructions {
-                            background: #f0f0f0;
-                            border-left: 4px solid #000;
-                            padding: 15px;
-                            margin: 20px 0;
-                        }
-                        
-                        .instructions ol {
-                            margin-left: 20px;
-                        }
-                        
-                        .instructions li {
+                        .section li {
                             margin: 8px 0;
                         }
                         
-                        .warning {
-                            background: #fff;
-                            border: 2px solid #000;
+                        .important-box {
+                            background: #fff3f3;
+                            border-left: 4px solid #f44336;
                             padding: 15px;
                             margin: 20px 0;
                         }
                         
-                        .warning-title {
-                            font-weight: bold;
-                            text-transform: uppercase;
-                            margin-bottom: 10px;
-                        }
-                        
-                        .button {
-                            display: block;
-                            background: #000;
-                            color: #fff;
-                            text-align: center;
-                            padding: 15px;
-                            text-decoration: none;
-                            font-weight: bold;
-                            text-transform: uppercase;
-                            margin: 20px 0;
-                            border: 2px solid #000;
+                        .important-box strong {
+                            color: #c62828;
                         }
                         
                         .footer { 
-                            background: #f5f5f5;
-                            border-top: 2px solid #000;
+                            background: #f9f9f9;
+                            border-top: 1px solid #e0e0e0;
                             padding: 20px;
                             text-align: center;
-                            font-size: 11px;
+                            font-size: 12px;
+                            color: #666;
                         }
                         
-                        .footer-line {
+                        .footer p {
                             margin: 5px 0;
                         }
                         
                         hr {
                             border: none;
-                            border-top: 1px dashed #000;
-                            margin: 20px 0;
+                            border-top: 1px solid #e0e0e0;
+                            margin: 25px 0;
                         }
                         
                         @media (max-width: 600px) {
                             body { padding: 10px; }
-                            .content { padding: 20px; }
-                            .field { flex-direction: column; }
-                            .field-label { width: 100%; margin-bottom: 5px; }
+                            .content { padding: 20px 15px; }
+                            .info-table td:first-child { width: 100%; display: block; }
+                            .info-table td:last-child { width: 100%; display: block; padding-left: 0; }
                         }
                     </style>
                 </head>
                 <body>
-                    <div class="receipt">
-                        <!-- Header -->
+                    <div class="container">
                         <div class="header">
-                            <h1>SAHAYOGNEPAL</h1>
+                            <h1>SahayogNepal</h1>
                             <p>Government Registered Crowdfunding Platform</p>
                             <p>Campaign Verification Department</p>
                         </div>
                         
-                        <!-- Content -->
                         <div class="content">
-                            <div class="receipt-title">Campaign Verification Receipt</div>
-                            
-                            <div class="verification-stamp">
-                                <div class="stamp-text">✓ VERIFIED & APPROVED</div>
-                                <p style="margin-top: 10px; font-size: 12px;">Status: ACTIVE</p>
+                            <div class="greeting">
+                                Dear ${name},
                             </div>
                             
-                            <div class="section">
-                                <div class="section-title">Campaign Information</div>
-                                <div class="field">
-                                    <div class="field-label">Campaign Title:</div>
-                                    <div class="field-value">${campaignTitle}</div>
-                                </div>
-                                <div class="field">
-                                    <div class="field-label">Campaign ID:</div>
-                                    <div class="field-value">${campaignId}</div>
-                                </div>
-                                <div class="field">
-                                    <div class="field-label">Campaign Creator:</div>
-                                    <div class="field-value">${name}</div>
-                                </div>
-                                <div class="field">
-                                    <div class="field-label">Verification Date:</div>
-                                    <div class="field-value">${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })} ${new Date().toLocaleTimeString('en-GB')}</div>
-                                </div>
-                                <div class="field">
-                                    <div class="field-label">Campaign Status:</div>
-                                    <div class="field-value"><strong>ACTIVE & ACCEPTING DONATIONS</strong></div>
-                                </div>
+                            <p>We are pleased to inform you that your campaign has been successfully verified and approved by our team.</p>
+                            
+                            <div class="status-box">
+                                <strong>Campaign Status: VERIFIED AND ACTIVE</strong>
+                                <p style="margin: 5px 0 0 0;">Your campaign is now live and accepting donations.</p>
+                            </div>
+                            
+                            <div class="info-section">
+                                <div class="info-title">Campaign Details</div>
+                                <table class="info-table">
+                                    <tr>
+                                        <td>Campaign Title:</td>
+                                        <td>${campaignTitle}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Campaign ID:</td>
+                                        <td>${campaignId}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Campaign Creator:</td>
+                                        <td>${name}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Verification Date:</td>
+                                        <td>${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })} at ${new Date().toLocaleTimeString('en-GB')}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Campaign URL:</td>
+                                        <td><a href="${campaignUrl}">${campaignUrl}</a></td>
+                                    </tr>
+                                </table>
                             </div>
                             
                             ${verificationNotes ? `
-                            <div class="message-box">
-                                <strong>VERIFICATION NOTES:</strong><br><br>
-                                ${verificationNotes}
+                            <div class="notes-box">
+                                <strong>Verification Notes:</strong>
+                                <p style="margin: 10px 0 0 0;">${verificationNotes}</p>
                             </div>
                             ` : ''}
                             
-                            <hr>
-                            
-                            <div class="section">
-                                <div class="section-title">Next Steps</div>
-                                <div class="instructions">
-                                    <ol>
-                                        <li>Your campaign is now live and visible to all donors</li>
-                                        <li>Share campaign link via social media and email</li>
-                                        <li>Monitor donations through your dashboard</li>
-                                        <li>Provide regular updates to donors</li>
-                                        <li>Submit withdrawal request when goal is reached</li>
-                                    </ol>
-                                </div>
+                            <div style="text-align: center; margin: 25px 0;">
+                                <a href="${campaignUrl}" class="button">View Your Campaign</a>
                             </div>
                             
-                            <a href="${campaignUrl}" class="button">VIEW LIVE CAMPAIGN</a>
-                            
                             <hr>
                             
                             <div class="section">
-                                <div class="section-title">Compliance Requirements</div>
-                                <div class="warning">
-                                    <div class="warning-title">⚠ IMPORTANT - READ CAREFULLY</div>
-                                    <ul style="margin-left: 20px; margin-top: 10px;">
-                                        <li>Maintain all receipts and proof of expenditure</li>
-                                        <li>Provide regular campaign updates</li>
-                                        <li>Any misrepresentation may result in legal action</li>
-                                        <li>Comply with all Terms of Service</li>
-                                        <li>Respond to donor inquiries promptly</li>
+                                <div class="info-title">Next Steps</div>
+                                <ol>
+                                    <li>Your campaign is now visible to all potential donors on our platform</li>
+                                    <li>Share your campaign link through social media, email, and other channels</li>
+                                    <li>Monitor donations and donor messages through your dashboard</li>
+                                    <li>Provide regular updates to keep donors informed about your progress</li>
+                                    <li>Submit a withdrawal request once you reach your fundraising goal</li>
+                                </ol>
+                            </div>
+                            
+                            <div class="section">
+                                <div class="info-title">Important Compliance Requirements</div>
+                                <div class="important-box">
+                                    <strong>Please Note:</strong>
+                                    <ul style="margin: 10px 0 0 0; padding-left: 20px;">
+                                        <li>Keep all receipts and proof of expenditure for audit purposes</li>
+                                        <li>Provide regular campaign updates to maintain donor trust</li>
+                                        <li>Any misrepresentation of facts may result in legal action</li>
+                                        <li>Ensure full compliance with our Terms of Service</li>
+                                        <li>Respond to donor inquiries in a timely manner</li>
                                     </ul>
                                 </div>
                             </div>
                             
                             <div class="section">
-                                <div class="section-title">Contact Information</div>
-                                <div class="field">
-                                    <div class="field-label">Campaign Support:</div>
-                                    <div class="field-value">campaigns@sahayognepal.org</div>
-                                </div>
-                                <div class="field">
-                                    <div class="field-label">Technical Support:</div>
-                                    <div class="field-value">support@sahayognepal.org</div>
-                                </div>
-                                <div class="field">
-                                    <div class="field-label">Campaign URL:</div>
-                                    <div class="field-value">${campaignUrl}</div>
-                                </div>
+                                <div class="info-title">Need Help?</div>
+                                <p>Our support team is here to assist you:</p>
+                                <ul>
+                                    <li><strong>Campaign Support:</strong> campaigns@sahayognepal.org</li>
+                                    <li><strong>Technical Support:</strong> support@sahayognepal.org</li>
+                                </ul>
                             </div>
+                            
+                            <p style="margin-top: 30px;">Best regards,<br><strong>SahayogNepal Verification Team</strong></p>
                         </div>
                         
-                        <!-- Footer -->
                         <div class="footer">
-                            <div class="footer-line"><strong>SAHAYOGNEPAL</strong></div>
-                            <div class="footer-line">Registered under Government of Nepal</div>
-                            <div class="footer-line">Ministry of Social Development</div>
-                            <div class="footer-line" style="margin-top: 10px;">━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>
-                            <div class="footer-line" style="margin-top: 10px;">Official Campaign Verification Notification</div>
-                            <div class="footer-line">Sent to: ${email}</div>
-                            <div class="footer-line">© ${new Date().getFullYear()} SahayogNepal. All rights reserved.</div>
-                            <div class="footer-line" style="margin-top: 10px; font-size: 10px;">This is an automated notification. Please do not reply to this email.</div>
+                            <p><strong>SahayogNepal</strong></p>
+                            <p>Registered under Government of Nepal - Ministry of Social Development</p>
+                            <p style="margin-top: 10px;">This is an automated notification sent to: ${email}</p>
+                            <p>© ${new Date().getFullYear()} SahayogNepal. All rights reserved.</p>
+                            <p style="margin-top: 10px; font-size: 11px;">Please do not reply to this email. For assistance, contact support@sahayognepal.org</p>
                         </div>
                     </div>
                 </body>

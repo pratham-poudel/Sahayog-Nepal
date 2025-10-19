@@ -862,6 +862,41 @@ router.post('/campaigns/:campaignId/verify',
                 // Don't fail the verification if email fails
             }
 
+            // Schedule campaign for automated queue management
+            try {
+                const dailyReportQueue = require('../queues/dailyReportQueue');
+                const campaignCompletionQueue = require('../queues/campaignCompletionQueue');
+                
+                // Schedule daily reports (will be picked up by scheduler at 6 PM)
+                console.log(`[CAMPAIGN VERIFIED] Campaign ${campaign._id} will be included in daily reports (added by scheduler at 6 PM)`);
+                
+                // Schedule completion check for when campaign ends
+                const endDate = new Date(campaign.endDate);
+                const now = new Date();
+                const delayMs = Math.max(0, endDate.getTime() - now.getTime());
+                
+                console.log(`[CAMPAIGN VERIFIED] Campaign end date: ${endDate.toISOString()}, Current time: ${now.toISOString()}, Delay: ${delayMs}ms (${Math.round(delayMs / (1000 * 60 * 60 * 24))} days)`);
+                
+                if (delayMs > 0) {
+                    const job = await campaignCompletionQueue.add(
+                        'scheduled-completion-check',
+                        { campaignId: campaign._id },
+                        {
+                            delay: delayMs,
+                            jobId: `completion-scheduled-${campaign._id}`,
+                            removeOnComplete: 100
+                        }
+                    );
+                    console.log(`[CAMPAIGN VERIFIED] ✅ Completion check scheduled - Job ID: ${job.id}, Campaign: ${campaign._id}, Delay: ${Math.round(delayMs / (1000 * 60 * 60 * 24))} days`);
+                } else {
+                    console.log(`[CAMPAIGN VERIFIED] ⚠️ Campaign ${campaign._id} end date is in the past or today - completion check will run on next hourly scheduler cycle`);
+                }
+            } catch (queueError) {
+                console.error('[CAMPAIGN VERIFIED] ❌ Error scheduling campaign queues:', queueError);
+                console.error('[CAMPAIGN VERIFIED] Error details:', queueError.stack);
+                // Don't fail the verification if queue scheduling fails
+            }
+
             res.json({
                 success: true,
                 message: 'Campaign verified and activated successfully',
@@ -1078,6 +1113,42 @@ router.post('/campaigns/:campaignId/revert-to-pending',
             await Employee.findByIdAndUpdate(req.employee._id, {
                 $inc: { 'statistics.totalCampaignsReverted': 1 }
             });
+
+            // Remove campaign from all queues when reverted to pending
+            try {
+                const dailyReportQueue = require('../queues/dailyReportQueue');
+                const campaignCompletionQueue = require('../queues/campaignCompletionQueue');
+                const withdrawalReminderQueue = require('../queues/withdrawalReminderQueue');
+                
+                // Remove from daily report recurring job
+                const dailyJobId = `daily-report-${campaign._id}`;
+                const dailyJob = await dailyReportQueue.getJob(dailyJobId);
+                if (dailyJob) {
+                    await dailyJob.remove();
+                    console.log(`[CAMPAIGN REVERTED] Removed daily report job: ${dailyJobId}`);
+                }
+                
+                // Remove from scheduled completion check
+                const completionJobId = `completion-scheduled-${campaign._id}`;
+                const completionJob = await campaignCompletionQueue.getJob(completionJobId);
+                if (completionJob) {
+                    await completionJob.remove();
+                    console.log(`[CAMPAIGN REVERTED] Removed completion check job: ${completionJobId}`);
+                }
+                
+                // Remove any withdrawal reminder jobs
+                const withdrawalJobId = `withdrawal-reminder-${campaign._id}`;
+                const withdrawalJob = await withdrawalReminderQueue.getJob(withdrawalJobId);
+                if (withdrawalJob) {
+                    await withdrawalJob.remove();
+                    console.log(`[CAMPAIGN REVERTED] Removed withdrawal reminder job: ${withdrawalJobId}`);
+                }
+                
+                console.log(`[CAMPAIGN REVERTED] All queue jobs removed for campaign ${campaign._id}`);
+            } catch (queueError) {
+                console.error('[CAMPAIGN REVERTED] Error removing campaign from queues:', queueError.message);
+                // Don't fail the reversion if queue removal fails
+            }
 
             // Log the reversion
             console.log(`[CAMPAIGN REVERTED] ID: ${campaign._id} from ACTIVE to PENDING by Employee: ${req.employee.designationNumber}`);

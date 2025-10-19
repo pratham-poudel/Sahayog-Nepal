@@ -118,6 +118,12 @@ function AppContent() {
               <Route path="/explore/reforestation">
                 {() => <CategoryExplore subcategory="reforestation" />}
               </Route>
+              <Route path="/explore/natural-disaster">
+                {() => <CategoryExplore subcategory="natural-disaster" />}
+              </Route>
+              <Route path="/explore/startup">
+                {() => <CategoryExplore subcategory="startup" />}
+              </Route>
               
               <Route path="/campaign/:id" component={CampaignDetails} />
               <Route path="/detailstatistic/:campaignid" component={DetailedStatistics} />
