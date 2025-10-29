@@ -17,7 +17,15 @@ const Profile = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   
-  const { register: registerPersonal, handleSubmit: handleSubmitPersonal, formState: { errors: errorsPersonal }, reset: resetPersonal } = useForm({
+  // Email change verification states
+  const [showEmailOtpInput, setShowEmailOtpInput] = useState(false);
+  const [emailOtp, setEmailOtp] = useState('');
+  const [emailOtpSending, setEmailOtpSending] = useState(false);
+  const [emailOtpVerifying, setEmailOtpVerifying] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+  const [originalEmail, setOriginalEmail] = useState('');
+  
+  const { register: registerPersonal, handleSubmit: handleSubmitPersonal, formState: { errors: errorsPersonal }, reset: resetPersonal, watch: watchPersonal, getValues } = useForm({
     defaultValues: {
       name: '',
       email: '',
@@ -46,6 +54,7 @@ const Profile = () => {
         phone: user.phone || '',
         bio: user.bio || ''
       });
+      setOriginalEmail(user.email || '');
     }
   }, [user, resetPersonal]);
   
@@ -57,22 +66,44 @@ const Profile = () => {
   }, [isAuthenticated, setLocation]);
   
   const onSubmitPersonal = async (data) => {
+    // Check if email has changed
+    if (data.email !== originalEmail) {
+      // Email changed - trigger OTP verification flow
+      await handleSendEmailChangeOtp(data.email);
+      return;
+    }
+    
+    // Normal profile update (no email change)
     setIsLoading(true);
     
     try {
-      const updatedUser = await updateProfile(data);
-      resetPersonal({
-        name: updatedUser.name,
-        email: updatedUser.email,
-        phone: updatedUser.phone || '',
-        bio: updatedUser.bio || ''
+      const response = await apiRequest('PUT', '/api/users/profile', {
+        name: data.name,
+        bio: data.bio
+        // Phone and email are excluded from update
       });
-      
-      toast({
-        title: "Profile updated",
-        description: "Your profile information has been updated successfully.",
-      });
+
+      if (response.ok) {
+        const result = await response.json();
+        await refreshAuth();
+        
+        resetPersonal({
+          name: result.user.name,
+          email: result.user.email,
+          phone: result.user.phone || '',
+          bio: result.user.bio || ''
+        });
+        
+        toast({
+          title: "Profile updated",
+          description: "Your profile information has been updated successfully.",
+        });
+      } else {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to update profile');
+      }
     } catch (error) {
+      console.error('Profile update error:', error);
       toast({
         title: "Update failed",
         description: error.message || "An error occurred while updating your profile.",
@@ -81,6 +112,111 @@ const Profile = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+  
+  // Handle send email change OTP
+  const handleSendEmailChangeOtp = async (email) => {
+    setEmailOtpSending(true);
+    try {
+      const response = await apiRequest('POST', '/api/users/send-email-change-otp', {
+        newEmail: email
+      });
+      
+      if (response.ok) {
+        setNewEmail(email);
+        setShowEmailOtpInput(true);
+        toast({
+          title: "Verification code sent",
+          description: `A verification code has been sent to ${email}`
+        });
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to send verification code');
+      }
+    } catch (error) {
+      console.error('Error sending email change OTP:', error);
+      toast({
+        variant: "destructive",
+        title: "Failed to send code",
+        description: error.message || "Failed to send verification code. Please try again."
+      });
+      // Reset email to original value
+      resetPersonal({
+        ...getValues(),
+        email: originalEmail
+      });
+    } finally {
+      setEmailOtpSending(false);
+    }
+  };
+  
+  // Handle verify email change OTP
+  const handleVerifyEmailChangeOtp = async () => {
+    if (!emailOtp || emailOtp.length !== 6) {
+      toast({
+        variant: "destructive",
+        title: "Invalid code",
+        description: "Please enter a valid 6-digit verification code."
+      });
+      return;
+    }
+    
+    setEmailOtpVerifying(true);
+    try {
+      const response = await apiRequest('POST', '/api/users/verify-email-change-otp', {
+        otp: emailOtp
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        await refreshAuth();
+        
+        // Update original email
+        setOriginalEmail(newEmail);
+        
+        // Update form
+        resetPersonal({
+          name: result.user.name,
+          email: result.user.email,
+          phone: result.user.phone || '',
+          bio: result.user.bio || ''
+        });
+        
+        // Reset OTP states
+        setShowEmailOtpInput(false);
+        setEmailOtp('');
+        setNewEmail('');
+        
+        toast({
+          title: "Email updated",
+          description: "Your email address has been updated successfully."
+        });
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Invalid verification code');
+      }
+    } catch (error) {
+      console.error('Error verifying email change OTP:', error);
+      toast({
+        variant: "destructive",
+        title: "Verification failed",
+        description: error.message || "Failed to verify code. Please try again."
+      });
+    } finally {
+      setEmailOtpVerifying(false);
+    }
+  };
+  
+  // Handle cancel email change
+  const handleCancelEmailChange = () => {
+    setShowEmailOtpInput(false);
+    setEmailOtp('');
+    setNewEmail('');
+    // Reset email to original value
+    resetPersonal({
+      ...getValues(),
+      email: originalEmail
+    });
   };
   
   const onSubmitPassword = async (data) => {
@@ -303,7 +439,8 @@ const Profile = () => {
                             <input
                               id="email"
                               type="email"
-                              className={`w-full px-4 py-2 border ${errorsPersonal.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8B2635] focus:border-[#8B2635] placeholder-gray-500 dark:placeholder-gray-400`}
+                              disabled={showEmailOtpInput}
+                              className={`w-full px-4 py-2 border ${errorsPersonal.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8B2635] focus:border-[#8B2635] placeholder-gray-500 dark:placeholder-gray-400 disabled:opacity-60 disabled:cursor-not-allowed`}
                               {...registerPersonal("email", { 
                                 required: "Email is required",
                                 pattern: {
@@ -315,17 +452,85 @@ const Profile = () => {
                             {errorsPersonal.email && (
                               <p className="mt-1 text-red-500 text-sm">{errorsPersonal.email.message}</p>
                             )}
+                            {watchPersonal('email') !== originalEmail && !showEmailOtpInput && (
+                              <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+                                <span className="inline-flex items-center">
+                                  <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                  </svg>
+                                  Click "Save Changes" to verify this email address
+                                </span>
+                              </p>
+                            )}
                           </div>
+                          
+                          {/* Email OTP Verification Section */}
+                          {showEmailOtpInput && (
+                            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                              <div className="flex items-start">
+                                <div className="flex-shrink-0">
+                                  <svg className="h-5 w-5 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                  </svg>
+                                </div>
+                                <div className="ml-3 flex-1">
+                                  <h3 className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2">
+                                    Email Verification Required
+                                  </h3>
+                                  <p className="text-sm text-blue-700 dark:text-blue-400 mb-3">
+                                    We've sent a verification code to <strong>{newEmail}</strong>. Please enter it below to confirm your email change.
+                                  </p>
+                                  <div className="flex flex-col gap-2">
+                                    <input 
+                                      type="text" 
+                                      value={emailOtp}
+                                      onChange={(e) => setEmailOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                      placeholder="Enter 6-digit code"
+                                      maxLength={6}
+                                      className="w-full px-3 py-2 border border-blue-300 dark:border-blue-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 dark:text-white text-center text-lg font-mono tracking-wider"
+                                    />
+                                    <div className="flex gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={handleVerifyEmailChangeOtp}
+                                        disabled={emailOtpVerifying || emailOtp.length !== 6}
+                                        className="flex-1 px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                      >
+                                        {emailOtpVerifying ? 'Verifying...' : 'Verify Code'}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={handleCancelEmailChange}
+                                        disabled={emailOtpVerifying}
+                                        className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                                      >
+                                        Cancel
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSendEmailChangeOtp(newEmail)}
+                                    disabled={emailOtpSending}
+                                    className="mt-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 disabled:opacity-50"
+                                  >
+                                    {emailOtpSending ? 'Sending...' : 'Resend verification code'}
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                           
                           <div>
                             <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                               Phone Number
+                              <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">(Cannot be changed)</span>
                             </label>
                             <input
                               id="phone"
                               type="tel"
-                              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8B2635] focus:border-[#8B2635] placeholder-gray-500 dark:placeholder-gray-400"
-                              placeholder="+977 98XXXXXXXX"
+                              disabled={true}
+                              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-900 text-gray-500 dark:text-gray-400 rounded-lg cursor-not-allowed"
                               {...registerPersonal("phone")}
                             />
                           </div>
@@ -344,17 +549,19 @@ const Profile = () => {
                           </div>
                         </div>
                         
-                        <div className="mt-6">
-                          <motion.button
-                            type="submit"
-                            className="px-6 py-3 bg-[#8B2635] text-white font-medium rounded-lg hover:bg-[#7A1E2B] focus:outline-none focus:ring-2 focus:ring-[#8B2635] focus:ring-opacity-50 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            disabled={isLoading}
-                          >
-                            {isLoading ? 'Saving...' : 'Save Changes'}
-                          </motion.button>
-                        </div>
+                        {!showEmailOtpInput && (
+                          <div className="mt-6">
+                            <motion.button
+                              type="submit"
+                              className="px-6 py-3 bg-[#8B2635] text-white font-medium rounded-lg hover:bg-[#7A1E2B] focus:outline-none focus:ring-2 focus:ring-[#8B2635] focus:ring-opacity-50 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              disabled={isLoading || emailOtpSending}
+                            >
+                              {isLoading || emailOtpSending ? (emailOtpSending ? 'Sending Code...' : 'Saving...') : 'Save Changes'}
+                            </motion.button>
+                          </div>
+                        )}
                       </form>
                     </motion.div>
                   )}

@@ -39,7 +39,9 @@ const {
     updateNotificationSettings,
     getMydonation,
     getPublicUserProfile,
-    getUserCampaigns
+    getUserCampaigns,
+    sendEmailChangeOtp,
+    verifyEmailChangeOtp
 
 } = require('../controllers/userController');
 const { protect, checkBanStatus } = require('../middlewares/authMiddleware');
@@ -113,6 +115,27 @@ router.post('/profile-picture', protect, checkBanStatus, upload.single('profileP
 router.put('/change-password', protect, checkBanStatus, changePassword);
 router.put('/notification-settings', protect, checkBanStatus, updateNotificationSettings);
 router.get('/mydonation/:id', protect, checkBanStatus, getMydonation);
+
+// Email change routes with protection
+router.post('/send-email-change-otp', 
+    protect, 
+    checkBanStatus,
+    dailyEmailLimiter,
+    emailLimiter,
+    otpLimiter,
+    checkBlockedIP,
+    emailDomainProtection,
+    emailFrequencyProtection,
+    sendEmailChangeOtp
+);
+router.post('/verify-email-change-otp', 
+    protect, 
+    checkBanStatus,
+    authLimiter,
+    checkBlockedIP,
+    otpAttemptProtection,
+    verifyEmailChangeOtp
+);
 
 // Public profile routes with rate limiting and caching
 router.get('/:id/profile', 

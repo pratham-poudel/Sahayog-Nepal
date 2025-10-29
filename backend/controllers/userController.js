@@ -814,8 +814,8 @@ exports.updateUserProfile = async (req, res) => {
     try {
         const { name, email, phone, bio, profilePicture, profilePictureUrl, personalVerificationDocument } = req.body;
         
-        // Build update object
-        const updateData = { name, email, phone, bio };
+        // Build update object - exclude email and phone for now
+        const updateData = { name, bio };
         
         // Add profile picture fields if provided
         if (profilePicture) {
@@ -829,6 +829,9 @@ exports.updateUserProfile = async (req, res) => {
         if (personalVerificationDocument) {
             updateData.personalVerificationDocument = personalVerificationDocument;
         }
+        
+        // Phone number cannot be changed
+        // Email can only be changed through verified OTP flow (handled separately)
         
         // Find user and update
         const user = await User.findByIdAndUpdate(
@@ -1375,6 +1378,184 @@ exports.getUserCampaigns = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Error fetching user campaigns',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Send OTP for email change verification
+// @route   POST /api/users/send-email-change-otp
+// @access  Private
+exports.sendEmailChangeOtp = async (req, res) => {
+    try {
+        const { newEmail } = req.body;
+        
+        if (!newEmail) {
+            return res.status(400).json({
+                success: false,
+                message: 'New email address is required'
+            });
+        }
+        
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(newEmail)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please provide a valid email address'
+            });
+        }
+        
+        // Check if email is already in use by another user
+        const existingUser = await User.findOne({ 
+            email: newEmail,
+            _id: { $ne: req.user._id } // Exclude current user
+        });
+        
+        if (existingUser) {
+            return res.status(400).json({
+                success: false,
+                message: 'This email is already in use by another account'
+            });
+        }
+        
+        // Check if user is trying to use the same email
+        if (req.user.email === newEmail) {
+            return res.status(400).json({
+                success: false,
+                message: 'This is already your current email address'
+            });
+        }
+        
+        // Generate 6-digit OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        
+        // Store OTP in Redis with 10-minute expiry
+        const otpKey = `email_change_otp:${req.user._id}`;
+        await redis.setex(otpKey, 600, JSON.stringify({
+            otp,
+            newEmail,
+            userId: req.user._id.toString()
+        }));
+        
+        // Send OTP email
+        await sendOtpEmail(newEmail, otp, 'Email Change Verification');
+        
+        res.status(200).json({
+            success: true,
+            message: 'Verification code sent to your new email address'
+        });
+        
+    } catch (error) {
+        console.error('Error sending email change OTP:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error sending verification code',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Verify OTP and update email
+// @route   POST /api/users/verify-email-change-otp
+// @access  Private
+exports.verifyEmailChangeOtp = async (req, res) => {
+    try {
+        const { otp } = req.body;
+        
+        if (!otp) {
+            return res.status(400).json({
+                success: false,
+                message: 'Verification code is required'
+            });
+        }
+        
+        // Retrieve OTP from Redis
+        const otpKey = `email_change_otp:${req.user._id}`;
+        const storedData = await redis.get(otpKey);
+        
+        if (!storedData) {
+            return res.status(400).json({
+                success: false,
+                message: 'Verification code has expired. Please request a new one.'
+            });
+        }
+        
+        const { otp: storedOtp, newEmail } = JSON.parse(storedData);
+        
+        // Verify OTP
+        if (otp !== storedOtp) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid verification code'
+            });
+        }
+        
+        // Double-check email is still available (race condition prevention)
+        const existingUser = await User.findOne({ 
+            email: newEmail,
+            _id: { $ne: req.user._id }
+        });
+        
+        if (existingUser) {
+            await redis.del(otpKey);
+            return res.status(400).json({
+                success: false,
+                message: 'This email is already in use by another account'
+            });
+        }
+        
+        // Update user email
+        const user = await User.findByIdAndUpdate(
+            req.user._id,
+            { email: newEmail },
+            { new: true, runValidators: true }
+        );
+        
+        // Clear OTP from Redis
+        await redis.del(otpKey);
+        
+        // Clear user cache
+        await redis.del(`profile:${req.user._id}`);
+        await clearCampaignCaches();
+        
+        // Get the profile picture URL
+        let responseProfilePictureUrl = '';
+        if (user.profilePictureUrl) {
+            responseProfilePictureUrl = user.profilePictureUrl;
+        } else if (user.profilePicture) {
+            if (user.profilePicture.startsWith('http://') || user.profilePicture.startsWith('https://')) {
+                responseProfilePictureUrl = user.profilePicture;
+            } else {
+                const fileService = require('../services/fileService');
+                const key = `users/profile-pictures/${user.profilePicture}`;
+                responseProfilePictureUrl = fileService.processUploadedFile({ 
+                    key: key,
+                    originalname: user.profilePicture
+                }).url;
+            }
+        }
+        
+        res.status(200).json({
+            success: true,
+            message: 'Email address updated successfully',
+            user: {
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                phone: user.phone,
+                bio: user.bio,
+                role: user.role,
+                profilePicture: user.profilePicture,
+                profilePictureUrl: responseProfilePictureUrl
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error verifying email change OTP:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error updating email address',
             error: error.message
         });
     }
