@@ -121,8 +121,8 @@ const Header = () => {
                   onClick={toggleUserMenu}
                 >
                   <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden border-2 border-white shadow-sm">
-                    {user?.profileImage ? (
-                      <img src={user.profileImage} alt={user.name} className="w-full h-full object-cover" />
+                    {user?.profilePictureUrl ? (
+                      <img src={user.profilePictureUrl} alt={user.name} className="w-full h-full object-cover" />
                     ) : (
                       <span className="text-gray-600 font-medium text-lg">{user?.name?.charAt(0) || "U"}</span>
                     )}

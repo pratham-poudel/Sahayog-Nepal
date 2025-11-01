@@ -6,56 +6,57 @@ const InspirationQuote = () => {
   
   const quotes = [
   {
-    text: "No act of kindness, no matter how small, is ever wasted.",
-    author: "Aesop",
-    context: "Ancient wisdom that guides us still"
+    text: "The best way to find yourself is to lose yourself in the service of others.",
+    author: "Mahatma Gandhi",
+    context: "Purpose through service"
   },
   {
-    text: "We rise by lifting others.",
-    author: "Robert Ingersoll",
-    context: "The heart of community"
+    text: "In the joy of others lies our own.",
+    author: "Pramukh Swami Maharaj",
+    context: "True happiness in collective welfare"
   },
   {
-    text: "Alone we can do so little; together we can do so much.",
-    author: "Helen Keller",
-    context: "The power of unity"
+    text: "Service to humanity is service to God.",
+    author: "Swami Vivekananda",
+    context: "Spiritual roots of giving"
   },
   {
-    text: "It's not how much we give, but how much love we put into giving.",
-    author: "Mother Teresa",
-    context: "Heart over wealth"
+    text: "When wealth is shared, it multiplies. When hoarded, it perishes.",
+    author: "Chanakya",
+    context: "Ancient wisdom on generosity"
   },
   {
-    text: "The greatness of a community is most accurately measured by the compassionate actions of its members.",
-    author: "Coretta Scott King",
-    context: "True power lies in collective kindness"
+    text: "Small acts, when multiplied by millions, can transform the world.",
+    author: "Kailash Satyarthi",
+    context: "The power of collective action"
   },
   {
-    text: "Never doubt that a small group of thoughtful, committed citizens can change the world; indeed, it's the only thing that ever has.",
-    author: "Margaret Mead",
-    context: "The unstoppable force of community"
+    text: "He who gives happiness to others shall find it himself.",
+    author: "Bhagavad Gita",
+    context: "Karma and compassion"
   },
   {
-    text: "The whole is greater than the sum of its parts.",
-    author: "Aristotle",
-    context: "The essence of collaboration"
+    text: "The highest education is that which makes us more human.",
+    author: "Rabindranath Tagore",
+    context: "Empathy as true enlightenment"
   },
   {
-    text: "Only a life lived for others is a life worthwhile.",
-    author: "Albert Einstein",
-    context: "Purpose found in service"
+    text: "Generosity is not about money, it is about the heart that gives.",
+    author: "Annapurna Devi (Nepali Saint)",
+    context: "The soul of sharing"
   },
   {
-    text: "If you want to go fast, go alone. If you want to go far, go together.",
-    author: "African Proverb",
-    context: "Timeless truth of collaboration"
+    text: "Where there is unity, there is always victory.",
+    author: "Kautilya (Chanakya Niti)",
+    context: "Strength in togetherness"
   },
   {
-    text: "He who wishes to secure the good of others has already secured his own.",
-    author: "Confucius",
-    context: "The circle of shared good"
+    text: "Let all be happy; let all be free from illness; let all see what is auspicious.",
+    author: "Rig Veda",
+    context: "Ancient call for collective wellbeing"
   }
 ];
+
 
 
   useEffect(() => {

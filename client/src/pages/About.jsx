@@ -73,13 +73,16 @@ const About = () => {
                 </nav>
 
                 <div className="inline-block bg-white/20 backdrop-blur-sm text-white rounded-full px-4 py-2 mb-6 text-sm font-medium">
-                  Bringing Transparency to Crowdfunding in Nepal
+                  Registered under Company Registration Act, 2034 B.S.
                 </div>
-                <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
-                  About Sahayog Nepal
+                <h1 className="text-5xl md:text-7xl font-serif italic mb-6 leading-tight text-teal-50">
+                  Keep Spreading Love! ❤️
                 </h1>
-                <p className="text-xl md:text-2xl text-white/90 leading-relaxed mb-8">
-                  A transparent crowdfunding platform where every donation is tracked, every campaign is accountable, and donors can see exactly how their contributions make a difference.
+                <h2 className="text-2xl md:text-3xl font-light text-white/90 mb-8">
+                  With Sahayog Nepal's Social Impact Plan
+                </h2>
+                <p className="text-lg md:text-xl text-white/80 leading-relaxed mb-8 font-light">
+                  A transparent and trustworthy digital platform fostering mutual support and social solidarity across Nepal through accountable crowdfunding.
                 </p>
                 
                 <div className="flex flex-col sm:flex-row gap-4">
@@ -109,7 +112,7 @@ const About = () => {
                 <div className="relative w-full max-w-md mx-auto">
                   <div className="relative aspect-[3/4] bg-white rounded-2xl p-4 shadow-2xl">
                     <img 
-                      src="https://images.unsplash.com/photo-1531482615713-2afd69097998" 
+                      src="https://kettocdn.gumlet.io/media/banner/0/95/image/bc5ae443b8da492ff0c97082e2981ada078e385d.jpg?w=auto&dpr=1.3" 
                       alt="Nepal community" 
                       className="w-full h-full object-cover rounded-xl"
                     />
@@ -154,11 +157,11 @@ const About = () => {
                 transition={{ duration: 0.6 }}
                 viewport={{ once: true }}
               >
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-[#8B2325]/10 rounded-2xl">
-                  <Target className="w-8 h-8 text-[#8B2325]" />
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-teal-50 dark:bg-[#8B2325]/10 rounded-2xl">
+                  <Target className="w-8 h-8 text-teal-600 dark:text-[#8B2325]" />
                 </div>
-                <h2 className="text-4xl font-bold text-gray-900 dark:text-white">Our Mission</h2>
-                <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed">
+                <h2 className="text-4xl font-serif italic text-teal-700 dark:text-teal-300">Our Mission</h2>
+                <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed font-light">
                   {aboutContent.mission}
                 </p>
               </motion.div>
@@ -170,11 +173,11 @@ const About = () => {
                 transition={{ duration: 0.6, delay: 0.2 }}
                 viewport={{ once: true }}
               >
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-[#8B2325]/10 rounded-2xl">
-                  <Eye className="w-8 h-8 text-[#8B2325]" />
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-teal-50 dark:bg-[#8B2325]/10 rounded-2xl">
+                  <Eye className="w-8 h-8 text-teal-600 dark:text-[#8B2325]" />
                 </div>
-                <h2 className="text-4xl font-bold text-gray-900 dark:text-white">Our Vision</h2>
-                <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed">
+                <h2 className="text-4xl font-serif italic text-teal-700 dark:text-teal-300">Our Vision</h2>
+                <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed font-light">
                   {aboutContent.vision}
                 </p>
               </motion.div>
@@ -192,90 +195,92 @@ const About = () => {
               viewport={{ once: true }}
               className="text-center mb-16"
             >
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
-                How It Started
+              <h2 className="text-5xl md:text-6xl font-serif italic text-teal-700 dark:text-teal-300 mb-4">
+                Introduction
               </h2>
-              <p className="text-lg text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
-                From Facebook scams to transparent crowdfunding - building accountability into fundraising
+              <p className="text-lg text-gray-600 dark:text-gray-400 max-w-3xl mx-auto font-light">
+                Building a culture of mutual support and solidarity through modern technology
               </p>
             </motion.div>
 
-            <div className="grid md:grid-cols-3 gap-8">
-              {[
-                {
-                  step: '01',
-                  title: 'The Problem',
-                  description: 'While browsing Facebook and other social platforms, I noticed people collecting funds without proper verification or transparency. Many turned out to be scams, leaving donors with no way to track where their money went or if the cause was even legitimate.'
-                },
-                {
-                  step: '02',
-                  title: 'The Solution',
-                  description: 'As an international student from Chandrauta, Kapilvastu studying BTech in India, I realized Nepal needed a transparent platform where donors could see exactly who donated, how much was collected, and how funds were being used - bringing accountability to crowdfunding.'
-                },
-                {
-                  step: '03',
-                  title: 'Today',
-                  description: 'Sahayog Nepal is live, providing a transparent medium for fundraising in Nepal. Every donation is tracked, every rupee is accounted for, and campaign updates keep donors informed about how their contributions are making a difference.'
-                }
-              ].map((item, index) => (
-                <motion.div 
-                  key={index}
-                  className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-sm hover:shadow-md transition-shadow"
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  viewport={{ once: true }}
-                >
-                  <div className="text-6xl font-bold text-[#8B2325]/20 mb-4">{item.step}</div>
-                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">{item.title}</h3>
-                  <p className="text-gray-600 dark:text-gray-300 leading-relaxed">{item.description}</p>
-                </motion.div>
-              ))}
-            </div>
+            <motion.div 
+              className="bg-white dark:bg-gray-800 rounded-2xl p-8 md:p-12 shadow-sm border-l-4 border-[#8B2325]"
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              viewport={{ once: true }}
+            >
+              <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed mb-6 font-light">
+                In Nepal, there has been a recognized need to establish an institution named <span className="font-serif italic text-[#8B2325] text-xl">"Sahayog Nepal"</span> to promote the spirit of social assistance, unity, and philanthropy among citizens, and to strengthen the culture of mutual cooperation and empathy.
+              </p>
+              <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed mb-6 font-light">
+                Our primary purpose is to coordinate assistance through a convenient, transparent, and trustworthy digital platform using modern technology to provide timely support to economically disadvantaged, vulnerable individuals, and those facing sudden crises in areas such as health, education, natural disasters, human welfare, and emergency situations.
+              </p>
+              <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed font-light">
+                This institution is firmly committed to upholding the principles of transparency, accountability, and responsibility in the assistance process, and to contributing to the development of a responsible digital support culture based on mutual trust and cooperation between donors and beneficiaries. This constitution has been prepared in accordance with the <span className="font-medium text-[#8B2325]">Company Registration Act, 2034 B.S.</span>
+              </p>
+            </motion.div>
           </div>
         </div>
 
         {/* Founder Section */}
         <div className="py-20 bg-white dark:bg-gray-900">
-          <div className="container mx-auto px-4 max-w-4xl">
+          <div className="container mx-auto px-4 max-w-6xl">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
               viewport={{ once: true }}
-              className="text-center mb-12"
+              className="text-center mb-16"
             >
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
-                Built & Managed By
+              <h2 className="text-5xl md:text-6xl font-serif italic text-teal-700 dark:text-teal-300 mb-4">
+                Our Objectives
               </h2>
+              <p className="text-lg text-gray-600 dark:text-gray-400 max-w-3xl mx-auto font-light">
+                The guiding principles that define our institutional purpose
+              </p>
             </motion.div>
 
-            <motion.div 
-              className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-8 md:p-12"
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              viewport={{ once: true }}
-            >
-              <div className="flex flex-col md:flex-row gap-8 items-center">
-                <div className="flex-shrink-0">
-                  <div className="w-32 h-32 bg-[#8B2325]/10 rounded-2xl flex items-center justify-center">
-                    <Users className="w-16 h-16 text-[#8B2325]" />
+            <div className="grid md:grid-cols-1 gap-8">
+              {[
+                {
+                  number: '1',
+                  title: 'Establish Transparent Digital Infrastructure',
+                  description: 'To establish and operate a convenient, transparent, and trustworthy digital platform for the collection and distribution of voluntary financial assistance from individuals, communities, and institutions, promoting the spirit of social support, unity, and philanthropy.'
+                },
+                {
+                  number: '2',
+                  title: 'Provide Emergency Financial Support',
+                  description: 'To arrange financial resources to provide necessary assistance to economically vulnerable, disadvantaged, or individuals facing sudden crises in health treatment, education, natural disasters, human welfare, and other emergency situations.'
+                },
+                {
+                  number: '3',
+                  title: 'Foster Accountable Support Culture',
+                  description: 'To ensure transparency, accountability, and responsibility in the assistance process and contribute to the development of a responsible digital support culture based on mutual trust and cooperation between donors and beneficiaries.'
+                }
+              ].map((item, index) => (
+                <motion.div 
+                  key={index}
+                  className="bg-gradient-to-br from-teal-50 to-white dark:from-gray-800 dark:to-gray-800/50 rounded-2xl p-8 md:p-10 shadow-sm hover:shadow-lg transition-all border-l-4 border-[#8B2325]"
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: index * 0.1 }}
+                  viewport={{ once: true }}
+                >
+                  <div className="flex items-start gap-6">
+                    <div className="flex-shrink-0">
+                      <div className="w-16 h-16 bg-gradient-to-br from-[#8B2325] to-[#b12a2c] text-white rounded-full flex items-center justify-center font-serif italic text-2xl shadow-lg">
+                        {item.number}
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-2xl font-light text-gray-900 dark:text-white mb-3">{item.title}</h3>
+                      <p className="text-base text-gray-600 dark:text-gray-300 leading-relaxed font-light">{item.description}</p>
+                    </div>
                   </div>
-                </div>
-                <div className="flex-1 text-center md:text-left">
-                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Pratham Poudel</h3>
-                  <p className="text-lg text-[#8B2325] font-medium mb-4">Founder & Developer</p>
-                  <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-4">
-                    2nd year BTech student from Chandrauta, Kapilvastu, currently studying in India as an international student. 
-                    Built and manages Sahayog Nepal - handling everything from development to operations.
-                  </p>
-                  <div className="text-sm text-gray-500 dark:text-gray-400">
-                    Database • Backend • Frontend • DevOps • Business
-                  </div>
-                </div>
-              </div>
-            </motion.div>
+                </motion.div>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -289,10 +294,10 @@ const About = () => {
               viewport={{ once: true }}
               className="text-center mb-16"
             >
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
+              <h2 className="text-5xl md:text-6xl font-serif italic text-teal-700 dark:text-teal-300 mb-4">
                 How It Works
               </h2>
-              <p className="text-lg text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
+              <p className="text-lg text-gray-600 dark:text-gray-400 max-w-3xl mx-auto font-light">
                 Four simple steps to start your fundraising campaign
               </p>
             </motion.div>
@@ -329,10 +334,10 @@ const About = () => {
               viewport={{ once: true }}
               className="text-center mb-16"
             >
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
+              <h2 className="text-5xl md:text-6xl font-serif italic text-teal-700 dark:text-teal-300 mb-4">
                 What We Stand For
               </h2>
-              <p className="text-lg text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
+              <p className="text-lg text-gray-600 dark:text-gray-400 max-w-3xl mx-auto font-light">
                 Simple principles that guide how we build and run this platform
               </p>
             </motion.div>
@@ -368,10 +373,10 @@ const About = () => {
               viewport={{ once: true }}
               className="text-center mb-16"
             >
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
+              <h2 className="text-5xl md:text-6xl font-serif italic text-teal-700 dark:text-teal-300 mb-4">
                 Common Questions
               </h2>
-              <p className="text-lg text-gray-600 dark:text-gray-400">
+              <p className="text-lg text-gray-600 dark:text-gray-400 font-light">
                 Everything you need to know about the platform
               </p>
             </motion.div>
@@ -415,8 +420,8 @@ const About = () => {
             >
               <div className="grid md:grid-cols-2 gap-8 items-center">
                 <div className="p-12">
-                  <h2 className="text-4xl font-bold text-white mb-6">Ready to Start?</h2>
-                  <p className="text-xl text-white/90 mb-8 leading-relaxed">
+                  <h2 className="text-5xl font-serif italic text-white mb-6">Ready to Start?</h2>
+                  <p className="text-xl text-white/90 mb-8 leading-relaxed font-light">
                     Create your campaign or support existing ones. Whether you need help or want to give it, start here.
                   </p>
                   <div className="flex flex-col sm:flex-row gap-4">
