@@ -140,39 +140,38 @@ pipeline {
         }
 
         stage('Package') {
-            steps {
-                dir('backend') {
-                    echo 'Packaging application...'
-                    script {
-                        if (isUnix()) {
-                            sh '''
-                                rm -rf artifacts
-                                mkdir -p artifacts
-                                
-                                # Create package excluding unnecessary files
-                                tar -czf artifacts/backend-build-${BUILD_NUMBER}.tar.gz \
-                                    --exclude='node_modules' \
-                                    --exclude='coverage' \
-                                    --exclude='tests' \
-                                    --exclude='*.log' \
-                                    --exclude='.git' \
-                                    .
-                                
-                                echo "Package created: artifacts/backend-build-${BUILD_NUMBER}.tar.gz"
-                                ls -lh artifacts/
-                            '''
-                        } else {
-                            bat '''
-                                if exist artifacts rmdir /s /q artifacts
-                                mkdir artifacts
-                                powershell Compress-Archive -Path @("app.js","server.js","config","controllers","db","middleware","middlewares","models","queues","routes","services","utils","workers","package.json","package-lock.json",".env") -DestinationPath artifacts\\backend-build-%BUILD_NUMBER%.zip -Force
-                                dir artifacts
-                            '''
-                        }
-                    }
+    steps {
+        dir('backend') {
+            echo 'Packaging application...'
+            script {
+                if (isUnix()) {
+                    sh '''
+                        rm -rf artifacts
+                        mkdir -p artifacts
+                        tar -czf artifacts/backend-build-${BUILD_NUMBER}.tar.gz \
+                            --exclude='node_modules' \
+                            --exclude='coverage' \
+                            --exclude='tests' \
+                            --exclude='*.log' \
+                            --exclude='.git' \
+                            .
+                    '''
+                } else {
+                    bat '''
+                        if exist artifacts rmdir /s /q artifacts
+                        mkdir artifacts
+
+                        rem ✅ Using PowerShell with -Command and wildcards safely
+                        powershell -Command "Compress-Archive -Path app.js,server.js,config,controllers,db,middleware,middlewares,models,queues,routes,services,utils,workers,package.json,package-lock.json,.env -DestinationPath artifacts\\backend-build-%BUILD_NUMBER%.zip -Force"
+
+                        dir artifacts
+                    '''
                 }
             }
         }
+    }
+}
+
 
         stage('Archive Artifacts') {
             steps {
