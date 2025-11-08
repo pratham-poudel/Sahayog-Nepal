@@ -5,6 +5,7 @@
 const { S3Client } = require('@aws-sdk/client-s3');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
+require('dotenv').config();
 
 // Load configuration from environment variables with fallbacks
 const STORAGE_ENDPOINT = process.env.STORAGE_ENDPOINT || 'http://127.0.0.1:9000/';

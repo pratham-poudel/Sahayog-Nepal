@@ -1,12 +1,12 @@
 // utils/sendTransactionEmail.js
-import { SendMailClient } from "zeptomail";
-import redis from "../utils/RedisClient.js"; 
+const { SendMailClient } = require("zeptomail");
+const redis = require("../utils/RedisClient.js"); 
 
 const url = "api.zeptomail.in/";
 const token = process.env.ZEPTO_TOKEN_TRANSACTION; // keep token in .env
 const zeptoClient = new SendMailClient({ url, token });
 
-export const sendTransactionEmail = async (email, payment, ipAddress = null) => {
+const sendTransactionEmail = async (email, payment, ipAddress = null) => {
     const {
       donorName,
       totalAmount,
@@ -197,3 +197,5 @@ export const sendTransactionEmail = async (email, payment, ipAddress = null) => 
         throw emailError;
     }
 };
+
+module.exports = { sendTransactionEmail };
