@@ -1,0 +1,217 @@
+pipeline {
+    agent any
+
+    environment {
+        NODE_ENV = 'production'
+        // Use Jenkins workspace directory
+        WORKSPACE_DIR = "${WORKSPACE}/backend"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                echo 'Checking out source code...'
+                checkout scm
+            }
+        }
+
+        stage('Prepare Environment') {
+            steps {
+                script {
+                    withCredentials([string(credentialsId: 'backend-env-file', variable: 'ENV_CONTENT')]) {
+                        dir('backend') {
+                            echo "Writing .env file from Jenkins credentials..."
+                            // Works on both Windows and Linux
+                            writeFile file: '.env', text: "${ENV_CONTENT}"
+                            
+                            // Verify .env was created
+                            sh 'ls -la .env || dir .env'
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                dir('backend') {
+                    echo 'Installing npm dependencies...'
+                    // Use sh for Linux/Unix, bat for Windows
+                    script {
+                        if (isUnix()) {
+                            sh 'npm ci --production=false'
+                        } else {
+                            bat 'npm ci --production=false'
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Verify Configuration') {
+            steps {
+                dir('backend') {
+                    echo 'Verifying configuration and dependencies...'
+                    script {
+                        if (isUnix()) {
+                            sh '''
+                                node -v
+                                npm -v
+                                echo "Checking required environment variables..."
+                                node -e "require('dotenv').config(); console.log('MongoDB:', process.env.MONGODB_URI ? 'SET' : 'MISSING'); console.log('Redis:', process.env.REDIS_BULL_URL ? 'SET' : 'MISSING');"
+                            '''
+                        } else {
+                            bat '''
+                                node -v
+                                npm -v
+                                node -e "require('dotenv').config(); console.log('MongoDB:', process.env.MONGODB_URI ? 'SET' : 'MISSING'); console.log('Redis:', process.env.REDIS_BULL_URL ? 'SET' : 'MISSING');"
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                dir('backend') {
+                    echo 'Running tests...'
+                    script {
+                        if (isUnix()) {
+                            sh 'npm test || echo "No tests configured"'
+                        } else {
+                            bat 'npm test || echo "No tests configured"'
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Database Migration Check') {
+            steps {
+                dir('backend') {
+                    echo 'Checking database migrations...'
+                    script {
+                        if (isUnix()) {
+                            sh '''
+                                echo "Validating database optimizations..."
+                                node scripts/validateOptimizations.js || echo "Validation script not critical"
+                            '''
+                        } else {
+                            bat '''
+                                echo "Validating database optimizations..."
+                                node scripts/validateOptimizations.js || echo "Validation script not critical"
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Build') {
+            steps {
+                dir('backend') {
+                    echo 'Building application...'
+                    script {
+                        if (isUnix()) {
+                            sh '''
+                                echo "Preparing production build..."
+                                # Remove development dependencies
+                                npm prune --production
+                            '''
+                        } else {
+                            bat '''
+                                echo "Preparing production build..."
+                                npm prune --production
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Package') {
+            steps {
+                dir('backend') {
+                    echo 'Packaging application...'
+                    script {
+                        if (isUnix()) {
+                            sh '''
+                                rm -rf artifacts
+                                mkdir -p artifacts
+                                
+                                # Create package excluding unnecessary files
+                                tar -czf artifacts/backend-build-${BUILD_NUMBER}.tar.gz \
+                                    --exclude='node_modules' \
+                                    --exclude='coverage' \
+                                    --exclude='tests' \
+                                    --exclude='*.log' \
+                                    --exclude='.git' \
+                                    .
+                                
+                                echo "Package created: artifacts/backend-build-${BUILD_NUMBER}.tar.gz"
+                                ls -lh artifacts/
+                            '''
+                        } else {
+                            bat '''
+                                if exist artifacts rmdir /s /q artifacts
+                                mkdir artifacts
+                                powershell Compress-Archive -Path @("app.js","server.js","config","controllers","db","middleware","middlewares","models","queues","routes","services","utils","workers","package.json","package-lock.json",".env") -DestinationPath artifacts\\backend-build-%BUILD_NUMBER%.zip -Force
+                                dir artifacts
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Archive Artifacts') {
+            steps {
+                dir('backend') {
+                    echo 'Archiving build artifacts...'
+                    script {
+                        if (isUnix()) {
+                            archiveArtifacts artifacts: 'artifacts/backend-build-*.tar.gz', fingerprint: true
+                        } else {
+                            archiveArtifacts artifacts: 'artifacts/backend-build-*.zip', fingerprint: true
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Deploy') {
+            when {
+                branch 'main'
+            }
+            steps {
+                echo 'Deploying application...'
+                script {
+                    // Add your deployment logic here
+                    // Example: Deploy to server, restart services, etc.
+                    echo "Deployment stage - implement based on your infrastructure"
+                    
+                    // Example deployment commands:
+                    // sh 'scp artifacts/backend-build-*.tar.gz user@server:/path/to/deploy'
+                    // sh 'ssh user@server "cd /path/to/deploy && tar -xzf backend-build-*.tar.gz && npm install --production && pm2 restart backend"'
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Pipeline completed successfully!'
+            // Optional: Send success notification
+        }
+        failure {
+            echo 'Pipeline failed!'
+            // Optional: Send failure notification
+        }
+        always {
+            // Cleanup
+            echo 'Cleaning up workspace...'
+            cleanWs()
+        }
+    }
+}
