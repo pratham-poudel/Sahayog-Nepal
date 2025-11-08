@@ -187,6 +187,33 @@ pipeline {
                 }
             }
         }
+        stage('Upload to Cloudflare R2') {
+    steps {
+        dir('backend') {
+            echo '☁️ Uploading artifact to Cloudflare R2...'
+            withCredentials([
+                string(credentialsId: 'R2_ACCESS_KEY_ID', variable: 'R2_ACCESS_KEY_ID'),
+                string(credentialsId: 'R2_SECRET_ACCESS_KEY', variable: 'R2_SECRET_ACCESS_KEY'),
+                string(credentialsId: 'R2_BUCKET_NAME', variable: 'R2_BUCKET_NAME'),
+                string(credentialsId: 'R2_ACCOUNT_ID', variable: 'R2_ACCOUNT_ID')
+            ]) {
+                script {
+                    def artifact = "artifacts/backend-build-${BUILD_NUMBER}.zip"
+                    def endpoint = "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+
+                    bat """
+                        echo Uploading %BUILD_NUMBER% to Cloudflare R2...
+                        aws configure set aws_access_key_id %R2_ACCESS_KEY_ID%
+                        aws configure set aws_secret_access_key %R2_SECRET_ACCESS_KEY%
+                        aws s3 cp ${artifact} s3://%R2_BUCKET_NAME%/builds/ ^
+                          --endpoint-url=${endpoint} --region auto --no-progress
+                    """
+                }
+            }
+        }
+    }
+}
+
 
         stage('Deploy') {
             when {
