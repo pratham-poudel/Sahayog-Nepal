@@ -202,12 +202,12 @@ pipeline {
                     def endpoint = "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
 
                     bat """
-                        echo Uploading %BUILD_NUMBER% to Cloudflare R2...
-                        aws configure set aws_access_key_id %R2_ACCESS_KEY_ID%
-                        aws configure set aws_secret_access_key %R2_SECRET_ACCESS_KEY%
-                        aws s3 cp ${artifact} s3://%R2_BUCKET_NAME%/builds/ ^
-                          --endpoint-url=${endpoint} --region auto --no-progress
-                    """
+    echo Uploading %BUILD_NUMBER% to Cloudflare R2...
+    "C:\\Program Files\\Amazon\\AWSCLIV2\\aws.exe" configure set aws_access_key_id %R2_ACCESS_KEY_ID%
+    "C:\\Program Files\\Amazon\\AWSCLIV2\\aws.exe" configure set aws_secret_access_key %R2_SECRET_ACCESS_KEY%
+    "C:\\Program Files\\Amazon\\AWSCLIV2\\aws.exe" s3 cp ${artifact} s3://%R2_BUCKET_NAME%/builds/ ^
+      --endpoint-url=${endpoint} --region auto --no-progress
+"""
                 }
             }
         }
