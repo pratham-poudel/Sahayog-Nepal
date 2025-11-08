@@ -16,26 +16,26 @@ pipeline {
         }
 
         stage('Prepare Environment') {
-            steps {
-                script {
-                    withCredentials([string(credentialsId: 'backend-env-file', variable: 'ENV_CONTENT')]) {
-                        dir('backend') {
-                            echo "Writing .env file from Jenkins credentials..."
-                            
-                            // Write .env file
-                            writeFile file: '.env', text: "${ENV_CONTENT}"
+    steps {
+        script {
+            // ✅ Use 'file' instead of 'string'
+            withCredentials([file(credentialsId: 'backend-env-file', variable: 'ENV_FILE')]) {
+                dir('backend') {
+                    echo "Copying .env from Jenkins Secret File..."
 
-                            // Verify file created (cross-platform)
-                            if (isUnix()) {
-                                sh 'ls -la .env'
-                            } else {
-                                bat 'dir .env'
-                            }
-                        }
+                    if (isUnix()) {
+                        sh 'cp $ENV_FILE .env && ls -l .env'
+                    } else {
+                        bat 'copy %ENV_FILE% .env && dir .env'
                     }
-                        }
+
+                    echo "✅ .env successfully copied into backend folder"
                 }
+            }
         }
+    }
+}
+
 
 
         stage('Install Dependencies') {
@@ -199,7 +199,7 @@ pipeline {
             ]) {
                 script {
                     def artifact = "artifacts/backend-build-${BUILD_NUMBER}.zip"
-                    def endpoint = "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+                    def endpoint = "https://${R2_ACCOUNTa_ID}.r2.cloudflarestorage.com"
 
                     bat """
     echo Uploading %BUILD_NUMBER% to Cloudflare R2...
