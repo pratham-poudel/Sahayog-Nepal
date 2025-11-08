@@ -21,16 +21,22 @@ pipeline {
                     withCredentials([string(credentialsId: 'backend-env-file', variable: 'ENV_CONTENT')]) {
                         dir('backend') {
                             echo "Writing .env file from Jenkins credentials..."
-                            // Works on both Windows and Linux
-                            writeFile file: '.env', text: "${ENV_CONTENT}"
                             
-                            // Verify .env was created
-                            sh 'ls -la .env || dir .env'
+                            // Write .env file
+                            writeFile file: '.env', text: "${ENV_CONTENT}"
+
+                            // Verify file created (cross-platform)
+                            if (isUnix()) {
+                                sh 'ls -la .env'
+                            } else {
+                                bat 'dir .env'
+                            }
                         }
                     }
+                        }
                 }
-            }
         }
+
 
         stage('Install Dependencies') {
             steps {
