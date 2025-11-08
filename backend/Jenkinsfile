@@ -199,7 +199,7 @@ pipeline {
             ]) {
                 script {
                     def artifact = "artifacts/backend-build-${BUILD_NUMBER}.zip"
-                    def endpoint = "https://${R2_ACCOUNTa_ID}.r2.cloudflarestorage.com"
+                    def endpoint = "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
 
                     bat """
     echo Uploading %BUILD_NUMBER% to Cloudflare R2...
