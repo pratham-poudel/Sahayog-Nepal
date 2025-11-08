@@ -667,35 +667,35 @@ const AddBankAccount = ({ onClose, onSuccess }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-2 sm:p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
           <div className="flex items-center">
-            <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg mr-4">
-              <BanknotesIcon className="h-6 w-6 text-primary-600 dark:text-primary-400" />
+            <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg mr-3 sm:mr-4">
+              <BanknotesIcon className="h-5 w-5 sm:h-6 sm:w-6 text-primary-600 dark:text-primary-400" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Add Bank Account</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">Add Bank Account</h2>
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                 Add your bank account for receiving donations
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 flex-shrink-0"
           >
-            <XMarkIcon className="h-6 w-6" />
+            <XMarkIcon className="h-5 w-5 sm:h-6 sm:w-6" />
           </button>
         </div>
 
         {/* Progress Steps */}
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between">
+        <div className="px-3 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0 overflow-x-auto">
+          <div className="flex items-center justify-between min-w-max sm:min-w-0">
             {steps.map((step, index) => (
               <div key={step.number} className="flex items-center">
-                <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${
+                <div className={`flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 ${
                   step.number === currentStep 
                     ? 'border-primary-500 bg-primary-500 text-white'
                     : step.number < currentStep
@@ -703,21 +703,21 @@ const AddBankAccount = ({ onClose, onSuccess }) => {
                     : 'border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400'
                 }`}>
                   {step.number < currentStep ? (
-                    <CheckCircleIcon className="h-5 w-5" />
+                    <CheckCircleIcon className="h-4 w-4 sm:h-5 sm:w-5" />
                   ) : (
-                    <span className="text-sm font-medium">{step.number}</span>
+                    <span className="text-xs sm:text-sm font-medium">{step.number}</span>
                   )}
                 </div>
-                <div className="ml-3">
-                  <p className={`text-sm font-medium ${
+                <div className="ml-2 sm:ml-3">
+                  <p className={`text-xs sm:text-sm font-medium ${
                     step.number === currentStep ? 'text-primary-600 dark:text-primary-400' : 'text-gray-700 dark:text-gray-300'
                   }`}>
                     {step.title}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{step.description}</p>
+                  <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 hidden sm:block">{step.description}</p>
                 </div>
                 {index < steps.length - 1 && (
-                  <div className={`hidden md:block w-16 h-0.5 ml-6 ${
+                  <div className={`hidden md:block w-12 lg:w-16 h-0.5 ml-4 sm:ml-6 ${
                     step.number < currentStep ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'
                   }`} />
                 )}
@@ -726,25 +726,25 @@ const AddBankAccount = ({ onClose, onSuccess }) => {
           </div>
         </div>
 
-        {/* Content */}
-        <div className="p-6 max-h-[60vh] overflow-y-auto">
+        {/* Content - Scrollable */}
+        <div className="p-4 sm:p-6 flex-1 overflow-y-auto">
           {renderStepContent()}
         </div>
 
         {/* Footer */}
-        <div className="flex justify-between items-center p-6 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           <button
             onClick={prevStep}
             disabled={currentStep === 1}
-            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full sm:w-auto px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Previous
           </button>
           
-          <div className="flex space-x-3">
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
+              className="w-full sm:w-auto px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
             >
               Cancel
             </button>
@@ -752,7 +752,7 @@ const AddBankAccount = ({ onClose, onSuccess }) => {
             {currentStep < 3 ? (
               <button
                 onClick={nextStep}
-                className="px-6 py-2 text-sm font-medium text-white bg-primary-600 dark:bg-primary-500 rounded-lg hover:bg-primary-700 dark:hover:bg-primary-600"
+                className="inline-flex items-center px-4 py-2 bg-[#800000] text-white font-medium rounded-lg hover:bg-[#660000] transition-colors"
               >
                 Next
               </button>
@@ -760,7 +760,7 @@ const AddBankAccount = ({ onClose, onSuccess }) => {
               <button
                 onClick={handleSubmit}
                 disabled={isSubmitting || documentUpload.isUploading}
-                className="px-6 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                className="w-full sm:w-auto px-6 py-2.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
               >
                 {isSubmitting ? (
                   <>
