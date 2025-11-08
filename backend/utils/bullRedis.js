@@ -4,6 +4,15 @@ require('dotenv').config();
 // Parse Redis URL if available, otherwise use default config
 const redisUrl = process.env.REDIS_BULL_URL || process.env.REDIS_HOST;
 
+// Validate that we have a Redis URL
+if (!redisUrl) {
+  console.error('❌ FATAL: No Redis URL found in environment variables!');
+  console.error('❌ Please set REDIS_BULL_URL or REDIS_HOST in your .env file');
+  process.exit(1);
+}
+
+console.log(`🔌 Connecting to Bull Redis: ${redisUrl.replace(/:[^:@]+@/, ':****@')}`); // Hide password in logs
+
 const bullRedis = new Redis(redisUrl, {
   maxRetriesPerRequest: null,
   enableReadyCheck: false,
