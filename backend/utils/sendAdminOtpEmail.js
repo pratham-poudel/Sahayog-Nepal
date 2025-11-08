@@ -1,6 +1,7 @@
 // utils/sendAdminOtpEmail.js
 const { SendMailClient } = require("zeptomail");
 
+
 const url = "api.zeptomail.in/";
 const token = process.env.ZEPTO_TOKEN_OTP; // keep token in .env
 const zeptoClient = new SendMailClient({ url, token });

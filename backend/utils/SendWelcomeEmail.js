@@ -1,5 +1,5 @@
 // utils/sendWelcomeEmail.js
-import { SendMailClient } from "zeptomail";
+const { SendMailClient } = require("zeptomail");
 import redis from "../utils/RedisClient.js"; 
 const url = "api.zeptomail.in/";
 const token = process.env.ZEPTO_TOKEN_WELCOME; // keep token in .env
