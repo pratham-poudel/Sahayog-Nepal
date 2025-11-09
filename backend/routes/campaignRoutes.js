@@ -50,14 +50,14 @@ router.get('/categories/hierarchy', cacheMiddleware(() => 'categories_hierarchy'
 // Get campaigns by hierarchical category (with optional subcategory)
 router.get('/category/:category/:subcategory?', cacheMiddleware((req) => `hierarchical_category:${req.params.category}:${req.params.subcategory || 'all'}`, 300), getCampaignsByHierarchicalCategory); // Cache for 5 minutes
   
-// Featured campaign rotation with cache (short TTL)
+// Featured campaign rotation with cache (very short TTL for dynamic rotation)
 router.get('/featured/rotation', cacheMiddleware((req) => {
     const queryString = Object.entries(req.query)
       .sort()
       .map(([key, value]) => `${key}:${value}`)
       .join('|');
     return `featuredRotation:${queryString}`;
-}, 60), getRotatingFeaturedCampaigns); // Cache for 60 seconds
+}, 30), getRotatingFeaturedCampaigns); // Cache for 30 seconds - short cache for fresh rotation
 
 router.get('/category/:category',cacheMiddleware((req) => `categoryCampaigns:${req.params.category}`), getCampaignsByCategory);
 router.get('/search/:searchTerm', searchLimiter, searchCampaigns);

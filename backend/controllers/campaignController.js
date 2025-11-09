@@ -1211,15 +1211,15 @@ exports.searchCampaigns = async (req, res) => {
     }
 };
 
-// @desc    Get rotating featured campaigns
+// @desc    Get rotating featured campaigns - Dynamic rotation with short cache
 // @route   GET /api/campaigns/featured/rotation
 // @access  Public
 exports.getRotatingFeaturedCampaigns = async (req, res) => {
     try {
-        // Extract query parameters
-        const count = Math.min(parseInt(req.query.count) || 3, 5); // Default to 3, max 5
+        // Extract query parameters - Always fetch exactly 3 campaigns for consistent rotation
+        const count = 3; // Fixed to 3 for consistent UI
         const category = req.query.category || null;
-        const page = parseInt(req.query.page) || 1;
+        const offset = parseInt(req.query.offset) || 0; // Use offset instead of page for rotation
         const strategy = req.query.strategy || null; // Optional specific strategy selection
         
         // Calculate the date 10 days ago
@@ -1239,15 +1239,15 @@ exports.getRotatingFeaturedCampaigns = async (req, res) => {
             query.category = category;
         }
         
-        console.log('Featured campaigns query:', JSON.stringify(query));
+        console.log(`[Featured Rotation] Query:`, JSON.stringify(query), `Offset: ${offset}`);
         
         // Count total documents matching the query first
         const total = await Campaign.countDocuments(query);
-        console.log(`Found ${total} featured campaigns total`);
+        console.log(`[Featured Rotation] Found ${total} featured campaigns total`);
         
         // If no featured campaigns found, fallback to regular active campaigns
         if (total === 0) {
-            console.log('No featured campaigns found, falling back to regular active campaigns');
+            console.log('[Featured Rotation] No featured campaigns, using fallback');
             const fallbackQuery = { 
                 status: 'active',
                 endDate: { $gte: tenDaysAgo }
@@ -1259,59 +1259,68 @@ exports.getRotatingFeaturedCampaigns = async (req, res) => {
             }
             
             const fallbackTotal = await Campaign.countDocuments(fallbackQuery);
-            const skip = (page - 1) * count;
+            
+            // Use modulo to wrap around when offset exceeds total
+            const adjustedOffset = fallbackTotal > 0 ? offset % fallbackTotal : 0;
             
             const campaigns = await Campaign.find(fallbackQuery)
                 .populate('creator', 'name email profilePicture profilePictureUrl isPremiumAndVerified')
                 .sort({ createdAt: -1 }) // Sort by newest first as fallback
-                .skip(skip)
+                .skip(adjustedOffset)
                 .limit(count)
                 .lean();
             
             const campaignsWithUrls = campaigns.map(campaign => formatCampaignWithUrls(campaign));
-            const totalPages = Math.ceil(fallbackTotal / count);
             
             return res.status(200).json({
                 success: true,
                 count: campaignsWithUrls.length,
                 total: fallbackTotal,
+                offset: adjustedOffset,
+                nextOffset: (adjustedOffset + count) % fallbackTotal,
                 strategy: 'Recently Added',
                 isFallback: true,
-                pagination: {
-                    page,
-                    count,
-                    totalPages,
-                    hasNextPage: page < totalPages,
-                    hasPrevPage: page > 1,
-                    nextPage: page < totalPages ? page + 1 : null,
-                    prevPage: page > 1 ? page - 1 : null
-                },
+                hasMore: fallbackTotal > count,
                 campaigns: campaignsWithUrls
             });
         }
         
-        // Define possible selection strategies
+        // Define possible selection strategies with weights for variety
         const selectionStrategies = [
-            { sortBy: 'createdAt', sortOrder: -1, displayReason: 'Recently Added' }, // Newest campaigns
-            { sortBy: 'amountRaised', sortOrder: -1, displayReason: 'Most Popular' }, // Most funded
-            { sortBy: 'endDate', sortOrder: 1, displayReason: 'Ending Soon' }, // Ending soon
-            { sortBy: 'percentageRaised', sortOrder: -1, displayReason: 'Nearly Funded' }, // Closest to goal
+            { sortBy: 'createdAt', sortOrder: -1, displayReason: 'Recently Added', weight: 1 }, 
+            { sortBy: 'amountRaised', sortOrder: -1, displayReason: 'Most Popular', weight: 1 }, 
+            { sortBy: 'endDate', sortOrder: 1, displayReason: 'Ending Soon', weight: 2 }, // Higher weight for urgency
+            { sortBy: 'percentageRaised', sortOrder: -1, displayReason: 'Nearly Funded', weight: 1.5 },
         ];
         
-        // Choose a strategy - either specified or random
+        // Choose a strategy - either specified or weighted random
         let selectedStrategy;
         if (strategy && selectionStrategies.find(s => s.displayReason === strategy)) {
             selectedStrategy = selectionStrategies.find(s => s.displayReason === strategy);
         } else {
-            // Choose a random strategy
-            const randomIndex = Math.floor(Math.random() * selectionStrategies.length);
-            selectedStrategy = selectionStrategies[randomIndex];
+            // Weighted random selection for better variety
+            const totalWeight = selectionStrategies.reduce((sum, s) => sum + s.weight, 0);
+            const random = Math.random() * totalWeight;
+            let weightSum = 0;
+            
+            for (const strat of selectionStrategies) {
+                weightSum += strat.weight;
+                if (random <= weightSum) {
+                    selectedStrategy = strat;
+                    break;
+                }
+            }
+            
+            // Fallback to first strategy if none selected
+            if (!selectedStrategy) {
+                selectedStrategy = selectionStrategies[0];
+            }
         }
         
-        // Calculate skip for pagination
-        const skip = (page - 1) * count;
+        // Use modulo to wrap around when offset exceeds total
+        const adjustedOffset = offset % total;
         
-        console.log('Using sort strategy:', selectedStrategy.displayReason);
+        console.log(`[Featured Rotation] Using strategy: ${selectedStrategy.displayReason}, Offset: ${adjustedOffset}`);
         
         // Build aggregation pipeline for better performance
         const pipeline = [
@@ -1361,18 +1370,18 @@ exports.getRotatingFeaturedCampaigns = async (req, res) => {
             { $unwind: '$creator' }
         ];
 
-        // Add sorting
+        // Add sorting based on selected strategy
         const sortStage = {};
         sortStage[selectedStrategy.sortBy] = selectedStrategy.sortOrder;
         pipeline.push({ $sort: sortStage });
 
-        // Add pagination
-        pipeline.push({ $skip: skip }, { $limit: count });
+        // Add offset-based pagination for rotation
+        pipeline.push({ $skip: adjustedOffset }, { $limit: count });
 
         // Fetch campaigns with aggregation
         const campaigns = await Campaign.aggregate(pipeline);
         
-        console.log(`Retrieved ${campaigns.length} featured campaigns for page ${page}`);
+        console.log(`[Featured Rotation] Retrieved ${campaigns.length} campaigns at offset ${adjustedOffset}`);
         
         // Add URLs for each campaign's images
         const campaignsWithUrls = campaigns.map(campaign => formatCampaignWithUrls(campaign));
@@ -1383,28 +1392,22 @@ exports.getRotatingFeaturedCampaigns = async (req, res) => {
             displayReason: selectedStrategy.displayReason
         }));
         
-        // Calculate total pages
-        const totalPages = Math.ceil(total / count);
+        // Calculate next offset (wrap around)
+        const nextOffset = (adjustedOffset + count) % total;
         
         res.status(200).json({
             success: true,
             count: campaignsWithReason.length,
             total,
+            offset: adjustedOffset,
+            nextOffset, // Frontend can use this for next request
             strategy: selectedStrategy.displayReason,
             isFallback: false,
-            pagination: {
-                page,
-                count,
-                totalPages,
-                hasNextPage: page < totalPages,
-                hasPrevPage: page > 1,
-                nextPage: page < totalPages ? page + 1 : null,
-                prevPage: page > 1 ? page - 1 : null
-            },
+            hasMore: total > count, // Indicates if rotation makes sense
             campaigns: campaignsWithReason
         });
     } catch (error) {
-        console.error('Error fetching rotating featured campaigns:', error);
+        console.error('[Featured Rotation] Error:', error);
         res.status(500).json({
             success: false,
             message: 'Error fetching rotating featured campaigns',

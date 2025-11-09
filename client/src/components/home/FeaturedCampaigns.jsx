@@ -9,117 +9,92 @@ const FeaturedCampaigns = () => {
   const [activeCategory, setActiveCategory] = useState('All Campaigns');
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentOffset, setCurrentOffset] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCampaigns, setTotalCampaigns] = useState(0);
   const [hasMore, setHasMore] = useState(true);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isFetching, setIsFetching] = useState(false);
   const { getRotatingFeaturedCampaigns } = useCampaigns();
   const { categories, loading: categoriesLoading } = useCategories();
   const rotationIntervalRef = useRef(null);
   const isAnimatingRef = useRef(false); // Reference to track animation state without re-rendering
-  const allCampaignsRef = useRef([]);
-  const totalFetchedRef = useRef(0);
+  const isFetchingRef = useRef(false); // Reference to track fetching state
   
-  // Update ref whenever isAnimating changes
+  // Update refs whenever state changes
   useEffect(() => {
     isAnimatingRef.current = isAnimating;
   }, [isAnimating]);
-
-  // Fetch rotating featured campaigns from our dedicated endpoint
+  
   useEffect(() => {
-    let isMounted = true; // Track component mounted state
-    const fetchFeaturedCampaigns = async () => {
-      setLoading(true);
-      // Reset pagination when category changes
-      setCurrentPage(1);
-      setHasMore(true);
-      totalFetchedRef.current = 0;
-      
-      try {
-        console.log(`Fetching campaigns for category ${activeCategory}`);
-        const result = await getRotatingFeaturedCampaigns({
-          count: 9, // Get 9 campaigns at once to rotate through
-          page: 1,  // Start with page 1
-          category: activeCategory !== 'All Campaigns' ? activeCategory : null
-        });
-        
-        if (!isMounted) return; // Don't update state if unmounted
-        
-        if (result.campaigns && result.campaigns.length > 0) {
-          console.log(`Received ${result.campaigns.length} campaigns (fallback: ${result.isFallback || false})`);
-          // Store all campaigns in ref and display first 3
-          allCampaignsRef.current = result.campaigns;
-          totalFetchedRef.current = result.campaigns.length;
-          const initialCampaigns = result.campaigns.slice(0, 3);
-          setCampaigns(initialCampaigns);
-          
-          // Check if there might be more campaigns to fetch later
-          setHasMore(result.campaigns.length >= 9 || (result.pagination && result.pagination.hasNextPage));
-        } else {
-          console.log(`No campaigns received for category ${activeCategory}`);
-          setCampaigns([]);
-          allCampaignsRef.current = [];
-          setHasMore(false);
-        }
-      } catch (error) {
-        if (!isMounted) return;
-        console.error("Error fetching featured campaigns:", error);
-        setCampaigns([]);
-        allCampaignsRef.current = [];
-        setHasMore(false);
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    };
+    isFetchingRef.current = isFetching;
+  }, [isFetching]);
 
-    fetchFeaturedCampaigns();
+  // Fetch rotating featured campaigns dynamically with offset-based rotation
+  const fetchFeaturedCampaigns = async (offset = 0) => {
+    // Prevent concurrent fetches
+    if (isFetchingRef.current) {
+      console.log('[Rotation] Fetch already in progress, skipping...');
+      return false;
+    }
     
-    // Cleanup function
-    return () => {
-      isMounted = false;
-    };
-  }, [activeCategory]); // Only re-fetch when category changes
-
-  // Function to fetch more campaigns when needed
-  const fetchMoreCampaigns = async () => {
-    if (!hasMore || isLoadingMore) return;
-    
-    setIsLoadingMore(true);
-    const nextPage = currentPage + 1;
+    setIsFetching(true);
+    isFetchingRef.current = true;
     
     try {
-      console.log(`Fetching more campaigns for page ${nextPage}`);
+      console.log(`[Rotation] Fetching campaigns for category: ${activeCategory}, offset: ${offset}`);
       const result = await getRotatingFeaturedCampaigns({
-        count: 9,
-        page: nextPage,
+        offset, // Use offset for rotation instead of page
         category: activeCategory !== 'All Campaigns' ? activeCategory : null
       });
       
       if (result.campaigns && result.campaigns.length > 0) {
-        console.log(`Received ${result.campaigns.length} additional campaigns`);
-        // Append new campaigns to existing ones
-        allCampaignsRef.current = [...allCampaignsRef.current, ...result.campaigns];
-        totalFetchedRef.current += result.campaigns.length;
+        console.log(`[Rotation] Received ${result.campaigns.length} campaigns (strategy: ${result.strategy})`);
         
-        // Check if there might be more campaigns based on pagination
-        setHasMore(result.pagination ? result.pagination.hasNextPage : result.campaigns.length >= 9);
-        setCurrentPage(nextPage);
+        // Update state with new campaigns
+        setCampaigns(result.campaigns);
+        setTotalCampaigns(result.total);
+        setHasMore(result.hasMore);
+        setCurrentOffset(result.nextOffset); // Store next offset for next rotation
+        
+        return true;
       } else {
-        console.log('No more campaigns available');
+        console.log(`[Rotation] No campaigns received for category ${activeCategory}`);
+        setCampaigns([]);
         setHasMore(false);
+        return false;
       }
     } catch (error) {
-      console.error("Error fetching more campaigns:", error);
-      setHasMore(false); // Stop trying to fetch more on error
+      console.error("[Rotation] Error fetching featured campaigns:", error);
+      return false;
     } finally {
-      setIsLoadingMore(false);
+      setIsFetching(false);
+      isFetchingRef.current = false;
     }
   };
+  
+  // Initial fetch when category changes
+  useEffect(() => {
+    let isMounted = true;
+    
+    const initialFetch = async () => {
+      setLoading(true);
+      setCurrentOffset(0); // Reset offset when category changes
+      
+      const success = await fetchFeaturedCampaigns(0);
+      
+      if (isMounted) {
+        setLoading(false);
+      }
+    };
 
-  // Auto-rotate featured campaigns with smoother animation and debouncing
+    initialFetch();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [activeCategory]);
+
+  // Auto-rotate featured campaigns with dynamic fetching
   useEffect(() => {
     // Clear any existing interval first
     if (rotationIntervalRef.current) {
@@ -127,72 +102,43 @@ const FeaturedCampaigns = () => {
       rotationIntervalRef.current = null;
     }
     
-    // Don't set up auto-rotation if we don't have enough campaigns or are loading
-    if (!allCampaignsRef.current || allCampaignsRef.current.length <= 3 || loading) {
-      console.log('Skipping rotation setup:', {
-        campaignCount: allCampaignsRef.current?.length || 0,
-        loading,
-        hasEnoughCampaigns: allCampaignsRef.current?.length > 3
-      });
+    // Don't set up auto-rotation if we don't have campaigns, are loading, or no more campaigns to rotate
+    if (loading || !hasMore || campaigns.length === 0) {
+      console.log('[Rotation] Skipping setup:', { loading, hasMore, campaignCount: campaigns.length });
       return;
     }
     
-    console.log(`Setting up auto-rotation for ${allCampaignsRef.current.length} campaigns`);
+    console.log(`[Rotation] Setting up auto-rotation for category: ${activeCategory}`);
     
-    // Set up auto-rotation with a delay to allow for initial page stabilization
+    // Set up auto-rotation with initial delay for page stabilization
     const timeoutId = setTimeout(() => {
-      // Use a longer interval for better readability
-      rotationIntervalRef.current = setInterval(() => {
-        // Check if we're already in an animation to prevent overlapping animations
-        if (!isAnimatingRef.current && allCampaignsRef.current.length > 3) {
-          console.log('Auto-rotating campaigns...');
-          // Set animation flag before any state changes to prevent race conditions
-          setIsAnimating(true);
-          
-          // Calculate next index and prepare next campaigns set
-          setCurrentIndex(prevIndex => {
-            const totalCampaigns = allCampaignsRef.current.length;
-            // Ensure we have valid range even if total campaigns change
-            const nextIndex = totalCampaigns > 3 
-              ? (prevIndex + 1) % (totalCampaigns - 2)
-              : 0;
-            
-            console.log(`Rotating from index ${prevIndex} to ${nextIndex} (total: ${totalCampaigns})`);
-            
-            // Check if we need to fetch more campaigns
-            // If we're more than 70% through our already fetched campaigns
-            if (hasMore && !isLoadingMore && nextIndex > totalCampaigns * 0.7) {
-              console.log('Triggering background fetch for more campaigns');
-              // Fetch more campaigns in background without blocking the rotation
-              fetchMoreCampaigns();
-            }
-            
-            // Create a fresh array to trigger proper re-renders
-            const nextCampaigns = [];
-            for (let i = 0; i < 3; i++) {
-              const idx = (nextIndex + i) % totalCampaigns;
-              nextCampaigns.push({...allCampaignsRef.current[idx]}); // Clone for immutability
-            }
-            
-            // Update campaigns state with next batch
-            setCampaigns(nextCampaigns);
-            return nextIndex;
-          });
-          
-          // Add a longer animation cooldown period to ensure smooth transitions
-          // This ensures animations complete fully before the next rotation
-          setTimeout(() => {
-            setIsAnimating(false);
-          }, 1200); // Even longer cooldown for smoother experience
-        } else if (isAnimatingRef.current) {
-          console.log('Skipping rotation - animation in progress');
-        } else {
-          console.log('Skipping rotation - not enough campaigns');
+      rotationIntervalRef.current = setInterval(async () => {
+        // Check if we're already animating or fetching to prevent overlaps
+        if (isAnimatingRef.current || isFetchingRef.current) {
+          console.log('[Rotation] Skipping - animation or fetch in progress');
+          return;
         }
-      }, 6000); // 6 seconds for better visibility of each campaign set
-    }, 2000); // Longer initial delay to ensure DOM is fully rendered and stable
+        
+        console.log('[Rotation] Starting rotation cycle...');
+        
+        // Set animation flag
+        setIsAnimating(true);
+        
+        // Small delay before fetch to allow animation to start
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Fetch next set of campaigns using stored offset
+        const success = await fetchFeaturedCampaigns(currentOffset);
+        
+        // Reset animation flag after fetch completes and animation time passes
+        setTimeout(() => {
+          setIsAnimating(false);
+        }, 800); // Animation cooldown
+        
+      }, 6000); // 6 seconds between rotations for good visibility
+    }, 2000); // Initial delay for DOM stability
     
-    // Cleanup all timers to prevent memory leaks
+    // Cleanup timers
     return () => {
       clearTimeout(timeoutId);
       if (rotationIntervalRef.current) {
@@ -200,48 +146,24 @@ const FeaturedCampaigns = () => {
         rotationIntervalRef.current = null;
       }
     };
-  }, [loading, hasMore, isLoadingMore]); // Added dependencies related to fetch-more functionality
+  }, [loading, hasMore, currentOffset, activeCategory]); // Re-setup when these change
 
-  // Reset rotation when category changes
-  useEffect(() => {
-    setCurrentIndex(0);
-  }, [activeCategory]);
-
-  // Manual rotation function (in case you want to manually trigger it)
-  const rotateCampaigns = () => {
-    if (isAnimating || loading || allCampaignsRef.current.length <= 3) return;
+  // Manual rotation function for user interaction
+  const rotateCampaigns = async () => {
+    if (isAnimating || isFetching || !hasMore) {
+      console.log('[Manual Rotation] Blocked:', { isAnimating, isFetching, hasMore });
+      return;
+    }
     
-    // Set animation flag to prevent overlapping animations
     setIsAnimating(true);
     
-    // Optimized rotation logic with proper cloning for state updates
-    setCurrentIndex(prevIndex => {
-      const totalCampaigns = allCampaignsRef.current.length;
-      const nextIndex = (prevIndex + 1) % (totalCampaigns - 2);
-      
-      // Check if we need to fetch more campaigns
-      // If we're more than 70% through our already fetched campaigns
-      if (hasMore && !isLoadingMore && nextIndex > totalCampaigns * 0.7) {
-        // Fetch more campaigns in background without blocking the rotation
-        fetchMoreCampaigns();
-      }
-      
-      // Create a fresh array with cloned objects for proper reactivity
-      const nextCampaigns = [];
-      for (let i = 0; i < 3; i++) {
-        const idx = (nextIndex + i) % totalCampaigns;
-        // Clone objects to ensure React detects the changes
-        nextCampaigns.push({...allCampaignsRef.current[idx]});
-      }
-      
-      setCampaigns(nextCampaigns);
-      return nextIndex;
-    });
+    // Fetch next set
+    await fetchFeaturedCampaigns(currentOffset);
     
-    // Extended animation cooldown with a safety buffer
+    // Reset animation flag
     setTimeout(() => {
       setIsAnimating(false);
-    }, 1200); // Match the auto-rotation cooldown for consistency
+    }, 800);
   };
 
   return (
@@ -374,7 +296,7 @@ const FeaturedCampaigns = () => {
                   <AnimatePresence mode="wait" initial={false}>
                     {campaigns.map((campaign, index) => (
                       <motion.div
-                        key={`card-${campaign._id}-${currentIndex}-${index}`}
+                        key={`card-${campaign._id}-${currentOffset}-${index}`}
                         className="carousel-card bg-white p-3 rounded-xl shadow-lg overflow-hidden"
                         style={{
                           position: 'absolute',

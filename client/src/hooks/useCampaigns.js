@@ -392,11 +392,10 @@ const useCampaigns = () => {
     }
   };
 
-  // Get rotating featured campaigns - special endpoint for efficient featured campaign rotation
+  // Get rotating featured campaigns - Dynamic rotation with offset-based fetching
   const getRotatingFeaturedCampaigns = async (options = {}) => {
     const { 
-      count = 3,
-      page = 1,
+      offset = 0, // Use offset instead of page for seamless rotation
       category = null,
       strategy = null
     } = options;
@@ -406,8 +405,7 @@ const useCampaigns = () => {
     try {
       // Build query parameters
       const params = new URLSearchParams();
-      params.append('count', count);
-      params.append('page', page);
+      params.append('offset', offset); // Offset-based rotation
       
       if (category && category !== 'All Campaigns') {
         params.append('category', category);
@@ -417,27 +415,33 @@ const useCampaigns = () => {
         params.append('strategy', strategy);
       }
       
+      console.log(`[API] Fetching featured campaigns with offset: ${offset}, category: ${category || 'All'}`);
+      
       // Use special endpoint for rotating featured campaigns
       const response = await axios.get(`${API_URL}/campaigns/featured/rotation?${params.toString()}`);
       
       if (response.data.success) {
+        console.log(`[API] Received ${response.data.campaigns.length} campaigns, strategy: ${response.data.strategy}`);
         return {
           campaigns: response.data.campaigns,
-          pagination: response.data.pagination,
           total: response.data.total,
-          strategy: response.data.strategy
+          offset: response.data.offset,
+          nextOffset: response.data.nextOffset,
+          strategy: response.data.strategy,
+          hasMore: response.data.hasMore,
+          isFallback: response.data.isFallback
         };
       } else {
         throw new Error(response.data.message || 'Failed to load featured campaigns');
       }
     } catch (error) {
-      console.error('Error loading rotating featured campaigns:', error);
+      console.error('[API] Error loading rotating featured campaigns:', error);
       toast({
         title: "Error loading featured campaigns",
         description: error.message || "Failed to load featured campaigns",
         variant: "destructive"
       });
-      return { campaigns: [], pagination: null, total: 0, strategy: null };
+      return { campaigns: [], total: 0, offset: 0, nextOffset: 0, strategy: null, hasMore: false, isFallback: false };
     } finally {
       setLoading(false);
     }
