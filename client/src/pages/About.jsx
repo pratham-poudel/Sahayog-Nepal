@@ -112,7 +112,7 @@ const About = () => {
                 <div className="relative w-full max-w-md mx-auto">
                   <div className="relative aspect-[3/4] bg-white rounded-2xl p-4 shadow-2xl">
                     <img 
-                      src="https://kettocdn.gumlet.io/media/banner/0/95/image/bc5ae443b8da492ff0c97082e2981ada078e385d.jpg?w=auto&dpr=1.3" 
+                      src="https://images.unsplash.com/photo-1497486751825-1233686d5d80?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&h=800&q=80" 
                       alt="Nepal community" 
                       className="w-full h-full object-cover rounded-xl"
                     />
@@ -442,7 +442,7 @@ const About = () => {
                 </div>
                 <div className="hidden md:block h-full">
                   <img 
-                    src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3" 
+                    src="https://images.unsplash.com/photo-1674515489647-fd8f76b86f65?q=80&w=2080&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" 
                     alt="Community support" 
                     className="h-full w-full object-cover"
                   />

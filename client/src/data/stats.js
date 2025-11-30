@@ -64,11 +64,11 @@ export const faqItems = [
   },
   {
     question: "What fees does Sahayog Nepal charge?",
-    answer: "Sahayog Nepal takes a 5% platform fee from successfully funded campaigns to cover operational costs. Payment processors may charge additional fees (typically 2-3%). We're committed to keeping fees low to maximize the impact of donations."
+    answer: "Sahayog Nepal takes no platform fee from any funded campaigns to cover operational costs until you intend to. Payment processors may charge additional fees (typically 2-3%). We're committed to keeping fees low to maximize the impact of donations."
   },
   {
     question: "When do campaign creators receive the funds?",
-    answer: "Campaign creators receive funds after their campaign deadline passes and verification is complete. This typically happens within 5-7 business days. For urgent campaigns, we offer an expedited verification process."
+    answer: "Campaign creators receive funds only after their bank account has been verified. Before a campaign ends, early withdrawals are allowed only if the campaign balance reaches at least Rs 10,000 and the bank account is verified. When a campaign ends, creators can withdraw any amount (including sums below Rs 10,000) once bank verification is complete. Withdrawals are typically processed within 5–7 business days; expedited verification is available for urgent cases."
   },
   {
     question: "Can I create a campaign on behalf of someone else?",
