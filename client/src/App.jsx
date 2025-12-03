@@ -12,6 +12,9 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { StatsProvider } from "./contexts/StatsContext";
 
+// DevTools Protection
+// import { useDevToolsProtection } from "./hooks/useDevToolsProtection.jsx";
+
 // Layout components
 import Header from "./components/layout/Header";
 import Footer from "./components/layout/Footer";
@@ -62,6 +65,18 @@ function AppContent() {
     return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
   });
 
+  // // DevTools Protection - blocks UI and API requests when DevTools detected
+  // const { blockUI } = useDevToolsProtection({
+  //   autoBlock: true,
+  //   blockUI: true,
+  //   showWarning: true,
+  //   onDetect: (isOpen) => {
+  //     if (isOpen) {
+  //       console.clear();
+  //     }
+  //   }
+  // });
+
   // Refresh auth on app start
   useEffect(() => {
     refreshAuth();
@@ -84,6 +99,50 @@ function AppContent() {
     };
   }, []);
 
+  // // Additional security measures - disable DevTools shortcuts
+  // useEffect(() => {
+  //   const handleKeyDown = (e) => {
+  //     // F12
+  //     if (e.keyCode === 123) {
+  //       e.preventDefault();
+  //       return false;
+  //     }
+  //     // Ctrl+Shift+I (DevTools)
+  //     if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+  //       e.preventDefault();
+  //       return false;
+  //     }
+  //     // Ctrl+Shift+J (Console)
+  //     if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+  //       e.preventDefault();
+  //       return false;
+  //     }
+  //     // Ctrl+Shift+C (Inspect)
+  //     if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+  //       e.preventDefault();
+  //       return false;
+  //     }
+  //     // Ctrl+U (View Source)
+  //     if (e.ctrlKey && e.keyCode === 85) {
+  //       e.preventDefault();
+  //       return false;
+  //     }
+  //   };
+
+  //   const handleContextMenu = (e) => {
+  //     e.preventDefault();
+  //     return false;
+  //   };
+
+  //   document.addEventListener('keydown', handleKeyDown);
+  //   document.addEventListener('contextmenu', handleContextMenu);
+
+  //   return () => {
+  //     document.removeEventListener('keydown', handleKeyDown);
+  //     document.removeEventListener('contextmenu', handleContextMenu);
+  //   };
+  // }, []);
+
   // Scroll to top on route change
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -91,6 +150,33 @@ function AppContent() {
 
   // Check if current route is an admin route
   const isAdminRoute = location.startsWith('/admin') || location.startsWith('/helloadmin') || location.startsWith('/employee');
+
+  // // Block UI if DevTools detected
+  // if (blockUI) {
+  //   return (
+  //     <div className="fixed inset-0 bg-black text-white flex items-center justify-center z-[99999]">
+  //       <div className="text-center max-w-md p-8">
+  //         <div className="text-6xl mb-6 animate-pulse">⚠️</div>
+  //         <h1 className="text-3xl font-bold mb-4 bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent">
+  //           Security Warning
+  //         </h1>
+  //         <div className="space-y-3 mb-6">
+  //           <p className="text-lg font-medium">Developer Tools Detected</p>
+  //           <p className="text-sm text-gray-400">
+  //             For security reasons, this application cannot be used with developer tools open.
+  //           </p>
+  //         </div>
+  //         <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4 space-y-2">
+  //           <p className="text-xs text-red-400">🔒 API Access: Blocked</p>
+  //           <p className="text-xs text-red-400">🗑️ Session Data: Cleared</p>
+  //         </div>
+  //         <p className="mt-6 text-xs text-gray-500">
+  //           Please close developer tools and refresh the page to continue.
+  //         </p>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="flex flex-col min-h-screen">

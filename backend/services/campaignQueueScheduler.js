@@ -38,19 +38,29 @@ class CampaignQueueScheduler {
   async scheduleDailyReports() {
     console.log('[Campaign Queue Scheduler] Setting up daily report scheduler...');
 
+    // Track the last date reports were sent to avoid duplicates
+    let lastReportDate = null;
+
     const scheduleReports = async () => {
       try {
         const now = new Date();
         const nepalTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kathmandu' }));
         const hour = nepalTime.getHours();
+        const currentDate = nepalTime.toISOString().split('T')[0]; // YYYY-MM-DD format
 
-        // Only run at 6 PM Nepal Time (18:00)
-        if (hour !== 18) {
-          console.log(`[Campaign Queue Scheduler] Not time for daily reports yet (current hour: ${hour})`);
+        // Check if reports have already been sent today
+        if (lastReportDate === currentDate) {
+          return; // Already sent reports today
+        }
+
+        // Only run at or after 6 PM Nepal Time (18:00 to 23:59)
+        if (hour < 18) {
+          console.log(`[Campaign Queue Scheduler] Not time for daily reports yet (current hour: ${hour}, need 18+)`);
           return;
         }
 
         console.log('[Campaign Queue Scheduler] Running daily report scheduler...');
+        console.log(`[Campaign Queue Scheduler] Nepal Time: ${nepalTime.toISOString()}, Hour: ${hour}`);
 
         // Get all active campaigns
         const activeCampaigns = await Campaign.find({
@@ -59,6 +69,12 @@ class CampaignQueueScheduler {
         }).select('_id title');
 
         console.log(`[Campaign Queue Scheduler] Found ${activeCampaigns.length} active campaigns for daily reports`);
+
+        if (activeCampaigns.length === 0) {
+          console.log('[Campaign Queue Scheduler] No active campaigns found, skipping daily reports');
+          lastReportDate = currentDate; // Mark as sent even if no campaigns
+          return;
+        }
 
         // Add jobs to queue with staggered delays to respect rate limits
         for (let i = 0; i < activeCampaigns.length; i++) {
@@ -70,24 +86,26 @@ class CampaignQueueScheduler {
             { campaignId: campaign._id },
             {
               delay,
-              jobId: `daily-report-${campaign._id}-${now.toISOString().split('T')[0]}`, // Unique job ID per day
+              jobId: `daily-report-${campaign._id}-${currentDate}`, // Unique job ID per day
               removeOnComplete: 100,
               removeOnFail: 50
             }
           );
         }
 
-        console.log(`[Campaign Queue Scheduler] Scheduled ${activeCampaigns.length} daily report jobs`);
+        console.log(`[Campaign Queue Scheduler] ✅ Scheduled ${activeCampaigns.length} daily report jobs for ${currentDate}`);
+        lastReportDate = currentDate; // Mark reports as sent for today
       } catch (error) {
-        console.error('[Campaign Queue Scheduler] Error scheduling daily reports:', error);
+        console.error('[Campaign Queue Scheduler] ❌ Error scheduling daily reports:', error);
       }
     };
 
-    // Run immediately on startup (if it's 6 PM)
+    // Run immediately on startup
     await scheduleReports();
 
-    // Then run every hour to check if it's time
-    this.schedulerIntervals.dailyReports = setInterval(scheduleReports, 60 * 60 * 1000); // Every hour
+    // Then run every 30 minutes to check if it's time (more frequent checks)
+    this.schedulerIntervals.dailyReports = setInterval(scheduleReports, 30 * 60 * 1000); // Every 30 minutes
+    console.log('[Campaign Queue Scheduler] ✅ Daily report scheduler set up (checks every 30 minutes, triggers at 6 PM Nepal Time)');
   }
 
   /**

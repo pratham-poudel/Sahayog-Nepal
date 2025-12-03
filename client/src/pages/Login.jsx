@@ -292,11 +292,13 @@ const Login = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 relative flex items-center justify-center p-4 overflow-hidden">
       {/* Peaceful 3D Illustration Background */}
-      <div className="absolute inset-0 z-0">        {/* Main Background Elements */}
+      <div className="absolute inset-0 z-0">
+        {/* Main Background Elements */}
         <div className="absolute inset-0 opacity-10 dark:opacity-20 bg-gradient-to-br from-blue-100 via-indigo-50 to-white dark:from-indigo-900 dark:via-blue-900 dark:to-gray-900" />
         
         {/* Animated 3D Elements */}
-        <div className="absolute inset-0">          {/* Peaceful Mountains */}
+        <div className="absolute inset-0">
+          {/* Peaceful Mountains */}
           <svg className="absolute bottom-0 left-0 w-full h-2/3 opacity-30 dark:opacity-25" viewBox="0 0 1440 320" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
             <path fill="#8B2325" fillOpacity="0.3" d="M0,128L48,122.7C96,117,192,107,288,122.7C384,139,480,181,576,197.3C672,213,768,203,864,170.7C960,139,1056,85,1152,74.7C1248,64,1344,96,1392,112L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z" />
             <path fill="#8B2325" fillOpacity="0.15" d="M0,192L48,181.3C96,171,192,149,288,154.7C384,160,480,192,576,202.7C672,213,768,203,864,181.3C960,160,1056,128,1152,112C1248,96,1344,96,1392,96L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z" />
@@ -342,7 +344,9 @@ const Login = () => {
               <svg className="w-48 h-48 text-[#D5A021] opacity-15 dark:opacity-25 dark:text-[#f0be4b]" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 2L12 22M12 12L20 4M12 12L4 4" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
               </svg>
-            </motion.div>            {/* Abstract Shapes */}
+            </motion.div>
+            
+            {/* Abstract Shapes */}
             <motion.div
               className="absolute top-1/3 right-1/6 w-64 h-64 bg-[#8B2325] rounded-full mix-blend-multiply filter blur-3xl opacity-10 dark:opacity-20"
               animate={{
@@ -356,7 +360,7 @@ const Login = () => {
                 repeatType: "reverse"
               }}
             />
-              <motion.div
+            <motion.div
               className="absolute bottom-1/4 left-1/3 w-72 h-72 bg-[#D5A021] rounded-full mix-blend-multiply filter blur-3xl opacity-10 dark:opacity-20 dark:bg-[#f0be4b]"
               animate={{
                 scale: [1, 1.1, 1],
@@ -370,7 +374,9 @@ const Login = () => {
                 delay: 1
               }}
             />
-          </div>          {/* 3D Dots Grid Pattern */}
+          </div>
+          
+          {/* 3D Dots Grid Pattern */}
           <div className="absolute inset-0 opacity-30 dark:opacity-25" 
                style={{
                  backgroundImage: 'radial-gradient(#8B2325 1px, transparent 1px), radial-gradient(#D5A021 1px, transparent 1px)',
@@ -380,202 +386,182 @@ const Login = () => {
         </div>
       </div>
 
-      <div className="relative w-full max-w-md z-10">
+      {/* Main Container with Two Column Layout */}
+      <div className="relative w-full max-w-6xl z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
+          className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl shadow-2xl overflow-hidden border border-white/20 dark:border-gray-700/30"
         >
-          <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-2xl shadow-xl p-8 border border-white/20 dark:border-gray-700/30">
-            <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-gradient-to-br from-[#8B2325] to-[#a32729] mb-6">
-                <span className="text-white font-bold text-2xl">S</span>
+          <div className="grid lg:grid-cols-2 gap-0">
+            {/* Left Side - Branding & Info */}
+            <div className="hidden lg:flex flex-col justify-center p-12 xl:p-16 bg-gradient-to-br from-[#8B2325] to-[#a32729] dark:from-[#9e292b] dark:to-[#b52d2f] relative overflow-hidden">
+              {/* Decorative Elements */}
+              <div className="absolute inset-0 opacity-10">
+                <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full filter blur-3xl transform translate-x-1/2 -translate-y-1/2" />
+                <div className="absolute bottom-0 left-0 w-96 h-96 bg-[#D5A021] rounded-full filter blur-3xl transform -translate-x-1/2 translate-y-1/2" />
               </div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                <span className="bg-gradient-to-r from-[#8B2325] to-[#D5A021] dark:from-[#e05759] dark:to-[#f0be4b] bg-clip-text text-transparent">
-                  SahayogNepal
-                </span>
-              </h1>
-              <p className="text-gray-500 dark:text-gray-400 mt-2">
-                Secure access to your account
-              </p>            </div>
-
-            {/* Login Mode Toggle */}
-            <div className="mb-6">
-              <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
-                <button
-                  type="button"
-                  onClick={() => switchLoginMode('password')}
-                  className={`flex-1 flex items-center justify-center py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
-                    loginMode === 'password'
-                      ? 'bg-white dark:bg-gray-700 text-[#8B2325] dark:text-[#e05759] shadow-sm'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
-                  }`}
-                >
-                  <FiLock className="mr-2" />
-                  Password
-                </button>
-                <button
-                  type="button"
-                  onClick={() => switchLoginMode('otp')}
-                  className={`flex-1 flex items-center justify-center py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
-                    loginMode === 'otp'
-                      ? 'bg-white dark:bg-gray-700 text-[#8B2325] dark:text-[#e05759] shadow-sm'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
-                  }`}
-                >
-                  <FiSmartphone className="mr-2" />
-                  OTP
-                </button>
-              </div>
-            </div>
-
-            {/* Shared Turnstile Widget for both login modes */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Security Verification
-              </label>
-              <TurnstileWidget
-                key={`turnstile-${loginMode}-${otpStep}`}
-                ref={turnstileRef}
-                siteKey={TURNSTILE_CONFIG.siteKey}
-                onVerify={handleTurnstileVerify}
-                onExpire={handleTurnstileExpire}
-                onError={handleTurnstileError}
-                theme="light"
-                autoReset={true}
-                resetDelay={3000}
-              />
-              {!turnstileToken && (
-                <p className="mt-2 text-sm text-amber-600 dark:text-amber-400">
-                  Please complete the security verification before continuing
+              
+              <div className="relative z-10">
+                <div className="inline-flex items-center justify-center h-20 w-20 rounded-3xl bg-white/20 backdrop-blur-sm mb-8 shadow-lg">
+                  <span className="text-white font-bold text-4xl">S</span>
+                </div>
+                
+                <h1 className="text-5xl xl:text-6xl font-bold text-white mb-6 leading-tight">
+                  Welcome to<br />
+                  <span className="text-[#D5A021]">SahayogNepal</span>
+                </h1>
+                
+                <p className="text-white/90 text-lg xl:text-xl mb-8 leading-relaxed">
+                  Empowering communities through secure and transparent crowdfunding. 
+                  Join thousands who are making a difference.
                 </p>
-              )}
-              {turnstileToken && (
-                <p className="mt-2 text-sm text-green-600 dark:text-green-400 flex items-center">
-                  <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                  Security verification completed
-                </p>
-              )}
-            </div>
-
-            {/* Password Login Form */}
-            {loginMode === 'password' && (
-              <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Email or Phone Number
-                  </label>
-                  <div className="relative">
-                    <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
-                    <input
-                      id="identifier"
-                      type="text"
-                      autoComplete="username"
-                      className={`${formInputClasses} ${errors.identifier ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
-                      placeholder="you@example.com or 9812345678"
-                      {...register("identifier", { 
-                        required: "Email or phone number is required",
-                        validate: (value) => {
-                          const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-                          const isPhone = /^[0-9]{10}$/.test(value);
-                          return isEmail || isPhone || "Please enter a valid email or 10-digit phone number";
-                        }
-                      })}
-                    />
-                  </div>
-                  {errors.identifier && (
-                    <p className="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center">
-                      <FiArrowRight className="mr-1" /> {errors.identifier.message}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Password
-                  </label>
-                  <div className="relative">
-                    <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
-                    <input
-                      id="password"
-                      type="password"
-                      autoComplete="current-password"
-                      className={`${formInputClasses} ${errors.password ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
-                      placeholder="••••••••"
-                      {...register("password", { 
-                        required: "Password is required",
-                        minLength: {
-                          value: 6,
-                          message: "Minimum 6 characters required"
-                        }
-                      })}
-                    />
-                  </div>
-                  {errors.password && (
-                    <p className="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center">
-                      <FiArrowRight className="mr-1" /> {errors.password.message}
-                    </p>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 text-[#8B2325] focus:ring-[#8B2325] border-gray-300 dark:border-gray-600 rounded"
-                    />
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Remember me</span>
-                  </label>
-                  <button type="button" className="text-sm text-[#8B2325] dark:text-[#e05759] hover:underline">
-                    Forgot password?
-                  </button>
-                </div>
-
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 flex items-center justify-center ${
-                    isLoading || !turnstileToken 
-                      ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed' 
-                      : 'bg-gradient-to-br from-[#8B2325] to-[#a32729] hover:shadow-lg'
-                  } text-white`}
-                  disabled={isLoading || !turnstileToken}
-                >
-                  {isLoading ? (
-                    <span className="animate-pulse">Signing in...</span>
-                  ) : !turnstileToken ? (
-                    <span>Complete verification to continue</span>
-                  ) : (
-                    <>
-                      <span>Sign in</span>
-                      <FiArrowRight className="ml-2" />
-                    </>
-                  )}
-                </motion.button>
-              </form>
-            )}
-
-            {/* OTP Login Form */}
-            {loginMode === 'otp' && (
-              <>
-                {otpStep === 1 && (
-                  <form className="space-y-5" onSubmit={handleOtpIdentifierSubmit(onOtpIdentifierSubmit)}>
+                
+                <div className="space-y-4">
+                  <div className="flex items-start space-x-4">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <h3 className="text-white font-semibold text-lg">Secure & Trusted</h3>
+                      <p className="text-white/80">Bank-level security for all transactions</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start space-x-4">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-white font-semibold text-lg">Lightning Fast</h3>
+                      <p className="text-white/80">Quick setup and instant verification</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start space-x-4">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-white font-semibold text-lg">Community Driven</h3>
+                      <p className="text-white/80">Join a network of compassionate donors</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Side - Login Form */}
+            <div className="p-8 lg:p-12 xl:p-16">
+              <div className="max-w-md mx-auto">
+                {/* Mobile Logo */}
+                <div className="lg:hidden text-center mb-8">
+                  <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-gradient-to-br from-[#8B2325] to-[#a32729] mb-4">
+                    <span className="text-white font-bold text-2xl">S</span>
+                  </div>
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                    <span className="bg-gradient-to-r from-[#8B2325] to-[#D5A021] dark:from-[#e05759] dark:to-[#f0be4b] bg-clip-text text-transparent">
+                      SahayogNepal
+                    </span>
+                  </h1>
+                </div>
+
+                <div className="mb-8">
+                  <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                    Sign in
+                  </h2>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Access your account securely
+                  </p>
+                </div>
+
+                {/* Login Mode Toggle */}
+                <div className="mb-6">
+                  <div className="flex bg-gray-100 dark:bg-gray-800 rounded-xl p-1">
+                    <button
+                      type="button"
+                      onClick={() => switchLoginMode('password')}
+                      className={`flex-1 flex items-center justify-center py-3 px-4 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        loginMode === 'password'
+                          ? 'bg-white dark:bg-gray-700 text-[#8B2325] dark:text-[#e05759] shadow-md'
+                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                      }`}
+                    >
+                      <FiLock className="mr-2" />
+                      Password
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => switchLoginMode('otp')}
+                      className={`flex-1 flex items-center justify-center py-3 px-4 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        loginMode === 'otp'
+                          ? 'bg-white dark:bg-gray-700 text-[#8B2325] dark:text-[#e05759] shadow-md'
+                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                      }`}
+                    >
+                      <FiSmartphone className="mr-2" />
+                      OTP
+                    </button>
+                  </div>
+                </div>
+
+                {/* Shared Turnstile Widget for both login modes */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    Security Verification
+                  </label>
+                  <TurnstileWidget
+                    key={`turnstile-${loginMode}-${otpStep}`}
+                    ref={turnstileRef}
+                    siteKey={TURNSTILE_CONFIG.siteKey}
+                    onVerify={handleTurnstileVerify}
+                    onExpire={handleTurnstileExpire}
+                    onError={handleTurnstileError}
+                    theme="light"
+                    autoReset={true}
+                    resetDelay={3000}
+                  />
+                  {!turnstileToken && (
+                    <p className="mt-3 text-sm text-amber-600 dark:text-amber-400 flex items-center">
+                      <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                      Please complete the security verification
+                    </p>
+                  )}
+                  {turnstileToken && (
+                    <p className="mt-3 text-sm text-green-600 dark:text-green-400 flex items-center">
+                      <svg className="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                      Verification completed successfully
+                    </p>
+                  )}
+                </div>
+
+                {/* Password Login Form */}
+                {loginMode === 'password' && (
+                  <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                         Email or Phone Number
                       </label>
                       <div className="relative">
-                        <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+                        <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-lg" />
                         <input
-                          id="otp-identifier"
+                          id="identifier"
                           type="text"
                           autoComplete="username"
-                          className={`${formInputClasses} ${otpIdentifierErrors.identifier ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
+                          className={`${formInputClasses} ${errors.identifier ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
                           placeholder="you@example.com or 9812345678"
-                          {...registerOtpIdentifier("identifier", { 
+                          {...register("identifier", { 
                             required: "Email or phone number is required",
                             validate: (value) => {
                               const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
@@ -585,30 +571,71 @@ const Login = () => {
                           })}
                         />
                       </div>
-                      {otpIdentifierErrors.identifier && (
+                      {errors.identifier && (
                         <p className="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center">
-                          <FiArrowRight className="mr-1" /> {otpIdentifierErrors.identifier.message}
+                          <FiArrowRight className="mr-1.5" /> {errors.identifier.message}
                         </p>
                       )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                        Password
+                      </label>
+                      <div className="relative">
+                        <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-lg" />
+                        <input
+                          id="password"
+                          type="password"
+                          autoComplete="current-password"
+                          className={`${formInputClasses} ${errors.password ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
+                          placeholder="••••••••"
+                          {...register("password", { 
+                            required: "Password is required",
+                            minLength: {
+                              value: 6,
+                              message: "Minimum 6 characters required"
+                            }
+                          })}
+                        />
+                      </div>
+                      {errors.password && (
+                        <p className="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center">
+                          <FiArrowRight className="mr-1.5" /> {errors.password.message}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <label className="flex items-center space-x-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 text-[#8B2325] focus:ring-[#8B2325] border-gray-300 dark:border-gray-600 rounded cursor-pointer"
+                        />
+                        <span className="text-sm text-gray-600 dark:text-gray-400">Remember me</span>
+                      </label>
+                      <button type="button" className="text-sm text-[#8B2325] dark:text-[#e05759] hover:underline font-medium">
+                        Forgot password?
+                      </button>
                     </div>
 
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 flex items-center justify-center ${
+                      className={`w-full py-3.5 px-4 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center text-base ${
                         isLoading || !turnstileToken 
                           ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed' 
-                          : 'bg-gradient-to-br from-[#8B2325] to-[#a32729] hover:shadow-lg'
-                      } text-white`}
+                          : 'bg-gradient-to-br from-[#8B2325] to-[#a32729] hover:shadow-xl hover:from-[#9e292b] hover:to-[#b52d2f]'
+                      } text-white shadow-lg`}
                       disabled={isLoading || !turnstileToken}
                     >
                       {isLoading ? (
-                        <span className="animate-pulse">Sending OTP...</span>
+                        <span className="animate-pulse">Signing in...</span>
                       ) : !turnstileToken ? (
                         <span>Complete verification to continue</span>
                       ) : (
                         <>
-                          <span>Send OTP</span>
+                          <span>Sign in</span>
                           <FiArrowRight className="ml-2" />
                         </>
                       )}
@@ -616,118 +643,185 @@ const Login = () => {
                   </form>
                 )}
 
-                {otpStep === 2 && (
-                  <form className="space-y-5" onSubmit={handleOtpSubmit(onOtpSubmit)}>
-                    <div className="text-center mb-4">
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        We've sent a verification code to your {otpIdentifierType}
-                      </p>
-                      <p className="font-medium text-gray-900 dark:text-white">
-                        {otpIdentifier}
-                      </p>
-                    </div>
+                {/* OTP Login Form */}
+                {loginMode === 'otp' && (
+                  <>
+                    {otpStep === 1 && (
+                      <form className="space-y-6" onSubmit={handleOtpIdentifierSubmit(onOtpIdentifierSubmit)}>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                            Email or Phone Number
+                          </label>
+                          <div className="relative">
+                            <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-lg" />
+                            <input
+                              id="otp-identifier"
+                              type="text"
+                              autoComplete="username"
+                              className={`${formInputClasses} ${otpIdentifierErrors.identifier ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
+                              placeholder="you@example.com or 9812345678"
+                              {...registerOtpIdentifier("identifier", { 
+                                required: "Email or phone number is required",
+                                validate: (value) => {
+                                  const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+                                  const isPhone = /^[0-9]{10}$/.test(value);
+                                  return isEmail || isPhone || "Please enter a valid email or 10-digit phone number";
+                                }
+                              })}
+                            />
+                          </div>
+                          {otpIdentifierErrors.identifier && (
+                            <p className="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center">
+                              <FiArrowRight className="mr-1.5" /> {otpIdentifierErrors.identifier.message}
+                            </p>
+                          )}
+                        </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Verification Code
-                      </label>
-                      <div className="relative">
-                        <FiSmartphone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />                        <input
-                          id="otp"
-                          type="text"
-                          maxLength="6"
-                          className={`${formInputClasses} ${otpErrors.otp ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} text-center text-lg tracking-widest`}
-                          placeholder="123456"
-                          {...registerOtp("otp", { 
-                            required: "OTP is required",
-                            pattern: {
-                              value: /^\d{6}$/,
-                              message: "OTP must be 6 digits"
-                            }
-                          })}
-                        />
-                      </div>
-                      {otpErrors.otp && (
-                        <p className="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center">
-                          <FiArrowRight className="mr-1" /> {otpErrors.otp.message}
-                        </p>
-                      )}
-                    </div>                    <div className="flex space-x-3">
-                      <motion.button
-                        type="button"
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        className="flex-1 py-3 px-4 rounded-lg font-medium border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200"
-                        onClick={() => {
-                          setOtpStep(1);
-                        }}
-                      >
-                        Back
-                      </motion.button>
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all duration-200 flex items-center justify-center ${
-                          isLoading 
-                            ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed' 
-                            : 'bg-gradient-to-br from-[#8B2325] to-[#a32729] hover:shadow-lg'
-                        } text-white`}
-                        disabled={isLoading}
-                      >
-                        {isLoading ? (
-                          <span className="animate-pulse">Verifying...</span>
-                        ) : (
-                          <>
-                            <span>Verify & Login</span>
-                            <FiArrowRight className="ml-2" />
-                          </>
-                        )}
-                      </motion.button>
-                    </div>
-                  </form>
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          className={`w-full py-3.5 px-4 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center text-base ${
+                            isLoading || !turnstileToken 
+                              ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed' 
+                              : 'bg-gradient-to-br from-[#8B2325] to-[#a32729] hover:shadow-xl hover:from-[#9e292b] hover:to-[#b52d2f]'
+                          } text-white shadow-lg`}
+                          disabled={isLoading || !turnstileToken}
+                        >
+                          {isLoading ? (
+                            <span className="animate-pulse">Sending OTP...</span>
+                          ) : !turnstileToken ? (
+                            <span>Complete verification to continue</span>
+                          ) : (
+                            <>
+                              <span>Send OTP</span>
+                              <FiArrowRight className="ml-2" />
+                            </>
+                          )}
+                        </motion.button>
+                      </form>
+                    )}
+
+                    {otpStep === 2 && (
+                      <form className="space-y-6" onSubmit={handleOtpSubmit(onOtpSubmit)}>
+                        <div className="text-center mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                            We've sent a verification code to your {otpIdentifierType}
+                          </p>
+                          <p className="font-semibold text-gray-900 dark:text-white text-base">
+                            {otpIdentifier}
+                          </p>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                            Verification Code
+                          </label>
+                          <div className="relative">
+                            <FiSmartphone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-lg" />
+                            <input
+                              id="otp"
+                              type="text"
+                              maxLength="6"
+                              className={`${formInputClasses} ${otpErrors.otp ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} text-center text-xl tracking-widest font-semibold`}
+                              placeholder="• • • • • •"
+                              {...registerOtp("otp", { 
+                                required: "OTP is required",
+                                pattern: {
+                                  value: /^\d{6}$/,
+                                  message: "OTP must be 6 digits"
+                                }
+                              })}
+                            />
+                          </div>
+                          {otpErrors.otp && (
+                            <p className="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center">
+                              <FiArrowRight className="mr-1.5" /> {otpErrors.otp.message}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="flex space-x-4">
+                          <motion.button
+                            type="button"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            className="flex-1 py-3.5 px-4 rounded-xl font-semibold border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 shadow-sm hover:shadow-md"
+                            onClick={() => {
+                              setOtpStep(1);
+                            }}
+                          >
+                            Back
+                          </motion.button>
+                          <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            className={`flex-1 py-3.5 px-4 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center text-base ${
+                              isLoading 
+                                ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed' 
+                                : 'bg-gradient-to-br from-[#8B2325] to-[#a32729] hover:shadow-xl hover:from-[#9e292b] hover:to-[#b52d2f]'
+                            } text-white shadow-lg`}
+                            disabled={isLoading}
+                          >
+                            {isLoading ? (
+                              <span className="animate-pulse">Verifying...</span>
+                            ) : (
+                              <>
+                                <span>Verify & Login</span>
+                                <FiArrowRight className="ml-2" />
+                              </>
+                            )}
+                          </motion.button>
+                        </div>
+                      </form>
+                    )}
+                  </>
                 )}
-              </>
-            )}
 
-            <div className="mt-8 text-center text-sm text-gray-600 dark:text-gray-400">
-              Don't have an account?{' '}
-              <Link href="/signup" className="text-[#8B2325] dark:text-[#e05759] font-medium hover:underline">
-                Register now
-              </Link>
-            </div>
-
-            <div className="mt-8">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300 dark:border-gray-600/50" />
+                <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+                  <p className="text-center text-sm text-gray-600 dark:text-gray-400">
+                    Don't have an account?{' '}
+                    <Link href="/signup" className="text-[#8B2325] dark:text-[#e05759] font-semibold hover:underline">
+                      Register now
+                    </Link>
+                  </p>
                 </div>
-                <div className="relative flex justify-center">
-                  <span className="px-3 bg-white/70 dark:bg-gray-800/70 text-sm text-gray-500 dark:text-gray-400">
-                    Or continue with
-                  </span>
+
+                <div className="mt-8">
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-gray-300 dark:border-gray-600" />
+                    </div>
+                    <div className="relative flex justify-center">
+                      <span className="px-4 bg-white dark:bg-gray-800 text-sm text-gray-500 dark:text-gray-400 font-medium">
+                        Or continue with
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 grid grid-cols-2 gap-4">
+                    <motion.button
+                      whileHover={{ y: -2 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="w-full flex items-center justify-center py-3 px-4 border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 shadow-sm hover:shadow-md"
+                    >
+                      <svg className="w-5 h-5 mr-2 text-red-500" viewBox="0 0 24 24">
+                        <path fill="currentColor" d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.033s2.701-6.033,6.033-6.033c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.545,6.477,2.545,12s4.476,10,10,10c5.523,0,10-4.477,10-10c0-0.67-0.069-1.325-0.201-1.957H12.545z"/>
+                      </svg>
+                      <span className="font-medium text-gray-700 dark:text-gray-300">Google</span>
+                    </motion.button>
+
+                    <motion.button
+                      whileHover={{ y: -2 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="w-full flex items-center justify-center py-3 px-4 border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 shadow-sm hover:shadow-md"
+                    >
+                      <svg className="w-5 h-5 mr-2 text-blue-600" viewBox="0 0 24 24">
+                        <path fill="currentColor" d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686,0.235 2.686,0.235v2.953H15.83c-1.491,0-1.956,0.925-1.956,1.874v2.25h3.328l-0.532,3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                      </svg>
+                      <span className="font-medium text-gray-700 dark:text-gray-300">Facebook</span>
+                    </motion.button>
+                  </div>
                 </div>
-              </div>
-
-              <div className="mt-6 grid grid-cols-2 gap-3">
-                <motion.button
-                  whileHover={{ y: -2 }}
-                  className="w-full flex items-center justify-center py-2.5 px-4 border rounded-lg bg-white/70 dark:bg-gray-700/70 hover:bg-gray-50/70 dark:hover:bg-gray-600/70 transition-colors"
-                >
-                  <svg className="w-5 h-5 mr-2 text-red-500" viewBox="0 0 24 24">
-                    <path fill="currentColor" d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.033s2.701-6.033,6.033-6.033c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.545,6.477,2.545,12s4.476,10,10,10c5.523,0,10-4.477,10-10c0-0.67-0.069-1.325-0.201-1.957H12.545z"/>
-                  </svg>
-                  <span>Google</span>
-                </motion.button>
-
-                <motion.button
-                  whileHover={{ y: -2 }}
-                  className="w-full flex items-center justify-center py-2.5 px-4 border rounded-lg bg-white/70 dark:bg-gray-700/70 hover:bg-gray-50/70 dark:hover:bg-gray-600/70 transition-colors"
-                >
-                  <svg className="w-5 h-5 mr-2 text-blue-600" viewBox="0 0 24 24">
-                    <path fill="currentColor" d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686,0.235 2.686,0.235v2.953H15.83c-1.491,0-1.956,0.925-1.956,1.874v2.25h3.328l-0.532,3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                  </svg>
-                  <span>Facebook</span>
-                </motion.button>
               </div>
             </div>
           </div>

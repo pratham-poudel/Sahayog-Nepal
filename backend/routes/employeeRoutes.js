@@ -3184,4 +3184,103 @@ router.post(
     }
 );
 
+// Trigger daily reports manually for testing/debugging
+router.post(
+    '/trigger-daily-reports',
+    employeeAuth,
+    restrictToDepartment(['Executive', 'IT', 'Analytics']),
+    async (req, res) => {
+        try {
+            const { campaignId } = req.body;
+            const dailyReportQueue = require('../queues/dailyReportQueue');
+            const Campaign = require('../models/Campaign');
+
+            // If specific campaign ID provided, trigger for that campaign only
+            if (campaignId) {
+                const campaign = await Campaign.findById(campaignId);
+                
+                if (!campaign) {
+                    return res.status(404).json({
+                        success: false,
+                        message: 'Campaign not found'
+                    });
+                }
+
+                if (campaign.status !== 'active') {
+                    return res.status(400).json({
+                        success: false,
+                        message: `Cannot send report for ${campaign.status} campaign. Only active campaigns receive daily reports.`
+                    });
+                }
+
+                // Add single job to queue
+                await dailyReportQueue.add(
+                    'manual-daily-report',
+                    { campaignId: campaign._id },
+                    {
+                        priority: 1,
+                        removeOnComplete: 50,
+                        removeOnFail: 20
+                    }
+                );
+
+                console.log(`[MANUAL TRIGGER] Daily report triggered for campaign ${campaign._id} by ${req.employee.designationNumber}`);
+
+                return res.json({
+                    success: true,
+                    message: `Daily report triggered for campaign: ${campaign.title}`,
+                    campaignId: campaign._id
+                });
+            }
+
+            // Otherwise, trigger for all active campaigns
+            const activeCampaigns = await Campaign.find({
+                status: 'active',
+                endDate: { $gt: new Date() }
+            }).select('_id title');
+
+            if (activeCampaigns.length === 0) {
+                return res.json({
+                    success: true,
+                    message: 'No active campaigns found',
+                    count: 0
+                });
+            }
+
+            // Add jobs to queue with staggered delays
+            for (let i = 0; i < activeCampaigns.length; i++) {
+                const campaign = activeCampaigns[i];
+                const delay = i * 2000; // 2 second delay between each
+
+                await dailyReportQueue.add(
+                    'manual-bulk-daily-report',
+                    { campaignId: campaign._id },
+                    {
+                        delay,
+                        priority: 2,
+                        removeOnComplete: 50,
+                        removeOnFail: 20
+                    }
+                );
+            }
+
+            console.log(`[MANUAL TRIGGER] Daily reports triggered for ${activeCampaigns.length} campaigns by ${req.employee.designationNumber}`);
+
+            res.json({
+                success: true,
+                message: `Daily reports triggered for ${activeCampaigns.length} active campaigns`,
+                count: activeCampaigns.length,
+                campaigns: activeCampaigns.map(c => ({ id: c._id, title: c.title }))
+            });
+
+        } catch (error) {
+            console.error('Error triggering daily reports:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to trigger daily reports'
+            });
+        }
+    }
+);
+
 module.exports = router;

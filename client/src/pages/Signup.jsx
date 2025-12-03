@@ -156,7 +156,7 @@ const Signup = () => {
     setStep(4); // Move to OTP step
   };
   // Update form input fields for dark mode visibility with enhanced styling
-  const formInputClasses = `appearance-none block w-full px-3 py-2 border rounded-lg shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#8B2325] focus:border-[#8B2325] sm:text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800/70 dark:border-gray-700 backdrop-blur-sm transition-all duration-200`;
+  const formInputClasses = `appearance-none block w-full px-4 py-3 border rounded-xl shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#8B2325] focus:border-[#8B2325] text-base text-gray-900 dark:text-white bg-white dark:bg-gray-800/70 dark:border-gray-700 backdrop-blur-sm transition-all duration-200`;
   // Define a function to reset Turnstile in case of errors
   const resetTurnstile = () => {
     // The TurnstileWidget component will handle this internally
@@ -377,10 +377,10 @@ const Signup = () => {
   const renderIdentifierForm = () => (
     <form className="space-y-6" onSubmit={handleIdentifierSubmit(onIdentifierSubmit)}>
       <div>
-        <label htmlFor="identifier" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label htmlFor="identifier" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
           Email or Phone Number
         </label>
-        <div className="mt-1">
+        <div>
           <input
             id="identifier"
             type="text"
@@ -404,11 +404,11 @@ const Signup = () => {
             })}
           />
           {identifierErrors.identifier && (
-            <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+            <p className="mt-2 text-sm text-red-600 dark:text-red-400">
               {identifierErrors.identifier.message}
             </p>
           )}
-          <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+          <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
             Enter your email address or phone number to receive a verification code
           </p>
         </div>
@@ -418,7 +418,7 @@ const Signup = () => {
           type="submit"
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          className="w-full flex justify-center py-3 px-4 bg-gradient-to-br from-[#8B2325] to-[#a32729] text-white rounded-lg font-medium hover:shadow-lg transition-all duration-200"
+          className="w-full flex justify-center py-3.5 px-4 bg-gradient-to-br from-[#8B2325] to-[#a32729] text-white rounded-xl font-semibold hover:shadow-xl hover:from-[#9e292b] hover:to-[#b52d2f] transition-all duration-200 shadow-lg"
           disabled={isLoading}
         >
           {isLoading ? (
@@ -1034,19 +1034,19 @@ const Signup = () => {
   const renderProgressSteps = () => (
     <div className="flex items-center justify-center mb-8">
       <div className="flex items-center">
-        <div className={`flex items-center justify-center h-8 w-8 rounded-full ${step >= 1 ? 'bg-[#8B2325] text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>
+        <div className={`flex items-center justify-center h-10 w-10 rounded-full font-semibold transition-all duration-200 ${step >= 1 ? 'bg-[#8B2325] text-white shadow-md' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>
           1
         </div>
-        <div className={`w-10 h-1 ${step >= 2 ? 'bg-[#8B2325]' : 'bg-gray-200 dark:bg-gray-700'}`}></div>
-        <div className={`flex items-center justify-center h-8 w-8 rounded-full ${step >= 2 ? 'bg-[#8B2325] text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>
+        <div className={`w-12 h-1.5 rounded-full transition-all duration-200 ${step >= 2 ? 'bg-[#8B2325]' : 'bg-gray-200 dark:bg-gray-700'}`}></div>
+        <div className={`flex items-center justify-center h-10 w-10 rounded-full font-semibold transition-all duration-200 ${step >= 2 ? 'bg-[#8B2325] text-white shadow-md' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>
           2
         </div>
-        <div className={`w-10 h-1 ${step >= 3 ? 'bg-[#8B2325]' : 'bg-gray-200 dark:bg-gray-700'}`}></div>
-        <div className={`flex items-center justify-center h-8 w-8 rounded-full ${step >= 3 ? 'bg-[#8B2325] text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>
+        <div className={`w-12 h-1.5 rounded-full transition-all duration-200 ${step >= 3 ? 'bg-[#8B2325]' : 'bg-gray-200 dark:bg-gray-700'}`}></div>
+        <div className={`flex items-center justify-center h-10 w-10 rounded-full font-semibold transition-all duration-200 ${step >= 3 ? 'bg-[#8B2325] text-white shadow-md' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>
           3
         </div>
-        <div className={`w-10 h-1 ${step >= 4 ? 'bg-[#8B2325]' : 'bg-gray-200 dark:bg-gray-700'}`}></div>
-        <div className={`flex items-center justify-center h-8 w-8 rounded-full ${step >= 4 ? 'bg-[#8B2325] text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>
+        <div className={`w-12 h-1.5 rounded-full transition-all duration-200 ${step >= 4 ? 'bg-[#8B2325]' : 'bg-gray-200 dark:bg-gray-700'}`}></div>
+        <div className={`flex items-center justify-center h-10 w-10 rounded-full font-semibold transition-all duration-200 ${step >= 4 ? 'bg-[#8B2325] text-white shadow-md' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>
           4
         </div>
       </div>
@@ -1064,7 +1064,7 @@ const Signup = () => {
     }
   };
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 relative flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 overflow-hidden">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 relative flex items-center justify-center p-4 overflow-hidden">
       {/* Peaceful 3D Illustration Background */}
       <div className="absolute inset-0 z-0">
         {/* Main Background Elements */}
@@ -1118,7 +1118,7 @@ const Signup = () => {
               <svg className="w-48 h-48 text-[#D5A021] opacity-15 dark:opacity-25 dark:text-[#f0be4b]" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 2L12 22M12 12L20 4M12 12L4 4" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
               </svg>
-            </motion.div>            
+            </motion.div>
             
             {/* Abstract Shapes */}
             <motion.div
@@ -1134,7 +1134,6 @@ const Signup = () => {
                 repeatType: "reverse"
               }}
             />
-            
             <motion.div
               className="absolute bottom-1/4 left-1/3 w-72 h-72 bg-[#D5A021] rounded-full mix-blend-multiply filter blur-3xl opacity-10 dark:opacity-20 dark:bg-[#f0be4b]"
               animate={{
@@ -1160,44 +1159,124 @@ const Signup = () => {
                }} />
         </div>
       </div>
-      
-      <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
-        <div className="text-center">
-          <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-[#8B2325] mx-auto">
-            <span className="text-white font-bold text-xl">S</span>
-          </div>
-          <h2 className="mt-4 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
-            <span className="text-[#8B2325] dark:text-[#e05759]">Sahayog</span><span className="text-[#D5A021] dark:text-[#f0be4b]">Nepal</span>
-          </h2>
-          <h2 className="mt-2 text-center text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {getStepTitle()}
-          </h2>
-          {step === 1 && (
-            <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
-              Already have an account?{' '}
-              <Link href="/login">
-                <div className="inline font-medium text-[#8B2325] dark:text-[#e05759] hover:text-[#a32729]">
-                  Sign in
-                </div>
-              </Link>
-            </p>
-          )}
-        </div>
 
-        {renderProgressSteps()}        <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-          >
-            <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-2xl shadow-xl py-8 px-4 sm:px-10 border border-white/20 dark:border-gray-700/30">
-              {step === 1 && renderIdentifierForm()}
-              {step === 2 && renderUserDetailsForm()}
-              {step === 3 && renderDocumentUploadForm()}
-              {step === 4 && renderOtpForm()}
+      {/* Main Container with Two Column Layout */}
+      <div className="relative w-full max-w-6xl z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl shadow-2xl overflow-hidden border border-white/20 dark:border-gray-700/30"
+        >
+          <div className="grid lg:grid-cols-2 gap-0">
+            {/* Left Side - Branding & Info */}
+            <div className="hidden lg:flex flex-col justify-center p-12 xl:p-16 bg-gradient-to-br from-[#8B2325] to-[#a32729] dark:from-[#9e292b] dark:to-[#b52d2f] relative overflow-hidden">
+              {/* Decorative Elements */}
+              <div className="absolute inset-0 opacity-10">
+                <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full filter blur-3xl transform translate-x-1/2 -translate-y-1/2" />
+                <div className="absolute bottom-0 left-0 w-96 h-96 bg-[#D5A021] rounded-full filter blur-3xl transform -translate-x-1/2 translate-y-1/2" />
+              </div>
+              
+              <div className="relative z-10">
+                <div className="inline-flex items-center justify-center h-20 w-20 rounded-3xl bg-white/20 backdrop-blur-sm mb-8 shadow-lg">
+                  <span className="text-white font-bold text-4xl">S</span>
+                </div>
+                
+                <h1 className="text-5xl xl:text-6xl font-bold text-white mb-6 leading-tight">
+                  Start Your<br />
+                  <span className="text-[#D5A021]">Journey Today</span>
+                </h1>
+                
+                <p className="text-white/90 text-lg xl:text-xl mb-8 leading-relaxed">
+                  Join SahayogNepal and become part of a community that's making real change. 
+                  Create campaigns, raise funds, and transform lives.
+                </p>
+                
+                <div className="space-y-4">
+                  <div className="flex items-start space-x-4">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-white font-semibold text-lg">Quick Setup</h3>
+                      <p className="text-white/80">Get started in minutes with our easy registration</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start space-x-4">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-white font-semibold text-lg">Verified & Secure</h3>
+                      <p className="text-white/80">KYC verification ensures trust and authenticity</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start space-x-4">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-white font-semibold text-lg">Make an Impact</h3>
+                      <p className="text-white/80">Every contribution creates meaningful change</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-          </motion.div>
-        </div>
+
+            {/* Right Side - Registration Form */}
+            <div className="p-8 lg:p-12 xl:p-16">
+              <div className="max-w-md mx-auto">
+                {/* Mobile Logo */}
+                <div className="lg:hidden text-center mb-8">
+                  <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-gradient-to-br from-[#8B2325] to-[#a32729] mb-4">
+                    <span className="text-white font-bold text-2xl">S</span>
+                  </div>
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                    <span className="bg-gradient-to-r from-[#8B2325] to-[#D5A021] dark:from-[#e05759] dark:to-[#f0be4b] bg-clip-text text-transparent">
+                      SahayogNepal
+                    </span>
+                  </h1>
+                </div>
+
+                <div className="mb-8">
+                  <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                    {getStepTitle()}
+                  </h2>
+                  {step === 1 && (
+                    <p className="text-gray-600 dark:text-gray-400">
+                      Already have an account?{' '}
+                      <Link href="/login">
+                        <span className="text-[#8B2325] dark:text-[#e05759] font-semibold hover:underline cursor-pointer">
+                          Sign in
+                        </span>
+                      </Link>
+                    </p>
+                  )}
+                </div>
+
+                {/* Progress Steps */}
+                {renderProgressSteps()}
+
+                {/* Form Content */}
+                <div className="mt-8">
+                  {step === 1 && renderIdentifierForm()}
+                  {step === 2 && renderUserDetailsForm()}
+                  {step === 3 && renderDocumentUploadForm()}
+                  {step === 4 && renderOtpForm()}
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
       </div>
     </div>
   );

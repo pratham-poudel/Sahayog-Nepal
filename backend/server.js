@@ -17,6 +17,7 @@ if (isSchedulerInstance) {
   console.log('[Server] 🕐 This instance is designated as SCHEDULER instance');
 } else {
   console.log('[Server] ⚙️  This instance is a WORKER instance (scheduler disabled)');
+  console.log('[Server] ⚠️  To enable daily reports and automated scheduling, set ENABLE_SCHEDULER=true in your .env file');
 }
 
 const port = process.env.PORT || 5000;
