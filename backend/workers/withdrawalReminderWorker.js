@@ -1,6 +1,7 @@
 require('dotenv').config();
 const { Worker } = require('bullmq');
 const bullRedis = require('../utils/bullRedis');
+const mongoose = require('mongoose');
 const Campaign = require('../models/Campaign');
 const User = require('../models/User');
 const { sendWithdrawalReminderEmail } = require('../utils/sendWithdrawalReminderEmail');
@@ -11,6 +12,18 @@ const worker = new Worker(
     console.log(`[Withdrawal Reminder Worker] Processing job ${job.id} for campaign: ${job.data.campaignId}`);
     
     const { campaignId, reminderType } = job.data;
+
+    // Validate job data
+    if (!campaignId) {
+      console.error(`[Withdrawal Reminder Worker] Job ${job.id} missing campaignId`);
+      throw new Error('campaignId is required');
+    }
+
+    // Check database connection
+    if (mongoose.connection.readyState !== 1) {
+      console.error(`[Withdrawal Reminder Worker] Database not connected (state: ${mongoose.connection.readyState})`);
+      throw new Error('Database connection not ready');
+    }
 
     try {
       const campaign = await Campaign.findById(campaignId).populate('creator');
@@ -65,7 +78,11 @@ const worker = new Worker(
 
       // Send reminder email
       const creator = campaign.creator;
-      if (creator && creator.email) {
+      if (!creator) {
+        console.warn(`[Withdrawal Reminder Worker] Campaign ${campaignId} has no creator - skipping email`);
+      } else if (!creator.email) {
+        console.warn(`[Withdrawal Reminder Worker] Creator for campaign ${campaignId} has no email - skipping email`);
+      } else {
         await sendWithdrawalReminderEmail(
           campaign,
           creator,
@@ -86,7 +103,8 @@ const worker = new Worker(
       };
 
     } catch (error) {
-      console.error(`[Withdrawal Reminder Worker] Error processing campaign ${campaignId}:`, error);
+      console.error(`[Withdrawal Reminder Worker] Error processing campaign ${campaignId}:`, error.message);
+      console.error(`[Withdrawal Reminder Worker] Error stack:`, error.stack);
       throw error;
     }
   },
@@ -187,16 +205,37 @@ async function sendFundReallocationNotification(sourceCampaign, targetCampaign, 
 }
 
 // Event handlers
-worker.on('ready', () => console.log('✅ Withdrawal Reminder Worker connected to Bull Redis'));
+worker.on('ready', () => {
+  console.log('✅ Withdrawal Reminder Worker connected to Bull Redis');
+  console.log(`[Withdrawal Reminder Worker] Concurrency: ${process.env.BULL_WORKER_CONCURRENCY || 5}`);
+});
+
 worker.on('completed', (job, result) => {
   console.log(`[Withdrawal Reminder Worker] Job ${job.id} completed ✅`);
   console.log(`[Withdrawal Reminder Worker] Result:`, result);
 });
+
 worker.on('failed', (job, err) => {
   console.error(`[Withdrawal Reminder Worker] Job ${job?.id} failed ❌:`, err.message);
   console.error(`[Withdrawal Reminder Worker] Campaign ID: ${job?.data?.campaignId}`);
+  console.error(`[Withdrawal Reminder Worker] Attempt: ${job?.attemptsMade}/${job?.opts?.attempts || 5}`);
+  
+  if (job?.attemptsMade >= (job?.opts?.attempts || 5)) {
+    console.error(`[Withdrawal Reminder Worker] ⚠️  Job ${job?.id} exhausted all retry attempts - PERMANENTLY FAILED`);
+  }
 });
-worker.on('error', (err) => console.error('[Withdrawal Reminder Worker] Worker error ❌:', err));
-worker.on('stalled', (jobId) => console.warn(`[Withdrawal Reminder Worker] Job ${jobId} stalled ⚠️`));
+
+worker.on('error', (err) => {
+  console.error('[Withdrawal Reminder Worker] Worker error ❌:', err);
+  console.error('[Withdrawal Reminder Worker] Error details:', err.stack);
+});
+
+worker.on('stalled', (jobId) => {
+  console.warn(`[Withdrawal Reminder Worker] Job ${jobId} stalled ⚠️ (likely took too long or worker died)`);
+});
+
+worker.on('ioredis:close', () => {
+  console.warn('[Withdrawal Reminder Worker] ⚠️  Redis connection closed');
+});
 
 module.exports = worker;

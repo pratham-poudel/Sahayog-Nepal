@@ -15,6 +15,15 @@ const sendDailyReportEmail = async (campaign, user, todayStats) => {
     throw new Error('ZEPTO_BULK_EMAILER token is not configured');
   }
 
+  // Validate required parameters
+  if (!user || !user.email) {
+    throw new Error('User or user email is missing');
+  }
+
+  if (!campaign || !campaign._id || !campaign.title) {
+    throw new Error('Campaign data is incomplete');
+  }
+
   const {
     todayAmount,
     todayDonors,
@@ -33,7 +42,7 @@ const sendDailyReportEmail = async (campaign, user, todayStats) => {
     await zeptoClient.sendMail({
       from: {
         address: "reports@sahayognepal.org",
-        name: "Sahayog Nepal - Daily Reports"
+        name: "Sahayog Nepal"
       },
       to: [
         {
@@ -50,204 +59,146 @@ const sendDailyReportEmail = async (campaign, user, todayStats) => {
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daily Campaign Report</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #fafbfc;">
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f5;">
     
-    <div style="max-width: 650px; margin: 0 auto; background-color: #ffffff;">
+    <div style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
         
         <!-- Header -->
-        <div style="background-color: #2c3e50; padding: 36px 40px 28px 40px;">
-            <div style="text-align: center;">
-                <img src="https://filesatsahayognepal.dallytech.com/misc/SahayogNepal%20(1).png" 
-                     alt="Sahayog Nepal" 
-                     style="height: 65px; width: auto; margin-bottom: 18px; filter: brightness(0) invert(1);" />
-                <h1 style="margin: 0; color: #ffffff; font-size: 26px; font-weight: 500; letter-spacing: 0.5px;">
-                    Daily Campaign Report
-                </h1>
-                <p style="margin: 10px 0 0 0; color: rgba(255,255,255,0.9); font-size: 14px; font-weight: 400;">
-                    ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                </p>
-            </div>
+        <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); padding: 32px 40px; text-align: center;">
+            <div style="font-size: 11px; font-weight: 600; letter-spacing: 1.5px; color: #94a3b8; margin-bottom: 8px;">SAHAYOG NEPAL</div>
+            <div style="font-size: 20px; font-weight: 600; color: #ffffff; margin-bottom: 4px;">Daily Campaign Report</div>
+            <div style="font-size: 13px; color: #cbd5e1;">${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</div>
         </div>
 
-        <!-- Main Content -->
+        <!-- Content -->
         <div style="padding: 40px;">
             
-            <!-- Greeting -->
+            <div style="margin-bottom: 28px;">
+                <div style="font-size: 14px; color: #64748b;">Hello ${user.name},</div>
+            </div>
+            
+            <div style="margin-bottom: 28px; padding: 20px; background-color: #f8fafc; border-radius: 6px; border-left: 3px solid #1e293b;">
+                <div style="font-size: 12px; color: #94a3b8; font-weight: 500; letter-spacing: 0.5px; margin-bottom: 6px;">CAMPAIGN</div>
+                <div style="font-size: 16px; font-weight: 600; color: #0f172a;">${campaign.title}</div>
+            </div>
+
+            <!-- Today's Stats -->
+            <div style="margin-bottom: 32px;">
+                <div style="font-size: 13px; color: #64748b; font-weight: 500; letter-spacing: 0.5px; margin-bottom: 16px;">TODAY'S ACTIVITY</div>
+                
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 14px 0; font-size: 14px; color: #475569; border-bottom: 1px solid #e2e8f0;">
+                            Amount Raised
+                        </td>
+                        <td style="padding: 14px 0; font-size: 18px; color: #0f172a; text-align: right; font-weight: 600; border-bottom: 1px solid #e2e8f0;">
+                            NPR ${todayAmount > 0 ? todayAmount.toLocaleString('en-NP') : '0'}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 14px 0; font-size: 14px; color: #475569; border-bottom: 1px solid #e2e8f0;">
+                            New Donors
+                        </td>
+                        <td style="padding: 14px 0; font-size: 18px; color: #0f172a; text-align: right; font-weight: 600; border-bottom: 1px solid #e2e8f0;">
+                            ${todayDonors}
+                        </td>
+                    </tr>
+                    ${hasDonationsToday ? `
+                    <tr>
+                        <td style="padding: 14px 0; font-size: 14px; color: #475569; border-bottom: 1px solid #e2e8f0;">
+                            Average Donation
+                        </td>
+                        <td style="padding: 14px 0; font-size: 16px; color: #475569; text-align: right; font-weight: 500; border-bottom: 1px solid #e2e8f0;">
+                            NPR ${averageDonationToday.toLocaleString('en-NP')}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 14px 0; font-size: 14px; color: #475569;">
+                            Top Donation
+                        </td>
+                        <td style="padding: 14px 0; font-size: 16px; color: #10b981; text-align: right; font-weight: 600;">
+                            NPR ${topDonationToday.toLocaleString('en-NP')}
+                        </td>
+                    </tr>
+                    ` : `
+                    <tr>
+                        <td colspan="2" style="padding: 14px 0; font-size: 13px; color: #94a3b8; text-align: center;">
+                            No donations today yet
+                        </td>
+                    </tr>
+                    `}
+                </table>
+            </div>
+
+            <!-- Overall Progress -->
+            <div style="margin-bottom: 32px;">
+                <div style="font-size: 13px; color: #64748b; font-weight: 500; letter-spacing: 0.5px; margin-bottom: 16px;">CAMPAIGN PROGRESS</div>
+                
+                <div style="margin-bottom: 16px;">
+                    <div style="margin-bottom: 8px; overflow: hidden;">
+                        <span style="font-size: 13px; color: #64748b; float: left;">Progress to Goal</span>
+                        <span style="font-size: 14px; color: #1e293b; font-weight: 600; float: right;">${percentageComplete}%</span>
+                    </div>
+                    <div style="background-color: #e2e8f0; border-radius: 4px; height: 8px; overflow: hidden;">
+                        <div style="background-color: #1e293b; height: 100%; width: ${Math.min(percentageComplete, 100)}%;"></div>
+                    </div>
+                </div>
+
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 14px 0; font-size: 14px; color: #475569; border-bottom: 1px solid #e2e8f0;">
+                            Total Raised
+                        </td>
+                        <td style="padding: 14px 0; font-size: 16px; color: #10b981; text-align: right; font-weight: 600; border-bottom: 1px solid #e2e8f0;">
+                            NPR ${totalRaised.toLocaleString('en-NP')}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 14px 0; font-size: 14px; color: #475569; border-bottom: 1px solid #e2e8f0;">
+                            Goal Amount
+                        </td>
+                        <td style="padding: 14px 0; font-size: 16px; color: #475569; text-align: right; font-weight: 500; border-bottom: 1px solid #e2e8f0;">
+                            NPR ${goalAmount.toLocaleString('en-NP')}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 14px 0; font-size: 14px; color: #475569; border-bottom: 1px solid #e2e8f0;">
+                            Total Donors
+                        </td>
+                        <td style="padding: 14px 0; font-size: 16px; color: #475569; text-align: right; font-weight: 500; border-bottom: 1px solid #e2e8f0;">
+                            ${totalDonors}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 14px 0; font-size: 14px; color: #475569;">
+                            Days Remaining
+                        </td>
+                        <td style="padding: 14px 0; font-size: 16px; color: #475569; text-align: right; font-weight: 500;">
+                            ${daysRemaining} ${daysRemaining === 1 ? 'day' : 'days'}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- CTA -->
             <div style="margin-bottom: 32px; text-align: center;">
-                <h2 style="margin: 0 0 12px 0; font-size: 22px; font-weight: 500; color: #2c3e50;">
-                    Hello, ${user.name}
-                </h2>
-                <p style="margin: 0; font-size: 16px; line-height: 1.7; color: #5a6c7d; font-weight: 400;">
-                    ${hasDonationsToday 
-                      ? `Today brought wonderful support to your campaign. Here's a summary of the day's impact.` 
-                      : `Here's today's summary for your campaign. Keep sharing your story to reach more supporters.`}
-                </p>
-            </div>
-
-            <!-- Campaign Name -->
-            <div style="text-align: center; margin-bottom: 36px; padding-bottom: 24px; border-bottom: 1px solid #e9ecef;">
-                <h3 style="margin: 0; font-size: 20px; font-weight: 500; color: #2c3e50;">
-                    ${campaign.title}
-                </h3>
-            </div>
-
-            <!-- Today's Performance -->
-            <div style="margin-bottom: 36px;">
-                <h3 style="margin: 0 0 24px 0; font-size: 18px; font-weight: 500; color: #2c3e50; text-align: center;">
-                    Today's Impact
-                </h3>
-                
-                <!-- Stats Cards -->
-                <div style="display: table; width: 100%; margin-bottom: 20px;">
-                    <div style="display: table-cell; width: 50%; padding-right: 10px;">
-                        <div style="background-color: #f8f9fa; border-radius: 12px; padding: 28px 20px; text-align: center; border: 2px solid #e9ecef;">
-                            <p style="margin: 0 0 8px 0; font-size: 13px; color: #6c757d; text-transform: uppercase; letter-spacing: 1px; font-weight: 500;">
-                                Amount Raised
-                            </p>
-                            <p style="margin: 0; font-size: 32px; color: #2c3e50; font-weight: 600;">
-                                ${todayAmount > 0 ? `₹${todayAmount.toLocaleString('en-NP')}` : '—'}
-                            </p>
-                        </div>
-                    </div>
-                    <div style="display: table-cell; width: 50%; padding-left: 10px;">
-                        <div style="background-color: #f8f9fa; border-radius: 12px; padding: 28px 20px; text-align: center; border: 2px solid #e9ecef;">
-                            <p style="margin: 0 0 8px 0; font-size: 13px; color: #6c757d; text-transform: uppercase; letter-spacing: 1px; font-weight: 500;">
-                                New Donors
-                            </p>
-                            <p style="margin: 0; font-size: 32px; color: #28a745; font-weight: 600;">
-                                ${todayDonors > 0 ? todayDonors : '—'}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                ${hasDonationsToday ? `
-                <!-- Additional Today's Stats -->
-                <div style="background-color: #ffffff; border: 1px solid #e9ecef; border-radius: 8px; padding: 24px; margin-top: 20px;">
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <tr>
-                            <td style="padding: 10px 0; font-size: 14px; color: #6c757d; border-bottom: 1px solid #f8f9fa;">
-                                Average Donation Today
-                            </td>
-                            <td style="padding: 10px 0; font-size: 15px; color: #2c3e50; text-align: right; font-weight: 500; border-bottom: 1px solid #f8f9fa;">
-                                NPR ${averageDonationToday.toLocaleString('en-NP')}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 10px 0; font-size: 14px; color: #6c757d;">
-                                Highest Donation Today
-                            </td>
-                            <td style="padding: 10px 0; font-size: 15px; color: #28a745; text-align: right; font-weight: 600;">
-                                NPR ${topDonationToday.toLocaleString('en-NP')}
-                            </td>
-                        </tr>
-                    </table>
-                </div>
-                ` : ''}
-            </div>
-
-            <!-- Overall Campaign Progress -->
-            <div style="margin-bottom: 36px;">
-                <h3 style="margin: 0 0 24px 0; font-size: 18px; font-weight: 500; color: #2c3e50; text-align: center;">
-                    Overall Campaign Progress
-                </h3>
-                
-                <div style="background-color: #f8f9fa; border-radius: 8px; padding: 28px; border: 1px solid #e9ecef;">
-                    <!-- Progress Bar -->
-                    <div style="margin-bottom: 20px;">
-                        <div style="display: table; width: 100%; margin-bottom: 8px;">
-                            <div style="display: table-cell; text-align: left;">
-                                <span style="font-size: 14px; color: #6c757d; font-weight: 500;">Progress</span>
-                            </div>
-                            <div style="display: table-cell; text-align: right;">
-                                <span style="font-size: 16px; color: #667eea; font-weight: 600;">${percentageComplete}%</span>
-                            </div>
-                        </div>
-                        <div style="background-color: #e9ecef; border-radius: 10px; height: 12px; overflow: hidden;">
-                            <div style="background-color: #2c3e50; height: 100%; width: ${Math.min(percentageComplete, 100)}%; border-radius: 10px;"></div>
-                        </div>
-                    </div>
-
-                    <!-- Stats Table -->
-                    <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
-                        <tr>
-                            <td style="padding: 12px 0; font-size: 14px; color: #6c757d; border-bottom: 1px solid #e9ecef;">
-                                Total Raised
-                            </td>
-                            <td style="padding: 12px 0; font-size: 16px; color: #28a745; text-align: right; font-weight: 600; border-bottom: 1px solid #e9ecef;">
-                                NPR ${totalRaised.toLocaleString('en-NP')}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 12px 0; font-size: 14px; color: #6c757d; border-bottom: 1px solid #e9ecef;">
-                                Goal Amount
-                            </td>
-                            <td style="padding: 12px 0; font-size: 15px; color: #2c3e50; text-align: right; font-weight: 500; border-bottom: 1px solid #e9ecef;">
-                                NPR ${goalAmount.toLocaleString('en-NP')}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 12px 0; font-size: 14px; color: #6c757d; border-bottom: 1px solid #e9ecef;">
-                                Total Supporters
-                            </td>
-                            <td style="padding: 12px 0; font-size: 15px; color: #2c3e50; text-align: right; font-weight: 500; border-bottom: 1px solid #e9ecef;">
-                                ${totalDonors}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 12px 0; font-size: 14px; color: #6c757d;">
-                                Days Remaining
-                            </td>
-                            <td style="padding: 12px 0; font-size: 15px; color: #667eea; text-align: right; font-weight: 600;">
-                                ${daysRemaining} days
-                            </td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Encouragement Message -->
-            <div style="background-color: #f8f9fa; border-left: 3px solid #2c3e50; padding: 24px; margin-bottom: 32px; border-radius: 0 6px 6px 0;">
-                <p style="margin: 0; font-size: 15px; line-height: 1.8; color: #5a6c7d;">
-                    ${hasDonationsToday 
-                      ? `Every donation today represents someone who believes in your cause. Thank you for creating positive change in our community.` 
-                      : `Keep sharing your story. Every voice matters, and every share brings you closer to your goal. Your cause is important.`}
-                </p>
-            </div>
-
-            <!-- Action Suggestion -->
-            <div style="text-align: center; margin-bottom: 32px;">
                 <a href="${process.env.WEBSITE_URL}/dashboard/campaigns/${campaign._id}" 
-                   style="display: inline-block; background-color: #2c3e50; color: #ffffff; text-decoration: none; padding: 14px 40px; border-radius: 6px; font-size: 15px; font-weight: 500;">
-                    View Full Dashboard
+                   style="display: inline-block; background-color: #1e293b; color: #ffffff; text-decoration: none; padding: 12px 32px; border-radius: 6px; font-size: 14px; font-weight: 500;">
+                    View Dashboard
                 </a>
-            </div>
-
-            <!-- Closing -->
-            <div style="text-align: center; margin-bottom: 28px;">
-                <p style="margin: 0 0 8px 0; font-size: 15px; color: #5a6c7d;">
-                    With warm wishes for your continued success,
-                </p>
-                <p style="margin: 0; font-size: 16px; color: #2c3e50; font-weight: 500;">
-                    The Sahayog Nepal Team
-                </p>
             </div>
 
         </div>
 
         <!-- Footer -->
-        <div style="background-color: #f8f9fa; padding: 28px 40px; text-align: center; border-top: 1px solid #e9ecef;">
-            <p style="margin: 0 0 8px 0; font-size: 13px; color: #6c757d;">
-                Don't want daily reports? 
-                <a href="${process.env.WEBSITE_URL}/dashboard/settings/notifications" style="color: #667eea; text-decoration: none;">
-                    Manage email preferences
-                </a>
-            </p>
-            <p style="margin: 0; font-size: 12px; color: #95a5a6;">
+        <div style="background-color: #f8fafc; padding: 24px 40px; text-align: center; border-top: 1px solid #e2e8f0;">
+            <div style="font-size: 12px; color: #94a3b8; margin-bottom: 8px;">
+                <a href="${process.env.WEBSITE_URL}/dashboard/settings" style="color: #64748b; text-decoration: none;">Manage Preferences</a>
+            </div>
+            <div style="font-size: 11px; color: #cbd5e1;">
                 © ${new Date().getFullYear()} Sahayog Nepal. All rights reserved.
-            </p>
+            </div>
         </div>
 
     </div>

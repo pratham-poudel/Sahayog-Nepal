@@ -9,8 +9,8 @@ const campaignCompletionQueue = new Queue('campaign-completion', {
   connection: bullRedis,
   prefix: 'campaign',
   defaultJobOptions: {
-    attempts: 3,
-    backoff: { type: 'exponential', delay: 30000 },
+    attempts: 5,
+    backoff: { type: 'exponential', delay: 60000 }, // 60s initial backoff for email rate limiting
     removeOnComplete: 500,
     removeOnFail: 500,
   },

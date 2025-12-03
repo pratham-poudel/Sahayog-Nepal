@@ -1,6 +1,7 @@
 require('dotenv').config();
 const { Worker } = require('bullmq');
 const bullRedis = require('../utils/bullRedis');
+const mongoose = require('mongoose');
 const Campaign = require('../models/Campaign');
 const User = require('../models/User');
 const Donation = require('../models/Donation');
@@ -12,6 +13,18 @@ const worker = new Worker(
     console.log(`[Daily Report Worker] Processing job ${job.id} for campaign: ${job.data.campaignId}`);
     
     const { campaignId } = job.data;
+    
+    // Validate job data
+    if (!campaignId) {
+      console.error(`[Daily Report Worker] Job ${job.id} missing campaignId`);
+      throw new Error('campaignId is required');
+    }
+
+    // Check database connection
+    if (mongoose.connection.readyState !== 1) {
+      console.error(`[Daily Report Worker] Database not connected (state: ${mongoose.connection.readyState})`);
+      throw new Error('Database connection not ready');
+    }
 
     try {
       const campaign = await Campaign.findById(campaignId).populate('creator');
@@ -19,6 +32,18 @@ const worker = new Worker(
       if (!campaign) {
         console.warn(`[Daily Report Worker] Campaign not found: ${campaignId}`);
         throw new Error(`Campaign not found: ${campaignId}`);
+      }
+
+      // Validate campaign creator exists
+      if (!campaign.creator) {
+        console.warn(`[Daily Report Worker] Campaign ${campaignId} has no creator - skipping report`);
+        return { status: 'no_creator', message: 'Campaign has no creator' };
+      }
+
+      // Validate creator has email
+      if (!campaign.creator.email) {
+        console.warn(`[Daily Report Worker] Creator for campaign ${campaignId} has no email - skipping report`);
+        return { status: 'no_email', message: 'Creator has no email address' };
       }
 
       // Only send reports for active campaigns
@@ -89,7 +114,10 @@ const worker = new Worker(
       };
 
     } catch (error) {
-      console.error(`[Daily Report Worker] Error processing campaign ${campaignId}:`, error);
+      console.error(`[Daily Report Worker] Error processing campaign ${campaignId}:`, error.message);
+      console.error(`[Daily Report Worker] Error stack:`, error.stack);
+      
+      // Re-throw to mark job as failed for retry
       throw error;
     }
   },
@@ -101,18 +129,40 @@ const worker = new Worker(
 );
 
 // Event handlers
-worker.on('ready', () => console.log('✅ Daily Report Worker connected to Bull Redis'));
+worker.on('ready', () => {
+  console.log('✅ Daily Report Worker connected to Bull Redis');
+  console.log(`[Daily Report Worker] Concurrency: ${process.env.BULL_WORKER_CONCURRENCY || 5}`);
+});
+
 worker.on('completed', (job, result) => {
   console.log(`[Daily Report Worker] Job ${job.id} completed ✅`);
   if (result.todayStats) {
     console.log(`[Daily Report Worker] Stats: ${result.todayStats.todayAmount} NPR from ${result.todayStats.todayDonors} donors today`);
   }
 });
+
 worker.on('failed', (job, err) => {
   console.error(`[Daily Report Worker] Job ${job?.id} failed ❌:`, err.message);
   console.error(`[Daily Report Worker] Campaign ID: ${job?.data?.campaignId}`);
+  console.error(`[Daily Report Worker] Attempt: ${job?.attemptsMade}/${job?.opts?.attempts || 5}`);
+  
+  // Log if this was the final attempt
+  if (job?.attemptsMade >= (job?.opts?.attempts || 5)) {
+    console.error(`[Daily Report Worker] ⚠️  Job ${job?.id} exhausted all retry attempts - PERMANENTLY FAILED`);
+  }
 });
-worker.on('error', (err) => console.error('[Daily Report Worker] Worker error ❌:', err));
-worker.on('stalled', (jobId) => console.warn(`[Daily Report Worker] Job ${jobId} stalled ⚠️`));
+
+worker.on('error', (err) => {
+  console.error('[Daily Report Worker] Worker error ❌:', err);
+  console.error('[Daily Report Worker] Error details:', err.stack);
+});
+
+worker.on('stalled', (jobId) => {
+  console.warn(`[Daily Report Worker] Job ${jobId} stalled ⚠️ (likely took too long or worker died)`);
+});
+
+worker.on('ioredis:close', () => {
+  console.warn('[Daily Report Worker] ⚠️  Redis connection closed');
+});
 
 module.exports = worker;

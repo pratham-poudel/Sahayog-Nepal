@@ -10,8 +10,8 @@ const withdrawalReminderQueue = new Queue('withdrawal-reminder', {
   connection: bullRedis,
   prefix: 'withdrawal',
   defaultJobOptions: {
-    attempts: 3,
-    backoff: { type: 'exponential', delay: 60000 },
+    attempts: 5,
+    backoff: { type: 'exponential', delay: 60000 }, // 60s initial backoff for email rate limiting
     removeOnComplete: 1000,
     removeOnFail: 500,
   },

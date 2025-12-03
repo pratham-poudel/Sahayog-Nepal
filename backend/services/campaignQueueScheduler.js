@@ -77,23 +77,37 @@ class CampaignQueueScheduler {
         }
 
         // Add jobs to queue with staggered delays to respect rate limits
+        let successCount = 0;
+        let errorCount = 0;
+        
         for (let i = 0; i < activeCampaigns.length; i++) {
           const campaign = activeCampaigns[i];
-          const delay = i * 2000; // 2 second delay between each email
+          const delay = i * 3000; // 3 second delay between each email (reduced rate)
 
-          await dailyReportQueue.add(
-            'send-daily-report',
-            { campaignId: campaign._id },
-            {
-              delay,
-              jobId: `daily-report-${campaign._id}-${currentDate}`, // Unique job ID per day
-              removeOnComplete: 100,
-              removeOnFail: 50
-            }
-          );
+          try {
+            await dailyReportQueue.add(
+              'send-daily-report',
+              { campaignId: campaign._id.toString() }, // Ensure string ID
+              {
+                delay,
+                jobId: `daily-report-${campaign._id}-${currentDate}`, // Unique job ID per day
+                removeOnComplete: 100,
+                removeOnFail: 50,
+                attempts: 5,
+                backoff: { type: 'exponential', delay: 60000 }
+              }
+            );
+            successCount++;
+          } catch (error) {
+            console.error(`[Campaign Queue Scheduler] Failed to add job for campaign ${campaign._id}:`, error.message);
+            errorCount++;
+          }
         }
 
-        console.log(`[Campaign Queue Scheduler] ✅ Scheduled ${activeCampaigns.length} daily report jobs for ${currentDate}`);
+        console.log(`[Campaign Queue Scheduler] ✅ Scheduled ${successCount}/${activeCampaigns.length} daily report jobs for ${currentDate}`);
+        if (errorCount > 0) {
+          console.warn(`[Campaign Queue Scheduler] ⚠️  ${errorCount} jobs failed to schedule`);
+        }
         lastReportDate = currentDate; // Mark reports as sent for today
       } catch (error) {
         console.error('[Campaign Queue Scheduler] ❌ Error scheduling daily reports:', error);
@@ -128,21 +142,39 @@ class CampaignQueueScheduler {
 
         console.log(`[Campaign Queue Scheduler] Found ${endedCampaigns.length} campaigns to check for completion`);
 
-        // Add completion check jobs
-        for (const campaign of endedCampaigns) {
-          await campaignCompletionQueue.add(
-            'check-completion',
-            { campaignId: campaign._id },
-            {
-              jobId: `completion-${campaign._id}`, // Prevent duplicate jobs
-              removeOnComplete: 100,
-              removeOnFail: 50
-            }
-          );
+        // Add completion check jobs with staggered delays to respect email rate limits
+        let successCount = 0;
+        let errorCount = 0;
+        
+        for (let i = 0; i < endedCampaigns.length; i++) {
+          const campaign = endedCampaigns[i];
+          const delay = i * 5000; // 5 second delay between each email
+          
+          try {
+            await campaignCompletionQueue.add(
+              'check-completion',
+              { campaignId: campaign._id.toString() },
+              {
+                delay,
+                jobId: `completion-${campaign._id}`, // Prevent duplicate jobs
+                removeOnComplete: 100,
+                removeOnFail: 50,
+                attempts: 5,
+                backoff: { type: 'exponential', delay: 60000 }
+              }
+            );
+            successCount++;
+          } catch (error) {
+            console.error(`[Campaign Queue Scheduler] Failed to add completion job for campaign ${campaign._id}:`, error.message);
+            errorCount++;
+          }
         }
 
         if (endedCampaigns.length > 0) {
-          console.log(`[Campaign Queue Scheduler] Scheduled ${endedCampaigns.length} completion check jobs`);
+          console.log(`[Campaign Queue Scheduler] ✅ Scheduled ${successCount}/${endedCampaigns.length} completion check jobs`);
+          if (errorCount > 0) {
+            console.warn(`[Campaign Queue Scheduler] ⚠️  ${errorCount} completion jobs failed to schedule`);
+          }
         }
       } catch (error) {
         console.error('[Campaign Queue Scheduler] Error scheduling campaign completions:', error);
@@ -188,7 +220,11 @@ class CampaignQueueScheduler {
         console.log(`[Campaign Queue Scheduler] Found ${endedCampaigns.length} ended campaigns to check for withdrawal reminders`);
 
         // Filter campaigns with available funds and calculate reminder timing
-        for (const campaign of endedCampaigns) {
+        let reminderCount = 0;
+        let reminderErrors = 0;
+        
+        for (let i = 0; i < endedCampaigns.length; i++) {
+          const campaign = endedCampaigns[i];
           const availableAmount = campaign.amountRaised - campaign.amountWithdrawn - campaign.pendingWithdrawals;
           
           if (availableAmount <= 0) continue; // Skip if no funds available
@@ -217,18 +253,36 @@ class CampaignQueueScheduler {
           }
 
           if (reminderType) {
-            await withdrawalReminderQueue.add(
-              'withdrawal-reminder',
-              { campaignId: campaign._id, reminderType },
-              {
-                jobId: `withdrawal-${reminderType}-${campaign._id}`, // Prevent duplicates
-                removeOnComplete: 100,
-                removeOnFail: 50
-              }
-            );
+            const delay = reminderCount * 5000; // 5 second delay between each email
+            
+            try {
+              await withdrawalReminderQueue.add(
+                'withdrawal-reminder',
+                { campaignId: campaign._id.toString(), reminderType },
+                {
+                  delay,
+                  jobId: `withdrawal-${reminderType}-${campaign._id}`, // Prevent duplicates
+                  removeOnComplete: 100,
+                  removeOnFail: 50,
+                  attempts: 5,
+                  backoff: { type: 'exponential', delay: 60000 }
+                }
+              );
 
-            console.log(`[Campaign Queue Scheduler] Scheduled ${reminderType} reminder for campaign ${campaign._id} (${daysSinceEnd} days since end)`);
+              console.log(`[Campaign Queue Scheduler] Scheduled ${reminderType} reminder for campaign ${campaign._id} (${daysSinceEnd} days since end)`);
+              reminderCount++;
+            } catch (error) {
+              console.error(`[Campaign Queue Scheduler] Failed to add withdrawal reminder for campaign ${campaign._id}:`, error.message);
+              reminderErrors++;
+            }
           }
+        }
+        
+        if (reminderCount > 0) {
+          console.log(`[Campaign Queue Scheduler] ✅ Scheduled ${reminderCount} withdrawal reminder jobs`);
+        }
+        if (reminderErrors > 0) {
+          console.warn(`[Campaign Queue Scheduler] ⚠️  ${reminderErrors} withdrawal reminder jobs failed to schedule`);
         }
       } catch (error) {
         console.error('[Campaign Queue Scheduler] Error scheduling withdrawal reminders:', error);

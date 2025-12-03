@@ -1,6 +1,7 @@
 require('dotenv').config();
 const { Worker } = require('bullmq');
 const bullRedis = require('../utils/bullRedis');
+const mongoose = require('mongoose');
 const Campaign = require('../models/Campaign');
 const User = require('../models/User');
 const Donation = require('../models/Donation');
@@ -12,6 +13,18 @@ const worker = new Worker(
     console.log(`[Campaign Completion Worker] Processing job ${job.id} for campaign: ${job.data.campaignId}`);
     
     const { campaignId } = job.data;
+
+    // Validate job data
+    if (!campaignId) {
+      console.error(`[Campaign Completion Worker] Job ${job.id} missing campaignId`);
+      throw new Error('campaignId is required');
+    }
+
+    // Check database connection
+    if (mongoose.connection.readyState !== 1) {
+      console.error(`[Campaign Completion Worker] Database not connected (state: ${mongoose.connection.readyState})`);
+      throw new Error('Database connection not ready');
+    }
 
     try {
       const campaign = await Campaign.findById(campaignId).populate('creator');
@@ -80,7 +93,11 @@ const worker = new Worker(
 
       // Send completion summary email to creator
       const creator = campaign.creator;
-      if (creator && creator.email) {
+      if (!creator) {
+        console.warn(`[Campaign Completion Worker] Campaign ${campaignId} has no creator - skipping email`);
+      } else if (!creator.email) {
+        console.warn(`[Campaign Completion Worker] Creator for campaign ${campaignId} has no email - skipping email`);
+      } else {
         await sendCampaignCompletionEmail(campaign, creator, stats);
         console.log(`[Campaign Completion Worker] Completion email sent to ${creator.email}`);
       }
@@ -94,7 +111,8 @@ const worker = new Worker(
       };
 
     } catch (error) {
-      console.error(`[Campaign Completion Worker] Error processing campaign ${campaignId}:`, error);
+      console.error(`[Campaign Completion Worker] Error processing campaign ${campaignId}:`, error.message);
+      console.error(`[Campaign Completion Worker] Error stack:`, error.stack);
       throw error;
     }
   },
@@ -106,16 +124,37 @@ const worker = new Worker(
 );
 
 // Event handlers
-worker.on('ready', () => console.log('✅ Campaign Completion Worker connected to Bull Redis'));
+worker.on('ready', () => {
+  console.log('✅ Campaign Completion Worker connected to Bull Redis');
+  console.log(`[Campaign Completion Worker] Concurrency: ${process.env.BULL_WORKER_CONCURRENCY || 5}`);
+});
+
 worker.on('completed', (job, result) => {
   console.log(`[Campaign Completion Worker] Job ${job.id} completed ✅`);
   console.log(`[Campaign Completion Worker] Result:`, result);
 });
+
 worker.on('failed', (job, err) => {
   console.error(`[Campaign Completion Worker] Job ${job?.id} failed ❌:`, err.message);
   console.error(`[Campaign Completion Worker] Campaign ID: ${job?.data?.campaignId}`);
+  console.error(`[Campaign Completion Worker] Attempt: ${job?.attemptsMade}/${job?.opts?.attempts || 5}`);
+  
+  if (job?.attemptsMade >= (job?.opts?.attempts || 5)) {
+    console.error(`[Campaign Completion Worker] ⚠️  Job ${job?.id} exhausted all retry attempts - PERMANENTLY FAILED`);
+  }
 });
-worker.on('error', (err) => console.error('[Campaign Completion Worker] Worker error ❌:', err));
-worker.on('stalled', (jobId) => console.warn(`[Campaign Completion Worker] Job ${jobId} stalled ⚠️`));
+
+worker.on('error', (err) => {
+  console.error('[Campaign Completion Worker] Worker error ❌:', err);
+  console.error('[Campaign Completion Worker] Error details:', err.stack);
+});
+
+worker.on('stalled', (jobId) => {
+  console.warn(`[Campaign Completion Worker] Job ${jobId} stalled ⚠️ (likely took too long or worker died)`);
+});
+
+worker.on('ioredis:close', () => {
+  console.warn('[Campaign Completion Worker] ⚠️  Redis connection closed');
+});
 
 module.exports = worker;
