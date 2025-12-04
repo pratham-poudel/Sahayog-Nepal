@@ -370,8 +370,7 @@ exports.getCampaignById = async (req, res) => {
             featured: campaign.featured,
             targetAmount: campaign.targetAmount,
             amountRaised: campaign.amountRaised,
-            amountWithdrawn: campaign.amountWithdrawn,
-            pendingWithdrawals: campaign.pendingWithdrawals,
+            // DO NOT expose: amountWithdrawn, pendingWithdrawals, withdrawalRequests
             donors: campaign.donors,
             endDate: campaign.endDate,
             startDate: campaign.startDate,
@@ -389,7 +388,7 @@ exports.getCampaignById = async (req, res) => {
             isWithdrawalEligible: campaign.isWithdrawalEligible,
             withdrawalPercentage: campaign.withdrawalPercentage,
             daysLeft: campaign.daysLeft,
-            // Creator info (public only)
+            // Creator info (public only - DO NOT expose email)
             creator: {
                 _id: campaign.creator._id,
                 name: campaign.creator.name,
@@ -1049,9 +1048,10 @@ exports.getCampaignsByCategory = async (req, res) => {
         }
 
         const campaigns = await Campaign.find(query)
-            .populate('creator', 'name email profilePicture isPremiumAndVerified')
+            .populate('creator', 'name profilePicture profilePictureUrl isPremiumAndVerified')
             .sort({ createdAt: -1 })  // Sorting by creation date in descending order
-            .limit(limit);  // Apply the limit
+            .limit(limit)  // Apply the limit
+            .select('-amountWithdrawn -pendingWithdrawals -withdrawalRequests');  // Exclude sensitive fields
 
         res.status(200).json({
             success: true,
@@ -1264,10 +1264,11 @@ exports.getRotatingFeaturedCampaigns = async (req, res) => {
             const adjustedOffset = fallbackTotal > 0 ? offset % fallbackTotal : 0;
             
             const campaigns = await Campaign.find(fallbackQuery)
-                .populate('creator', 'name email profilePicture profilePictureUrl isPremiumAndVerified')
+                .populate('creator', 'name profilePicture profilePictureUrl isPremiumAndVerified')
                 .sort({ createdAt: -1 }) // Sort by newest first as fallback
                 .skip(adjustedOffset)
                 .limit(count)
+                .select('-amountWithdrawn -pendingWithdrawals -withdrawalRequests')  // Exclude sensitive fields
                 .lean();
             
             const campaignsWithUrls = campaigns.map(campaign => formatCampaignWithUrls(campaign));
@@ -1358,7 +1359,6 @@ exports.getRotatingFeaturedCampaigns = async (req, res) => {
                         {
                             $project: {
                                 name: 1,
-                                email: 1,
                                 profilePicture: 1,
                                 profilePictureUrl: 1,
                                 isPremiumAndVerified: 1
@@ -1367,7 +1367,14 @@ exports.getRotatingFeaturedCampaigns = async (req, res) => {
                     ]
                 }
             },
-            { $unwind: '$creator' }
+            { $unwind: '$creator' },
+            {
+                $project: {
+                    amountWithdrawn: 0,
+                    pendingWithdrawals: 0,
+                    withdrawalRequests: 0
+                }
+            }
         ];
 
         // Add sorting based on selected strategy
@@ -1596,10 +1603,11 @@ exports.getCampaignsByHierarchicalCategory = async (req, res) => {
 
         // Get campaigns with pagination
         const campaigns = await Campaign.find(query)
-            .populate('creator', 'name email profilePicture isPremiumAndVerified')
+            .populate('creator', 'name profilePicture profilePictureUrl isPremiumAndVerified')
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
+            .select('-amountWithdrawn -pendingWithdrawals -withdrawalRequests')  // Exclude sensitive fields
             .lean();
 
         // Get total count for pagination

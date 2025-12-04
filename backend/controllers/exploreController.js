@@ -72,7 +72,6 @@ exports.getRegularExplore = async (req, res) => {
                         {
                             $project: {
                                 name: 1,
-                                email: 1,
                                 profilePicture: 1,
                                 profilePictureUrl: 1,
                                 isPremiumAndVerified: 1
@@ -82,6 +81,13 @@ exports.getRegularExplore = async (req, res) => {
                 }
             },
             { $unwind: '$creator' },
+            {
+                $project: {
+                    amountWithdrawn: 0,
+                    pendingWithdrawals: 0,
+                    withdrawalRequests: 0
+                }
+            },
             {
                 $addFields: {
                     percentageRaised: {
@@ -428,7 +434,6 @@ exports.getUrgentExplore = async (req, res) => {
                         {
                             $project: {
                                 name: 1,
-                                email: 1,
                                 profilePicture: 1,
                                 profilePictureUrl: 1,
                                 isPremiumAndVerified: 1
@@ -438,6 +443,13 @@ exports.getUrgentExplore = async (req, res) => {
                 }
             },
             { $unwind: '$creator' },
+            {
+                $project: {
+                    amountWithdrawn: 0,
+                    pendingWithdrawals: 0,
+                    withdrawalRequests: 0
+                }
+            },
             {
                 $addFields: {
                     percentageRaised: {

@@ -1161,10 +1161,10 @@ const Signup = () => {
       </div>
 
       {/* Main Container with Two Column Layout */}
-      <div className="relative w-full max-w-6xl z-10">
+      <div className="relative w-full max-w-5xl z-10">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, y: 20, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 0.9 }}
           transition={{ duration: 0.4 }}
           className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl shadow-2xl overflow-hidden border border-white/20 dark:border-gray-700/30"
         >

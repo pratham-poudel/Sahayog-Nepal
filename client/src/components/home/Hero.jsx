@@ -706,7 +706,7 @@ const Hero = () => {
                   <div className="grid grid-cols-3 gap-4 max-w-xl mx-auto">
                     <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-xl p-4">
                       <p className="text-2xl md:text-3xl font-black text-blue-600 dark:text-blue-400" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                        {formattedHomeStats?.totalCampaigns?.formatted || "42"}
+                        {formattedHomeStats?.activeCampaigns?.formatted || "42"}
                       </p>
                       <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mt-1">Active Campaigns</p>
                     </div>
@@ -718,7 +718,7 @@ const Hero = () => {
                     </div>
                     <div className="bg-gradient-to-br from-purple-50 to-violet-100 dark:from-purple-900/30 dark:to-violet-800/30 rounded-xl p-4">
                       <p className="text-2xl md:text-3xl font-black text-purple-600 dark:text-purple-400" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                        {formattedHomeStats?.totalUsers?.formatted || "200+"}
+                        {formattedHomeStats?.totalDonors?.formatted || "200+"}
                       </p>
                       <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mt-1">Donors</p>
                     </div>

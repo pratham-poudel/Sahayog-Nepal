@@ -4,13 +4,17 @@ const cacheMiddleware = require('../middlewares/cacheMiddleware');
 
 // Import rate limiting middleware
 const { 
-    authLimiter, 
     emailLimiter, 
     otpLimiter, 
     otpResendLimiter, 
     dailyEmailLimiter,
     publicProfileLimiter 
 } = require('../middlewares/rateLimitMiddleware');
+// Import stricter rate limiters from advanced rate limiter
+const { 
+    strictAuthLimiter, 
+    passwordResetLimiter 
+} = require('../middlewares/advancedRateLimiter');
 
 // Import email abuse protection middleware
 const {
@@ -48,9 +52,9 @@ const { protect, checkBanStatus } = require('../middlewares/authMiddleware');
 const upload = require('../middlewares/uploadMiddleware');
 
 // Public routes
-router.post('/register', authLimiter, registerUser);
+router.post('/register', strictAuthLimiter, registerUser);
 router.post('/login', 
-    authLimiter, 
+    strictAuthLimiter, 
     turnstileMiddleware,         // Security verification required for login
     loginUser
 );
@@ -71,7 +75,7 @@ router.post('/send-login-otp',
 );
 
 router.post('/login-with-otp', 
-    authLimiter,
+    strictAuthLimiter,
     checkBlockedIP,
     otpAttemptProtection,        // Track and limit failed OTP attempts
     loginWithOtp
@@ -93,7 +97,7 @@ router.post('/send-otp',
 
 // OTP verification with attempt tracking
 router.post('/verify-otp', 
-    authLimiter,
+    strictAuthLimiter,
     checkBlockedIP,
     otpAttemptProtection,        // Track and limit failed OTP attempts
     verifyOtp
@@ -112,7 +116,7 @@ router.post('/resend-otp',
 router.get('/profile', protect, checkBanStatus, cacheMiddleware((req) => `profile:${req.user._id}`), getUserProfile);
 router.put('/profile', protect, checkBanStatus, updateUserProfile);
 router.post('/profile-picture', protect, checkBanStatus, upload.single('profilePicture'), uploadProfilePicture);
-router.put('/change-password', protect, checkBanStatus, changePassword);
+router.put('/change-password', protect, checkBanStatus, passwordResetLimiter, changePassword);
 router.put('/notification-settings', protect, checkBanStatus, updateNotificationSettings);
 router.get('/mydonation/:id', protect, checkBanStatus, getMydonation);
 
@@ -131,7 +135,7 @@ router.post('/send-email-change-otp',
 router.post('/verify-email-change-otp', 
     protect, 
     checkBanStatus,
-    authLimiter,
+    strictAuthLimiter,
     checkBlockedIP,
     otpAttemptProtection,
     verifyEmailChangeOtp

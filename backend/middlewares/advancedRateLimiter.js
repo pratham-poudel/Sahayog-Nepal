@@ -49,8 +49,8 @@ const logRateLimitViolation = (req, limit) => {
 // 1. GLOBAL API LIMITER
 // ====================
 const globalApiLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 1 minute
-    max: 200, // 200 requests per 15 minutes per IP/user
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 600, // 600 requests per 15 minutes per IP/user (increased from 200 for SPA usage)
     message: {
         success: false,
         message: 'Too many requests. Please slow down and try again later.',
@@ -62,7 +62,7 @@ const globalApiLimiter = rateLimit({
     store: redisStore,
     keyGenerator: createKeyGenerator('global'),
     handler: (req, res) => {
-        logRateLimitViolation(req, '200/15min');
+        logRateLimitViolation(req, '600/15min');
         res.status(429).json({
             success: false,
             message: 'Too many requests. Please slow down and try again later.',
@@ -135,7 +135,7 @@ const campaignCreationLimiter = rateLimit({
 // ====================
 const donationLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
-    max: 30, // Max 30 donations per hour per user
+    max: 12, // Max 12 donations per hour per user (reduced from 30 to prevent abuse)
     message: {
         success: false,
         message: 'Too many donation attempts. Please try again later.',
@@ -147,7 +147,7 @@ const donationLimiter = rateLimit({
     store: redisStore,
     keyGenerator: createKeyGenerator('donation'),
     handler: (req, res) => {
-        logRateLimitViolation(req, '30/hour-donation');
+        logRateLimitViolation(req, '12/hour-donation');
         res.status(429).json({
             success: false,
             message: 'Too many donation attempts. Please try again later.',
@@ -216,7 +216,7 @@ const uploadLimiter = rateLimit({
 // ====================
 const searchLimiter = rateLimit({
     windowMs: 10 * 60 * 1000, // 10 minutes
-    max: 100, // Max 100 searches per 10 minutes per user
+    max: 250, // Max 250 searches per 10 minutes per user (increased from 100)
     message: {
         success: false,
         message: 'Too many search requests. Please try again later.',
@@ -300,7 +300,7 @@ const passwordResetLimiter = rateLimit({
 // ====================
 const publicReadLimiter = rateLimit({
     windowMs: 10 * 60 * 1000, // 10 minutes
-    max: 300, // Max 300 read requests per 10 minutes per IP
+    max: 180, // Max 180 read requests per 10 minutes per IP (reduced from 300 to prevent scraping)
     message: {
         success: false,
         message: 'Too many requests. Please try again later.',
