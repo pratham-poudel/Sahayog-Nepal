@@ -282,6 +282,9 @@ const CampaignDetail = ({ campaign }) => {
     );
   }
 
+  const [showFullDescription, setShowFullDescription] = useState(false);
+  const DESCRIPTION_PREVIEW_LENGTH = 500; // Characters to show initially
+
   const tabContent = {
     story: (
       <div className="space-y-8">
@@ -297,14 +300,40 @@ const CampaignDetail = ({ campaign }) => {
           </div>
           <div className="prose prose-gray dark:prose-invert max-w-none">
             {campaign.longDescription ? (
-              <div className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap" style={{
-                wordWrap: 'break-word',
-                overflowWrap: 'break-word',
-                wordBreak: 'break-word',
-                maxWidth: '100%',
-                lineHeight: '1.6'
-              }}>
-                {campaign.longDescription}
+              <div>
+                <div className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap" style={{
+                  wordWrap: 'break-word',
+                  overflowWrap: 'break-word',
+                  wordBreak: 'break-word',
+                  maxWidth: '100%',
+                  lineHeight: '1.6'
+                }}>
+                  {showFullDescription || campaign.longDescription.length <= DESCRIPTION_PREVIEW_LENGTH
+                    ? campaign.longDescription
+                    : `${campaign.longDescription.substring(0, DESCRIPTION_PREVIEW_LENGTH)}...`}
+                </div>
+                {campaign.longDescription.length > DESCRIPTION_PREVIEW_LENGTH && (
+                  <button
+                    onClick={() => setShowFullDescription(!showFullDescription)}
+                    className="mt-3 text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium text-sm flex items-center gap-1 transition-colors"
+                  >
+                    {showFullDescription ? (
+                      <>
+                        Show Less
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                        </svg>
+                      </>
+                    ) : (
+                      <>
+                        Read More
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
             ) : (
               <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
@@ -342,61 +371,6 @@ const CampaignDetail = ({ campaign }) => {
             </div>
           </div>
         ) : null}
-
-        {/* Campaign Statistics */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm">
-          <div className="flex items-center mb-6">
-            <div className="bg-primary-100 dark:bg-primary-900 p-2 rounded-lg mr-3">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary-600 dark:text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Campaign Progress</h3>
-          </div>
-          
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <div className="text-2xl font-bold text-primary-600 dark:text-primary-400">
-                {campaign.progress}%
-              </div>
-              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Goal Reached</p>
-            </div>
-            
-            <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                {campaign.donors}
-              </div>
-              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Supporters</p>
-            </div>
-            
-            <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                {campaign.daysLeft}
-              </div>
-              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Days Left</p>
-            </div>
-            
-            <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                {formatCurrencyShort(Math.round(campaign.raised / campaign.donors || 0))}
-              </div>
-              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Avg. Donation</p>
-            </div>
-          </div>
-        </div>
-        
-        {/* Recent Supporters */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm">
-          <div className="flex items-center mb-4">
-            {/* <div className="bg-primary-100 dark:bg-primary-900 p-2 rounded-lg mr-3">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary-600 dark:text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
-            </div> */}
-            {/* <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Supporters</h3> */}
-          </div>
-          <RecentDonations campaignId={campaign._id || campaign.id} />
-        </div>
       </div>
     ),
     updates: (
@@ -849,6 +823,48 @@ const CampaignDetail = ({ campaign }) => {
           )}
         </motion.div>
 
+        {/* Campaign Statistics - Universal */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm mb-6">
+          <div className="flex items-center mb-6">
+            <div className="bg-primary-100 dark:bg-primary-900 p-2 rounded-lg mr-3">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary-600 dark:text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Campaign Progress</h3>
+          </div>
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <div className="text-2xl font-bold text-primary-600 dark:text-primary-400">
+                {campaign.progress}%
+              </div>
+              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Goal Reached</p>
+            </div>
+            
+            <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                {campaign.donors}
+              </div>
+              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Supporters</p>
+            </div>
+            
+            <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                {campaign.daysLeft}
+              </div>
+              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Days Left</p>
+            </div>
+            
+            <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                {formatCurrencyShort(Math.round(campaign.raised / campaign.donors || 0))}
+              </div>
+              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Avg. Donation</p>
+            </div>
+          </div>
+        </div>
+
         <div className="flex border-b mb-6 overflow-x-auto">
           <button 
             className={`py-2 px-4 md:py-3 md:px-6 font-medium text-sm md:text-base whitespace-nowrap ${
@@ -892,6 +908,19 @@ const CampaignDetail = ({ campaign }) => {
         >
           {tabContent[activeTab]}
         </motion.div>
+
+        {/* Recent Supporters - Universal */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm mt-6">
+          <div className="flex items-center mb-4">
+            {/* <div className="bg-primary-100 dark:bg-primary-900 p-2 rounded-lg mr-3">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary-600 dark:text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+            </div> */}
+            {/* <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Supporters</h3> */}
+          </div>
+          <RecentDonations campaignId={campaign._id || campaign.id} />
+        </div>
       </div>
 
       <motion.div 
