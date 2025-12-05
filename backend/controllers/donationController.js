@@ -20,27 +20,32 @@ exports.getDonationsByCampaign = async (req, res) => {
     const donations = await Donation.find({ campaignId })
       .populate({
         path: 'donorId',
-        select: 'name email profilePicture',
+        select: 'name profilePicture',
         options: { strictPopulate: false } // Allow null donorId for guest donations
       })
       .sort({ date: -1 })
       .skip(skip)
       .limit(limit);
     
-    // Format donations to handle guest donations
+    // Format donations to handle guest donations and remove sensitive data
     const formattedDonations = donations.map(donation => {
+      const donationObj = donation.toObject();
+      
+      // Remove sensitive fields
+      delete donationObj.donorEmail;
+      delete donationObj.donorPhone;
+      delete donationObj.riskScore;
+      delete donationObj.flags;
+      
       if (!donation.donorId && donation.donorName) {
-        // Guest donation - use name and email from donation record
-        return {
-          ...donation.toObject(),
-          donorId: {
-            name: donation.donorName,
-            email: donation.donorEmail,
-            profilePicture: null
-          }
+        // Guest donation - use only name from donation record
+        donationObj.donorId = {
+          name: donation.anonymous ? 'Anonymous' : donation.donorName,
+          profilePicture: null
         };
       }
-      return donation;
+      
+      return donationObj;
     });
     
     const total = await Donation.countDocuments({ campaignId });
@@ -78,26 +83,31 @@ exports.getRecentDonations = async (req, res) => {
     const donations = await Donation.find({ campaignId })
       .populate({
         path: 'donorId',
-        select: 'name email profilePicture',
+        select: 'name profilePicture',
         options: { strictPopulate: false } // Allow null donorId for guest donations
       })
       .sort({ date: -1 })
       .limit(7);
     
-    // Format donations to handle guest donations
+    // Format donations to handle guest donations and remove sensitive data
     const formattedDonations = donations.map(donation => {
+      const donationObj = donation.toObject();
+      
+      // Remove sensitive fields
+      delete donationObj.donorEmail;
+      delete donationObj.donorPhone;
+      delete donationObj.riskScore;
+      delete donationObj.flags;
+      
       if (!donation.donorId && donation.donorName) {
-        // Guest donation - use name and email from donation record
-        return {
-          ...donation.toObject(),
-          donorId: {
-            name: donation.donorName,
-            email: donation.donorEmail,
-            profilePicture: null
-          }
+        // Guest donation - use only name from donation record
+        donationObj.donorId = {
+          name: donation.anonymous ? 'Anonymous' : donation.donorName,
+          profilePicture: null
         };
       }
-      return donation;
+      
+      return donationObj;
     });
     
     res.status(200).json({

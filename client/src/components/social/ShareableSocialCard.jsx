@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import html2canvas from 'html2canvas';
 
@@ -34,11 +35,16 @@ const ShareableSocialCard = ({ campaign, onClose, isOpen }) => {
   
   data.progress = data.goal > 0 ? Math.min((data.raised / data.goal) * 100, 100) : 0;
   
-  // Prevent body scroll when modal is open
+  // Prevent body scroll when modal is open and cleanup states
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
-      return () => { document.body.style.overflow = ''; };
+      // Reset states when opening
+      setIsDownloaded(false);
+      setImageError(false);
+      return () => { 
+        document.body.style.overflow = ''; 
+      };
     }
   }, [isOpen]);
   
@@ -143,30 +149,30 @@ const ShareableSocialCard = ({ campaign, onClose, isOpen }) => {
     }
   };
 
+  // Memoize computed values to prevent recalculation on re-renders
   const proxyUrl = getProxyUrl(data.image);
   const icon = getIcon(data.title, data.description, data.category);
   
-  return (
+  // Render modal using portal to ensure it's at the root level
+  const modalContent = (
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[50000] p-4 isolate"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          style={{ zIndex: 9999 }}
         >
           <motion.div 
-            className="bg-white rounded-2xl max-w-4xl w-full max-h-[95vh] overflow-hidden shadow-2xl relative z-[10000]"
+            className="bg-white rounded-2xl max-w-4xl w-full max-h-[95vh] overflow-hidden shadow-2xl relative"
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
             onClick={e => e.stopPropagation()}
-            style={{ zIndex: 10000 }}
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-[#8B2325] to-[#B91C1C] text-white p-6 relative z-[10001]">
+            <div className="bg-gradient-to-r from-[#8B2325] to-[#B91C1C] text-white p-6 relative">
               <div className="flex justify-between items-center">
                 <div>
                   <h2 className="text-2xl font-bold">Share This Campaign</h2>
@@ -174,7 +180,7 @@ const ShareableSocialCard = ({ campaign, onClose, isOpen }) => {
                 </div>
                 <button 
                   onClick={onClose}
-                  className="text-white/80 hover:text-white p-2 rounded-full hover:bg-white/20 transition-colors relative z-[10002]"
+                  className="text-white/80 hover:text-white p-2 rounded-full hover:bg-white/20 transition-colors"
                 >
                   <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -183,7 +189,7 @@ const ShareableSocialCard = ({ campaign, onClose, isOpen }) => {
               </div>
             </div>
             
-            <div className="p-8 overflow-y-auto max-h-[calc(95vh-100px)] relative z-[10001]">
+            <div className="p-8 overflow-y-auto max-h-[calc(95vh-100px)]">
               <div className="grid md:grid-cols-2 gap-8">
                 {/* Instructions */}
                 <div className="space-y-6">
@@ -460,6 +466,9 @@ const ShareableSocialCard = ({ campaign, onClose, isOpen }) => {
       )}
     </AnimatePresence>
   );
+
+  // Render using portal to document.body to escape any parent z-index contexts
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : null;
 };
 
 export default ShareableSocialCard;

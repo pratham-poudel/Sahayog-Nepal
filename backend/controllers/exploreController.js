@@ -53,34 +53,99 @@ exports.getRegularExplore = async (req, res) => {
             baseMatch.subcategory = subcategory;
         }
         
-        // If search term exists, use MongoDB text search
+        // Enhanced search functionality
         let textSearchScore = null;
+        let searchStages = [];
+        
         if (searchTerm && searchTerm.trim()) {
-            baseMatch.$text = { $search: searchTerm };
-            textSearchScore = { score: { $meta: 'textScore' } };
+            // Create a search regex for flexible matching
+            const searchRegex = new RegExp(searchTerm.trim(), 'i');
+            
+            // First, lookup creator info for searching
+            searchStages = [
+                {
+                    $lookup: {
+                        from: 'users',
+                        localField: 'creator',
+                        foreignField: '_id',
+                        as: 'creator',
+                        pipeline: [
+                            {
+                                $project: {
+                                    name: 1,
+                                    profilePicture: 1,
+                                    profilePictureUrl: 1,
+                                    isPremiumAndVerified: 1
+                                }
+                            }
+                        ]
+                    }
+                },
+                { $unwind: '$creator' },
+                {
+                    $match: {
+                        $or: [
+                            { title: searchRegex },
+                            { shortDescription: searchRegex },
+                            { story: searchRegex },
+                            { category: searchRegex },
+                            { subcategory: searchRegex },
+                            { tags: { $in: [searchRegex] } },
+                            { 'creator.name': searchRegex }
+                        ]
+                    }
+                },
+                // Add scoring based on match quality
+                {
+                    $addFields: {
+                        searchScore: {
+                            $add: [
+                                // Title match gets highest score (100)
+                                { $cond: [{ $regexMatch: { input: '$title', regex: searchRegex } }, 100, 0] },
+                                // Creator name match gets high score (80)
+                                { $cond: [{ $regexMatch: { input: '$creator.name', regex: searchRegex } }, 80, 0] },
+                                // Category match gets good score (60)
+                                { $cond: [{ $regexMatch: { input: '$category', regex: searchRegex } }, 60, 0] },
+                                // Subcategory match gets decent score (50)
+                                { $cond: [{ $regexMatch: { input: { $ifNull: ['$subcategory', ''] }, regex: searchRegex } }, 50, 0] },
+                                // Tags match gets moderate score (40)
+                                { $cond: [{ $gt: [{ $size: { $filter: { input: '$tags', as: 'tag', cond: { $regexMatch: { input: '$$tag', regex: searchRegex } } } } }, 0] }, 40, 0] },
+                                // Short description match gets low score (20)
+                                { $cond: [{ $regexMatch: { input: '$shortDescription', regex: searchRegex } }, 20, 0] },
+                                // Story match gets minimal score (10)
+                                { $cond: [{ $regexMatch: { input: '$story', regex: searchRegex } }, 10, 0] }
+                            ]
+                        }
+                    }
+                }
+            ];
+        } else {
+            // No search term, just do normal lookup
+            searchStages = [
+                {
+                    $lookup: {
+                        from: 'users',
+                        localField: 'creator',
+                        foreignField: '_id',
+                        as: 'creator',
+                        pipeline: [
+                            {
+                                $project: {
+                                    name: 1,
+                                    profilePicture: 1,
+                                    profilePictureUrl: 1,
+                                    isPremiumAndVerified: 1
+                                }
+                            }
+                        ]
+                    }
+                },
+                { $unwind: '$creator' }
+            ];
         }
         
-        // Common lookup and addFields stages
-        const commonStages = [
-            {
-                $lookup: {
-                    from: 'users',
-                    localField: 'creator',
-                    foreignField: '_id',
-                    as: 'creator',
-                    pipeline: [
-                        {
-                            $project: {
-                                name: 1,
-                                profilePicture: 1,
-                                profilePictureUrl: 1,
-                                isPremiumAndVerified: 1
-                            }
-                        }
-                    ]
-                }
-            },
-            { $unwind: '$creator' },
+        // Common addFields stages
+        const commonAddFieldsStages = [
             {
                 $project: {
                     amountWithdrawn: 0,
@@ -113,21 +178,33 @@ exports.getRegularExplore = async (req, res) => {
             }
         ];
         
-        // If search is active, use simple text search sort
+        const commonStages = [...searchStages, ...commonAddFieldsStages];
+        
+        // If search is active, use enhanced search with scoring
         if (searchTerm && searchTerm.trim()) {
             const skip = (page - 1) * limit;
             
             const pipeline = [
                 { $match: baseMatch },
-                ...(textSearchScore ? [{ $addFields: textSearchScore }] : []),
                 ...commonStages,
-                { $sort: { score: { $meta: 'textScore' } } },
+                { $sort: { searchScore: -1, amountRaised: -1, donors: -1 } }, // Sort by search relevance, then by engagement
                 { $skip: skip },
                 { $limit: limit }
             ];
             
-            const campaigns = await Campaign.aggregate(pipeline);
-            const total = await Campaign.countDocuments(baseMatch);
+            // For counting, we need a similar pipeline but without skip/limit
+            const countPipeline = [
+                { $match: baseMatch },
+                ...searchStages,
+                { $count: 'total' }
+            ];
+            
+            const [campaigns, countResult] = await Promise.all([
+                Campaign.aggregate(pipeline),
+                Campaign.aggregate(countPipeline)
+            ]);
+            
+            const total = countResult.length > 0 ? countResult[0].total : 0;
             
             const campaignsWithUrls = campaigns.map(campaign => formatCampaignWithUrls(campaign));
             const totalPages = Math.ceil(total / limit);
@@ -415,34 +492,98 @@ exports.getUrgentExplore = async (req, res) => {
             matchStage.subcategory = subcategory;
         }
         
-        // If search term exists, use MongoDB text search
-        let textSearchScore = null;
+        // Enhanced search functionality for urgent campaigns
+        let searchStages = [];
+        
         if (searchTerm && searchTerm.trim()) {
-            matchStage.$text = { $search: searchTerm };
-            textSearchScore = { score: { $meta: 'textScore' } };
+            // Create a search regex for flexible matching
+            const searchRegex = new RegExp(searchTerm.trim(), 'i');
+            
+            // First, lookup creator info for searching
+            searchStages = [
+                {
+                    $lookup: {
+                        from: 'users',
+                        localField: 'creator',
+                        foreignField: '_id',
+                        as: 'creator',
+                        pipeline: [
+                            {
+                                $project: {
+                                    name: 1,
+                                    profilePicture: 1,
+                                    profilePictureUrl: 1,
+                                    isPremiumAndVerified: 1
+                                }
+                            }
+                        ]
+                    }
+                },
+                { $unwind: '$creator' },
+                {
+                    $match: {
+                        $or: [
+                            { title: searchRegex },
+                            { shortDescription: searchRegex },
+                            { story: searchRegex },
+                            { category: searchRegex },
+                            { subcategory: searchRegex },
+                            { tags: { $in: [searchRegex] } },
+                            { 'creator.name': searchRegex }
+                        ]
+                    }
+                },
+                // Add scoring based on match quality
+                {
+                    $addFields: {
+                        searchScore: {
+                            $add: [
+                                // Title match gets highest score (100)
+                                { $cond: [{ $regexMatch: { input: '$title', regex: searchRegex } }, 100, 0] },
+                                // Creator name match gets high score (80)
+                                { $cond: [{ $regexMatch: { input: '$creator.name', regex: searchRegex } }, 80, 0] },
+                                // Category match gets good score (60)
+                                { $cond: [{ $regexMatch: { input: '$category', regex: searchRegex } }, 60, 0] },
+                                // Subcategory match gets decent score (50)
+                                { $cond: [{ $regexMatch: { input: { $ifNull: ['$subcategory', ''] }, regex: searchRegex } }, 50, 0] },
+                                // Tags match gets moderate score (40)
+                                { $cond: [{ $gt: [{ $size: { $filter: { input: '$tags', as: 'tag', cond: { $regexMatch: { input: '$$tag', regex: searchRegex } } } } }, 0] }, 40, 0] },
+                                // Short description match gets low score (20)
+                                { $cond: [{ $regexMatch: { input: '$shortDescription', regex: searchRegex } }, 20, 0] },
+                                // Story match gets minimal score (10)
+                                { $cond: [{ $regexMatch: { input: '$story', regex: searchRegex } }, 10, 0] }
+                            ]
+                        }
+                    }
+                }
+            ];
+        } else {
+            // No search term, just do normal lookup
+            searchStages = [
+                {
+                    $lookup: {
+                        from: 'users',
+                        localField: 'creator',
+                        foreignField: '_id',
+                        as: 'creator',
+                        pipeline: [
+                            {
+                                $project: {
+                                    name: 1,
+                                    profilePicture: 1,
+                                    profilePictureUrl: 1,
+                                    isPremiumAndVerified: 1
+                                }
+                            }
+                        ]
+                    }
+                },
+                { $unwind: '$creator' }
+            ];
         }
         
-        // Build pipeline with common stages
-        const commonStages = [
-            {
-                $lookup: {
-                    from: 'users',
-                    localField: 'creator',
-                    foreignField: '_id',
-                    as: 'creator',
-                    pipeline: [
-                        {
-                            $project: {
-                                name: 1,
-                                profilePicture: 1,
-                                profilePictureUrl: 1,
-                                isPremiumAndVerified: 1
-                            }
-                        }
-                    ]
-                }
-            },
-            { $unwind: '$creator' },
+        // Common addFields stages
+        const commonAddFieldsStages = [
             {
                 $project: {
                     amountWithdrawn: 0,
@@ -519,12 +660,14 @@ exports.getUrgentExplore = async (req, res) => {
             }
         ];
         
+        const commonStages = [...searchStages, ...commonAddFieldsStages];
+        
         // Determine sort stage based on sortBy parameter
         let sortStage = {};
         
         if (searchTerm && searchTerm.trim()) {
-            // When searching, prioritize text search score
-            sortStage = { score: { $meta: 'textScore' } };
+            // When searching, prioritize search score
+            sortStage = { searchScore: -1, urgencyScore: -1, amountRaised: -1 };
         } else {
             switch (sortBy) {
                 case 'newest':
@@ -549,18 +692,28 @@ exports.getUrgentExplore = async (req, res) => {
         // Build pipeline
         const pipeline = [
             { $match: matchStage },
-            ...(textSearchScore ? [{ $addFields: textSearchScore }] : []),
             ...commonStages,
             { $sort: sortStage },
             { $skip: skip },
             { $limit: limit }
         ];
         
+        // For counting with search, we need a similar pipeline
+        let total;
+        if (searchTerm && searchTerm.trim()) {
+            const countPipeline = [
+                { $match: matchStage },
+                ...searchStages,
+                { $count: 'total' }
+            ];
+            const countResult = await Campaign.aggregate(countPipeline);
+            total = countResult.length > 0 ? countResult[0].total : 0;
+        } else {
+            total = await Campaign.countDocuments(matchStage);
+        }
+        
         // Execute aggregation
         const campaigns = await Campaign.aggregate(pipeline);
-        
-        // Get total count
-        const total = await Campaign.countDocuments(matchStage);
         
         // Format campaigns with URLs
         const campaignsWithUrls = campaigns.map(campaign => formatCampaignWithUrls(campaign));

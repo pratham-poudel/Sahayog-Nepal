@@ -89,49 +89,64 @@ const DonationsModal = ({ isOpen, onClose, campaignId }) => {
     }
   }, [isOpen, campaignId]);
   
-  // Fetch donations
-  const fetchDonations = useCallback(async () => {
-    try {
-      if (page === 1) {
-        setInitialLoading(true);
-      } else {
-        setLoading(true);
-      }
-      const response = await axios.get(`${CONFIG_API_URL}/api/donations/campaign/${campaignId}`, {
-        params: { page, limit: 10 }
-      });
-      
-      if (response.data && response.data.success) {
-        setDonations(prev => [...prev, ...response.data.data]);
-        setHasMore(response.data.pagination.hasMore);
-      } else {
-        setError('Failed to load donations');
-      }
-    } catch (error) {
-      console.error('Error fetching donations:', error);
-      setError('Failed to load donations');
-    } finally {
-      setLoading(false);
-      setInitialLoading(false);
-    }
-  }, [campaignId, page]);
-  
+  // Reset modal state when it opens/closes
   useEffect(() => {
     if (isOpen && campaignId) {
+      // Reset everything when modal opens
       setDonations([]);
       setPage(1);
       setHasMore(true);
       setError(null);
+      setLoading(false);
       setInitialLoading(false);
-      fetchDonations();
     } else if (!isOpen) {
       // Reset states when modal closes
       setDonations([]);
+      setPage(1);
       setInitialLoading(false);
       setLoading(false);
       setError(null);
     }
-  }, [isOpen, campaignId, fetchDonations]);
+  }, [isOpen, campaignId]);
+  
+  // Fetch donations when page changes
+  useEffect(() => {
+    const fetchDonations = async () => {
+      if (!isOpen || !campaignId) return;
+      
+      try {
+        if (page === 1) {
+          setInitialLoading(true);
+        } else {
+          setLoading(true);
+        }
+        
+        const response = await axios.get(`${CONFIG_API_URL}/api/donations/campaign/${campaignId}`, {
+          params: { page, limit: 10 }
+        });
+        
+        if (response.data && response.data.success) {
+          setDonations(prev => {
+            // Filter out duplicates based on _id
+            const existingIds = new Set(prev.map(d => d._id));
+            const newDonations = response.data.data.filter(d => !existingIds.has(d._id));
+            return [...prev, ...newDonations];
+          });
+          setHasMore(response.data.pagination.hasMore);
+        } else {
+          setError('Failed to load donations');
+        }
+      } catch (error) {
+        console.error('Error fetching donations:', error);
+        setError('Failed to load donations');
+      } finally {
+        setLoading(false);
+        setInitialLoading(false);
+      }
+    };
+    
+    fetchDonations();
+  }, [isOpen, campaignId, page]);
   
   // Setup intersection observer for infinite scroll
   const lastDonationElementRef = useCallback(node => {
@@ -146,13 +161,6 @@ const DonationsModal = ({ isOpen, onClose, campaignId }) => {
     
     if (node) observer.current.observe(node);
   }, [loading, initialLoading, hasMore]);
-  
-  // Load more donations when page changes
-  useEffect(() => {
-    if (page > 1) {
-      fetchDonations();
-    }
-  }, [page, fetchDonations]);
   
   return (
     <AnimatePresence>

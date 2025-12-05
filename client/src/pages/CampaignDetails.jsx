@@ -184,9 +184,9 @@ const CampaignDetails = () => {
               }} />
               
               {relatedCampaigns.length > 0 && (
-                <div className="mt-16">
+                <div className="mt-16 overflow-hidden">
                   <h2 className="text-2xl font-poppins font-semibold mb-6">Related Campaigns</h2>
-                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {relatedCampaigns.map((relatedCampaign) => (
                       <CampaignCard 
                         key={relatedCampaign._id} 

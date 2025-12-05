@@ -200,7 +200,7 @@ const CampaignCard = ({ campaign = {} }) => {
     <div className="h-full">
       <Link href={`/campaign/${safeData.id}`} className="block h-full">
         <div 
-          className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 flex flex-col h-full cursor-pointer"
+          className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 flex flex-col h-full cursor-pointer relative"
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
@@ -221,7 +221,7 @@ const CampaignCard = ({ campaign = {} }) => {
             
             {/* Featured Badge - "Needs Attention" Ribbon */}
             {campaign?.featured && (
-              <div className="absolute top-0 left-0 z-20">
+              <div className="absolute top-0 left-0 z-1">
                 <div className="relative">
                   {/* Main ribbon */}
                   <div className="bg-gradient-to-r from-red-700 to-red-800 text-white text-xs font-bold px-3 py-1.5 shadow-lg">
