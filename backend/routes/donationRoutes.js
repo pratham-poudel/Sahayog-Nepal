@@ -8,10 +8,10 @@ const { protect, checkBanStatus } = require('../middlewares/authMiddleware');
 router.get('/campaign/:campaignId', protect, checkBanStatus, donationController.getDonationsByCampaign);
 
 // GET /api/donations/campaign/:campaignId/recent - Get recent donations (limited to 7) for a campaign
-router.get('/campaign/:campaignId/recent', checkBanStatus, donationController.getRecentDonations);
+router.get('/campaign/:campaignId/recent', donationController.getRecentDonations);
 
 // GET /api/donations/campaign/:campaignId/top-donor - Get top donor for a campaign
-router.get('/campaign/:campaignId/top', checkBanStatus, donationController.getTopDonor);
+router.get('/campaign/:campaignId/top', donationController.getTopDonor);
 
 // GET /api/donations/user/:userId/recent - Get recent donations made to user's campaigns
 router.get('/user/:userId/recent', protect, checkBanStatus, donationController.getRecentDonationsToUserCampaigns);
