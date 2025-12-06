@@ -5,7 +5,7 @@ const { protect, checkBanStatus } = require('../middlewares/authMiddleware');
 
 
 // GET /api/donations/campaign/:campaignId - Get donations by campaign ID with pagination
-router.get('/campaign/:campaignId', protect, checkBanStatus, donationController.getDonationsByCampaign);
+router.get('/campaign/:campaignId', donationController.getDonationsByCampaign);
 
 // GET /api/donations/campaign/:campaignId/recent - Get recent donations (limited to 7) for a campaign
 router.get('/campaign/:campaignId/recent', donationController.getRecentDonations);
