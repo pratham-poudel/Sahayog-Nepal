@@ -122,14 +122,15 @@ router.get('/mydonation/:id', protect, checkBanStatus, getMydonation);
 
 // Email change routes with protection
 router.post('/send-email-change-otp', 
-    protect, 
+    dailyEmailLimiter,           // Daily email limit per IP
+    emailLimiter,                // General email rate limiting
+    otpLimiter,                  // OTP-specific rate limiting
+    checkBlockedIP,              // Check if IP is blocked for suspicious activity
+    honeypotProtection,          // Bot detection
+    emailDomainProtection,       // Validate email domain and block disposable emails
+    suspiciousPatternDetection,  // Detect suspicious patterns
+    emailFrequencyProtection,    protect, 
     checkBanStatus,
-    dailyEmailLimiter,
-    emailLimiter,
-    otpLimiter,
-    checkBlockedIP,
-    emailDomainProtection,
-    emailFrequencyProtection,
     sendEmailChangeOtp
 );
 router.post('/verify-email-change-otp', 
