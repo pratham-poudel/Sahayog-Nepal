@@ -388,6 +388,7 @@ exports.getCampaignStatistics = async (req, res) => {
         campaign: {
           id: campaign._id,
           title: campaign.title,
+          coverImage:campaign.coverImage,
           targetAmount: campaign.targetAmount,
           amountRaised: campaign.amountRaised,
           creator: campaign.creator,

@@ -1,8 +1,10 @@
 import { Link } from 'wouter';
-import { motion } from 'framer-motion';
+import { motion ,AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { useStats } from '../../contexts/StatsContext';
 import config from '../../config';
+
+
 
 // Real impact stories
 const impactImages = [
@@ -406,327 +408,373 @@ const Hero = () => {
             )}
           </motion.div>
 
-          <motion.div 
-            className="relative z-10"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: isVisible ? 1 : 0, scale: isVisible ? 1 : 0.9 }}
-            transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+          <motion.div
+  className="relative z-10"
+  initial={{ opacity: 0, scale: 0.9 }}
+  animate={{ opacity: isVisible ? 1 : 0, scale: isVisible ? 1 : 0.95 }}
+  transition={{ duration: 0.7, delay: 0.15, ease: 'easeOut' }}
+>
+  {/* GoFundMe-Inspired Hero Section */}
+  <div className="relative max-w-4xl mx-auto px-4 sm:px-6">
+    {/* Circular Category Grid */}
+    <div className="relative">
+      {/* Connection Wires/Lines - SVG */}
+      <svg
+        className="pointer-events-none absolute inset-0 h-full w-full -z-10"
+        viewBox="0 0 600 600"
+        preserveAspectRatio="xMidYMid meet"
+        aria-hidden="true"
+      >
+        <defs>
+          {/* Static gradient */}
+          <linearGradient id="wireGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#10b981" stopOpacity="0.25" />
+            <stop offset="50%" stopColor="#14b8a6" stopOpacity="0.6" />
+            <stop offset="100%" stopColor="#10b981" stopOpacity="0.25" />
+          </linearGradient>
+
+          {/* Animated gradient (for subtle shimmer if you want to switch to it later) */}
+          <linearGradient
+            id="wireGradientAnimated"
+            x1="0%"
+            y1="0%"
+            x2="100%"
+            y2="0%"
           >
-            {/* GoFundMe-Inspired Hero Section */}
-            <div className="relative max-w-2xl mx-auto">
-              {/* Main Heading - Professional & Clean */}
-              
+            <stop offset="0%" stopColor="#10b981" stopOpacity="0.2">
+              <animate
+                attributeName="stopOpacity"
+                values="0.2;0.8;0.2"
+                dur="3s"
+                repeatCount="indefinite"
+              />
+            </stop>
+            <stop offset="50%" stopColor="#14b8a6" stopOpacity="0.6">
+              <animate
+                attributeName="stopOpacity"
+                values="0.6;1;0.6"
+                dur="3s"
+                repeatCount="indefinite"
+              />
+            </stop>
+            <stop offset="100%" stopColor="#10b981" stopOpacity="0.2">
+              <animate
+                attributeName="stopOpacity"
+                values="0.2;0.8;0.2"
+                dur="3s"
+                repeatCount="indefinite"
+              />
+            </stop>
+          </linearGradient>
+        </defs>
 
-              {/* Circular Category Grid - GoFundMe Style */}
-              <div className="relative">
-                {/* Connection Wires/Lines - SVG */}
-                <svg 
-                  className="absolute inset-0 w-full h-full pointer-events-none z-0" 
-                  style={{ top: '0', left: '0' }}
-                  viewBox="0 0 600 600"
-                  preserveAspectRatio="xMidYMid meet"
-                >
-                  <defs>
-                    {/* Gradient for the wires */}
-                    <linearGradient id="wireGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="#10b981" stopOpacity="0.3" />
-                      <stop offset="50%" stopColor="#14b8a6" stopOpacity="0.6" />
-                      <stop offset="100%" stopColor="#10b981" stopOpacity="0.3" />
-                    </linearGradient>
-                    {/* Animated gradient */}
-                    <linearGradient id="wireGradientAnimated" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="#10b981" stopOpacity="0.2">
-                        <animate attributeName="stopOpacity" values="0.2;0.8;0.2" dur="3s" repeatCount="indefinite" />
-                      </stop>
-                      <stop offset="50%" stopColor="#14b8a6" stopOpacity="0.6">
-                        <animate attributeName="stopOpacity" values="0.6;1;0.6" dur="3s" repeatCount="indefinite" />
-                      </stop>
-                      <stop offset="100%" stopColor="#10b981" stopOpacity="0.2">
-                        <animate attributeName="stopOpacity" values="0.2;0.8;0.2" dur="3s" repeatCount="indefinite" />
-                      </stop>
-                    </linearGradient>
-                  </defs>
-                  
-                  {/* Center point (Your cause circle center) - approximately at 50%, 48% */}
-                  {/* Lines to top-left (Medical) */}
-                  <motion.line
-                    x1="300" y1="288"
-                    x2="140" y2="120"
-                    stroke="url(#wireGradient)"
-                    strokeWidth="2"
-                    strokeDasharray="8,4"
-                    initial={{ pathLength: 0, opacity: 0 }}
-                    animate={{ pathLength: 1, opacity: 1 }}
-                    transition={{ duration: 1, delay: 0.4, ease: "easeInOut" }}
-                  />
-                  
-                  {/* Line to top-right (Education) */}
-                  <motion.line
-                    x1="300" y1="288"
-                    x2="460" y2="120"
-                    stroke="url(#wireGradient)"
-                    strokeWidth="2"
-                    strokeDasharray="8,4"
-                    initial={{ pathLength: 0, opacity: 0 }}
-                    animate={{ pathLength: 1, opacity: 1 }}
-                    transition={{ duration: 1, delay: 0.5, ease: "easeInOut" }}
-                  />
-                  
-                  {/* Line to bottom-left (Emergency) */}
-                  <motion.line
-                    x1="300" y1="288"
-                    x2="120" y2="480"
-                    stroke="url(#wireGradient)"
-                    strokeWidth="2"
-                    strokeDasharray="8,4"
-                    initial={{ pathLength: 0, opacity: 0 }}
-                    animate={{ pathLength: 1, opacity: 1 }}
-                    transition={{ duration: 1, delay: 0.7, ease: "easeInOut" }}
-                  />
-                  
-                  {/* Line to bottom-center (Animal) */}
-                  <motion.line
-                    x1="300" y1="288"
-                    x2="300" y2="480"
-                    stroke="url(#wireGradient)"
-                    strokeWidth="2"
-                    strokeDasharray="8,4"
-                    initial={{ pathLength: 0, opacity: 0 }}
-                    animate={{ pathLength: 1, opacity: 1 }}
-                    transition={{ duration: 1, delay: 0.8, ease: "easeInOut" }}
-                  />
-                  
-                  {/* Line to bottom-right (Business) */}
-                  <motion.line
-                    x1="300" y1="288"
-                    x2="480" y2="480"
-                    stroke="url(#wireGradient)"
-                    strokeWidth="2"
-                    strokeDasharray="8,4"
-                    initial={{ pathLength: 0, opacity: 0 }}
-                    animate={{ pathLength: 1, opacity: 1 }}
-                    transition={{ duration: 1, delay: 0.9, ease: "easeInOut" }}
-                  />
-                  
-                  {/* Animated pulse circles at center */}
-                  <circle cx="300" cy="288" r="4" fill="#10b981" opacity="0.8">
-                    <animate attributeName="r" values="4;8;4" dur="2s" repeatCount="indefinite" />
-                    <animate attributeName="opacity" values="0.8;0.3;0.8" dur="2s" repeatCount="indefinite" />
-                  </circle>
-                </svg>
-                
-                {/* Center categories in a circular pattern */}
-                <div className="grid grid-cols-2 gap-8 md:gap-12 max-w-xl mx-auto mb-8 relative z-10">
-                  {/* Top Row - 2 circles */}
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.8, y: 20 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.4 }}
-                  >
-                    <Link to="/explore/medical-treatment">
-                      <div className="group relative cursor-pointer">
-                        <div className="relative w-32 h-32 md:w-40 md:h-40 mx-auto">
-                          {/* Circular image container with green border */}
-                          <div className="absolute inset-0 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 p-1.5 shadow-xl group-hover:shadow-2xl transition-all duration-300 group-hover:scale-110">
-                            <div className="w-full h-full rounded-full overflow-hidden bg-white dark:bg-gray-800">
-                              <img 
-                                src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80"
-                                alt="Medical"
-                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                                loading="lazy"
-                              />
-                            </div>
-                          </div>
-                          {/* Label badge */}
-                          <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-gray-100 dark:bg-gray-700 px-4 py-1.5 rounded-full shadow-lg border-2 border-white dark:border-gray-800 whitespace-nowrap">
-                            <span className="text-sm font-bold text-gray-700 dark:text-gray-200">Medical</span>
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
-                  </motion.div>
+        {/* Center point around (300, 288) */}
+        {/* Lines to top-left (Medical) */}
+        <motion.line
+          x1="300"
+          y1="288"
+          x2="150"
+          y2="135"
+          stroke="url(#wireGradient)"
+          strokeWidth="1.8"
+          strokeDasharray="8,4"
+          initial={{ pathLength: 0, opacity: 0 }}
+          animate={{ pathLength: 1, opacity: 1 }}
+          transition={{ duration: 0.9, delay: 0.35, ease: 'easeInOut' }}
+        />
 
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.8, y: 20 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.5 }}
-                  >
-                    <Link to="/explore/primary-education">
-                      <div className="group relative cursor-pointer">
-                        <div className="relative w-32 h-32 md:w-40 md:h-40 mx-auto">
-                          <div className="absolute inset-0 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 p-1.5 shadow-xl group-hover:shadow-2xl transition-all duration-300 group-hover:scale-110">
-                            <div className="w-full h-full rounded-full overflow-hidden bg-white dark:bg-gray-800">
-                              <img 
-                                src="https://images.unsplash.com/photo-1497486751825-1233686d5d80?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80"
-                                alt="Education"
-                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                                loading="lazy"
-                              />
-                            </div>
-                          </div>
-                          <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-gray-100 dark:bg-gray-700 px-4 py-1.5 rounded-full shadow-lg border-2 border-white dark:border-gray-800 whitespace-nowrap">
-                            <span className="text-sm font-bold text-gray-700 dark:text-gray-200">Education</span>
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
-                  </motion.div>
+        {/* Line to top-right (Education) */}
+        <motion.line
+          x1="300"
+          y1="288"
+          x2="450"
+          y2="135"
+          stroke="url(#wireGradient)"
+          strokeWidth="1.8"
+          strokeDasharray="8,4"
+          initial={{ pathLength: 0, opacity: 0 }}
+          animate={{ pathLength: 1, opacity: 1 }}
+          transition={{ duration: 0.9, delay: 0.45, ease: 'easeInOut' }}
+        />
+
+        {/* Line to bottom-left (Emergency) */}
+        <motion.line
+          x1="300"
+          y1="288"
+          x2="150"
+          y2="470"
+          stroke="url(#wireGradient)"
+          strokeWidth="1.8"
+          strokeDasharray="8,4"
+          initial={{ pathLength: 0, opacity: 0 }}
+          animate={{ pathLength: 1, opacity: 1 }}
+          transition={{ duration: 0.9, delay: 0.6, ease: 'easeInOut' }}
+        />
+
+        {/* Line to bottom-center (Animal) */}
+        <motion.line
+          x1="300"
+          y1="288"
+          x2="300"
+          y2="480"
+          stroke="url(#wireGradient)"
+          strokeWidth="1.8"
+          strokeDasharray="8,4"
+          initial={{ pathLength: 0, opacity: 0 }}
+          animate={{ pathLength: 1, opacity: 1 }}
+          transition={{ duration: 0.9, delay: 0.7, ease: 'easeInOut' }}
+        />
+
+        {/* Line to bottom-right (Business) */}
+        <motion.line
+          x1="300"
+          y1="288"
+          x2="450"
+          y2="470"
+          stroke="url(#wireGradient)"
+          strokeWidth="1.8"
+          strokeDasharray="8,4"
+          initial={{ pathLength: 0, opacity: 0 }}
+          animate={{ pathLength: 1, opacity: 1 }}
+          transition={{ duration: 0.9, delay: 0.8, ease: 'easeInOut' }}
+        />
+
+        {/* Pulse at center */}
+        <circle cx="300" cy="288" r="4" fill="#10b981" opacity="0.8">
+          <animate
+            attributeName="r"
+            values="4;8;4"
+            dur="2.2s"
+            repeatCount="indefinite"
+          />
+          <animate
+            attributeName="opacity"
+            values="0.8;0.3;0.8"
+            dur="2.2s"
+            repeatCount="indefinite"
+          />
+        </circle>
+      </svg>
+
+      {/* Content wrapper to control layout and spacing */}
+      <div className="relative mx-auto flex max-w-xl flex-col items-center gap-6 pt-4 pb-2 sm:gap-8 sm:pt-6 md:pt-8">
+        {/* Top row: 2 circles */}
+        <div className="grid w-full grid-cols-2 gap-6 sm:gap-8">
+          {/* Medical */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.85, y: 16 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.35 }}
+          >
+            <Link
+              to="/explore/medical-treatment"
+              className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950/0"
+            >
+              <div className="relative mx-auto h-28 w-28 sm:h-32 sm:w-32 md:h-36 md:w-36">
+                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 p-1.5 shadow-lg transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl">
+                  <div className="h-full w-full overflow-hidden rounded-full bg-white dark:bg-slate-900">
+                    <img
+                      src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80"
+                      alt="Medical"
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      loading="lazy"
+                    />
+                  </div>
                 </div>
-
-                {/* Middle Row - Center circle (larger) */}
-                <div className="flex justify-center mb-8">
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.5, delay: 0.6 }}
-                    className="relative -mt-4"
-                  >
-                    <Link to="/explore">
-                      <div className="group relative cursor-pointer">
-                        <div className="relative w-36 h-36 md:w-44 md:h-44">
-                          <div className="absolute inset-0 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 p-1.5 shadow-xl group-hover:shadow-2xl transition-all duration-300 group-hover:scale-110">
-                            <div className="w-full h-full rounded-full overflow-hidden bg-white dark:bg-gray-800">
-                              <img 
-                                src="https://images.unsplash.com/photo-1559027615-cd4628902d4a?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80"
-                                alt="Your cause"
-                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                                loading="lazy"
-                              />
-                            </div>
-                          </div>
-                          <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-gray-100 dark:bg-gray-700 px-4 py-1.5 rounded-full shadow-lg border-2 border-white dark:border-gray-800 whitespace-nowrap">
-                            <span className="text-sm font-bold text-gray-700 dark:text-gray-200">Your cause</span>
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
-                  </motion.div>
-                </div>
-
-                {/* Bottom Row - 3 circles */}
-                <div className="grid grid-cols-3 gap-6 md:gap-10 max-w-2xl mx-auto">
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.8, y: -20 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.7 }}
-                  >
-                    <Link to="/explore/natural-disaster">
-                      <div className="group relative cursor-pointer">
-                        <div className="relative w-28 h-28 md:w-36 md:h-36 mx-auto">
-                          <div className="absolute inset-0 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 p-1.5 shadow-xl group-hover:shadow-2xl transition-all duration-300 group-hover:scale-110">
-                            <div className="w-full h-full rounded-full overflow-hidden bg-white dark:bg-gray-800">
-                              <img 
-                                src="https://images.unsplash.com/photo-1593113598332-cd288d649433?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80"
-                                alt="Emergency"
-                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                                loading="lazy"
-                              />
-                            </div>
-                          </div>
-                          <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full shadow-lg border-2 border-white dark:border-gray-800 whitespace-nowrap">
-                            <span className="text-xs font-bold text-gray-700 dark:text-gray-200">Emergency</span>
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
-                  </motion.div>
-
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.8, y: -20 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.8 }}
-                  >
-                    <Link to="/explore/cats">
-                      <div className="group relative cursor-pointer">
-                        <div className="relative w-28 h-28 md:w-36 md:h-36 mx-auto">
-                          <div className="absolute inset-0 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 p-1.5 shadow-xl group-hover:shadow-2xl transition-all duration-300 group-hover:scale-110">
-                            <div className="w-full h-full rounded-full overflow-hidden bg-white dark:bg-gray-800">
-                              <img 
-                                src="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80"
-                                alt="Animal"
-                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                                loading="lazy"
-                              />
-                            </div>
-                          </div>
-                          <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full shadow-lg border-2 border-white dark:border-gray-800 whitespace-nowrap">
-                            <span className="text-xs font-bold text-gray-700 dark:text-gray-200">Animal</span>
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
-                  </motion.div>
-
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.8, y: -20 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.9 }}
-                  >
-                    <Link to="/explore/startup">
-                      <div className="group relative cursor-pointer">
-                        <div className="relative w-28 h-28 md:w-36 md:h-36 mx-auto">
-                          <div className="absolute inset-0 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 p-1.5 shadow-xl group-hover:shadow-2xl transition-all duration-300 group-hover:scale-110">
-                            <div className="w-full h-full rounded-full overflow-hidden bg-white dark:bg-gray-800">
-                              <img 
-                                src="https://images.unsplash.com/photo-1552664730-d307ca884978?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80"
-                                alt="Business"
-                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                                loading="lazy"
-                              />
-                            </div>
-                          </div>
-                          <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full shadow-lg border-2 border-white dark:border-gray-800 whitespace-nowrap">
-                            <span className="text-xs font-bold text-gray-700 dark:text-gray-200">Business</span>
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
-                  </motion.div>
+                {/* Label */}
+                <div className="absolute -bottom-3 left-1/2 w-max -translate-x-1/2 rounded-full border border-white/70 bg-slate-50 px-3 py-1 text-center text-xs font-semibold text-slate-800 shadow-md dark:border-slate-800/70 dark:bg-slate-800/90 dark:text-slate-100">
+                  Medical
                 </div>
               </div>
-
-              {/* Bottom Info Section */}
-              <motion.div
-                className="text-center mt-16 space-y-6"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 1.0 }}
-              >
-                {/* <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-white/30 dark:border-gray-700/30 max-w-xl mx-auto">
-                  <h4 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-3" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                    More than {formattedHomeStats?.totalFunds?.formatted || '₹50 million'} is raised every week on GoFundMe.*
-                  </h4>
-                  <p className="text-gray-600 dark:text-gray-300 leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>
-                    Get started in just a few minutes — with helpful new tools, it's easier than ever to pick the perfect title, write a compelling story, and share it with the world.
-                  </p>
-                </div> */}
-
-                {/* Stats Display */}
-                {!statsLoading && (
-                  <div className="grid grid-cols-3 gap-4 max-w-xl mx-auto">
-                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-xl p-4">
-                      <p className="text-2xl md:text-3xl font-black text-blue-600 dark:text-blue-400" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                        {formattedHomeStats?.activeCampaigns?.formatted || "42"}
-                      </p>
-                      <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mt-1">Active Campaigns</p>
-                    </div>
-                    <div className="bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/30 dark:to-emerald-800/30 rounded-xl p-4">
-                      <p className="text-2xl md:text-3xl font-black text-green-600 dark:text-green-400" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                        {liveStats?.formatted?.totalRaised || "₹2.5M"}
-                      </p>
-                      <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mt-1">Total Raised</p>
-                    </div>
-                    <div className="bg-gradient-to-br from-purple-50 to-violet-100 dark:from-purple-900/30 dark:to-violet-800/30 rounded-xl p-4">
-                      <p className="text-2xl md:text-3xl font-black text-purple-600 dark:text-purple-400" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                        {formattedHomeStats?.totalDonors?.formatted || "200+"}
-                      </p>
-                      <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mt-1">Donors</p>
-                    </div>
-                  </div>
-                )}
-              </motion.div>
-            </div>
+            </Link>
           </motion.div>
+
+          {/* Education */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.85, y: 16 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.45 }}
+          >
+            <Link
+              to="/explore/primary-education"
+              className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950/0"
+            >
+              <div className="relative mx-auto h-28 w-28 sm:h-32 sm:w-32 md:h-36 md:w-36">
+                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 p-1.5 shadow-lg transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl">
+                  <div className="h-full w-full overflow-hidden rounded-full bg-white dark:bg-slate-900">
+                    <img
+                      src="https://images.unsplash.com/photo-1497486751825-1233686d5d80?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80"
+                      alt="Education"
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      loading="lazy"
+                    />
+                  </div>
+                </div>
+                <div className="absolute -bottom-3 left-1/2 w-max -translate-x-1/2 rounded-full border border-white/70 bg-slate-50 px-3 py-1 text-center text-xs font-semibold text-slate-800 shadow-md dark:border-slate-800/70 dark:bg-slate-800/90 dark:text-slate-100">
+                  Education
+                </div>
+              </div>
+            </Link>
+          </motion.div>
+        </div>
+
+        {/* Middle: Center circle (Your cause) */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.85, y: 10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.55 }}
+          className="relative -mt-4 sm:-mt-6"
+        >
+          <Link
+            to="/explore"
+            className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950/0"
+          >
+            <div className="relative h-32 w-32 sm:h-36 sm:w-36 md:h-40 md:w-40">
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 p-1.5 shadow-xl transition-all duration-300 group-hover:scale-110 group-hover:shadow-2xl">
+                <div className="h-full w-full overflow-hidden rounded-full bg-white dark:bg-slate-900">
+                  <img
+                    src="https://images.unsplash.com/photo-1559027615-cd4628902d4a?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80"
+                    alt="Your cause"
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    loading="lazy"
+                  />
+                </div>
+              </div>
+              <div className="absolute -bottom-3 left-1/2 w-max -translate-x-1/2 rounded-full border border-white/70 bg-slate-50 px-4 py-1 text-center text-xs font-semibold text-slate-800 shadow-md dark:border-slate-800/70 dark:bg-slate-800/90 dark:text-slate-100">
+                Your cause
+              </div>
+            </div>
+          </Link>
+        </motion.div>
+
+        {/* Bottom row: 3 circles */}
+        <div className="grid w-full grid-cols-3 gap-4 sm:gap-6 md:gap-8">
+          {/* Emergency */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.85, y: -16 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.6 }}
+          >
+            <Link
+              to="/explore/natural-disaster"
+              className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950/0"
+            >
+              <div className="relative mx-auto h-24 w-24 sm:h-28 sm:w-28 md:h-32 md:w-32">
+                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 p-1.5 shadow-lg transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl">
+                  <div className="h-full w-full overflow-hidden rounded-full bg-white dark:bg-slate-900">
+                    <img
+                      src="https://images.unsplash.com/photo-1593113598332-cd288d649433?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80"
+                      alt="Emergency"
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      loading="lazy"
+                    />
+                  </div>
+                </div>
+                <div className="absolute -bottom-3 left-1/2 w-max -translate-x-1/2 rounded-full border border-white/70 bg-slate-50 px-2.5 py-0.5 text-center text-[11px] font-semibold text-slate-800 shadow-md dark:border-slate-800/70 dark:bg-slate-800/90 dark:text-slate-100">
+                  Emergency
+                </div>
+              </div>
+            </Link>
+          </motion.div>
+
+          {/* Animal */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.85, y: -16 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.7 }}
+          >
+            <Link
+              to="/explore/cats"
+              className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950/0"
+            >
+              <div className="relative mx-auto h-24 w-24 sm:h-28 sm:w-28 md:h-32 md:w-32">
+                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 p-1.5 shadow-lg transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl">
+                  <div className="h-full w-full overflow-hidden rounded-full bg-white dark:bg-slate-900">
+                    <img
+                      src="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80"
+                      alt="Animal"
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      loading="lazy"
+                    />
+                  </div>
+                </div>
+                <div className="absolute -bottom-3 left-1/2 w-max -translate-x-1/2 rounded-full border border-white/70 bg-slate-50 px-2.5 py-0.5 text-center text-[11px] font-semibold text-slate-800 shadow-md dark:border-slate-800/70 dark:bg-slate-800/90 dark:text-slate-100">
+                  Animal
+                </div>
+              </div>
+            </Link>
+          </motion.div>
+
+          {/* Business */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.85, y: -16 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.8 }}
+          >
+            <Link
+              to="/explore/startup"
+              className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950/0"
+            >
+              <div className="relative mx-auto h-24 w-24 sm:h-28 sm:w-28 md:h-32 md:w-32">
+                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 p-1.5 shadow-lg transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl">
+                  <div className="h-full w-full overflow-hidden rounded-full bg-white dark:bg-slate-900">
+                    <img
+                      src="https://images.unsplash.com/photo-1552664730-d307ca884978?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80"
+                      alt="Business"
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      loading="lazy"
+                    />
+                  </div>
+                </div>
+                <div className="absolute -bottom-3 left-1/2 w-max -translate-x-1/2 rounded-full border border-white/70 bg-slate-50 px-2.5 py-0.5 text-center text-[11px] font-semibold text-slate-800 shadow-md dark:border-slate-800/70 dark:bg-slate-800/90 dark:text-slate-100">
+                  Business
+                </div>
+              </div>
+            </Link>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Bottom Info / Stats Section */}
+      <motion.div
+        className="mt-12 space-y-5 text-center sm:mt-14"
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.55, delay: 0.95 }}
+      >
+        {!statsLoading && (
+          <div className="mx-auto grid max-w-xl grid-cols-3 gap-3 sm:gap-4">
+            <div className="rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 p-3 shadow-sm dark:from-blue-900/30 dark:to-blue-800/30">
+              <p className="text-xl font-extrabold text-blue-600 sm:text-2xl dark:text-blue-400">
+                {formattedHomeStats?.activeCampaigns?.formatted || '42'}
+              </p>
+              <p className="mt-1 text-[11px] font-semibold tracking-wide text-slate-700 sm:text-xs dark:text-slate-200">
+                Active Campaigns
+              </p>
+            </div>
+            <div className="rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100 p-3 shadow-sm dark:from-emerald-900/30 dark:to-emerald-800/30">
+              <p className="text-xl font-extrabold text-emerald-600 sm:text-2xl dark:text-emerald-400">
+                {liveStats?.formatted?.totalRaised || '₹2.5M'}
+              </p>
+              <p className="mt-1 text-[11px] font-semibold tracking-wide text-slate-700 sm:text-xs dark:text-slate-200">
+                Total Raised
+              </p>
+            </div>
+            <div className="rounded-xl bg-gradient-to-br from-violet-50 to-violet-100 p-3 shadow-sm dark:from-violet-900/30 dark:to-violet-800/30">
+              <p className="text-xl font-extrabold text-violet-600 sm:text-2xl dark:text-violet-400">
+                {formattedHomeStats?.totalDonors?.formatted || '200+'}
+              </p>
+              <p className="mt-1 text-[11px] font-semibold tracking-wide text-slate-700 sm:text-xs dark:text-slate-200">
+                Donors
+              </p>
+            </div>
+          </div>
+        )}
+      </motion.div>
+    </div>
+  </div>
+</motion.div>
+
         </div>
       </div>
     </section>
